@@ -298,8 +298,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <AIQuestionGenerator onBack={handleBackToDashboard} />
           </AccessControl>
         );
-      case 'tenant-management':
-        return <TenantManagement onBack={handleBackToDashboard} />;
       case 'system-settings':
         return <SystemSettings onBack={handleBackToDashboard} />;
       case 'plan-management':
