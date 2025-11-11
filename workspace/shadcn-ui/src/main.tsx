@@ -2,7 +2,16 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Vercel Speed Insights component
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
 console.log('🔍 main.tsx executing');
 console.log('🔍 About to render App');
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+	<>
+		{/* Render SpeedInsights (Next.js component works as a client-side React component) */}
+		<SpeedInsights />
+		<App />
+	</>
+);
 console.log('🔍 App render called');
