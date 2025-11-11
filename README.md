@@ -50,6 +50,22 @@ The compiled output will be placed in the `dist` or `build` folder depending on 
 - If `npm run dev` exits with an error, ensure dependencies are installed and Node version is compatible.
 - If you have a nested `.git` in `workspace`, remove or convert it to a submodule if needed (this repo expects a single top-level `.git`).
 
+## Deploying to Vercel (recommended)
+
+Vercel is the fastest way to deploy this Vite React app with automatic preview deployments for pull requests.
+
+1. Go to https://vercel.com and sign in with your GitHub account.
+2. Click "Import Project" → choose the `phelmye/Smart-eQuiz-Platform` repository.
+3. In the import settings set:
+	- Root Directory: (leave empty) — we use a `vercel.json` to point at the app
+	- Install command: `pnpm install`
+	- Build command: `pnpm run build`
+	- Output directory: `workspace/shadcn-ui/dist`
+4. Add any environment variables under Project Settings → Environment Variables (for Supabase or other keys).
+5. Deploy — Vercel will build and serve your app. PRs will get preview deployments automatically.
+
+Note: This repository contains `vercel.json` which configures the static-build for the frontend located at `workspace/shadcn-ui` and routes all requests to the built `index.html` (SPA fallback).
+
 ## Contributing
 If you'd like, I can add a `CONTRIBUTING.md`, set up CI, and run the dev server to fix remaining runtime issues.
 

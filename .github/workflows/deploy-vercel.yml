@@ -1,0 +1,42 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Enable corepack and prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@8.10.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: workspace/shadcn-ui
+
+      - name: Build
+        run: pnpm run build
+        working-directory: workspace/shadcn-ui
+
+      - name: Deploy to Vercel
+        if: secrets.VERCEL_TOKEN != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx vercel --prod --token $VERCEL_TOKEN --cwd workspace/shadcn-ui --confirm
+
+      - name: Fail if no VERCEL_TOKEN
+        if: secrets.VERCEL_TOKEN == ''
+        run: |
+          echo "VERCEL_TOKEN not set. Add a repository secret named VERCEL_TOKEN to enable automatic deploys to Vercel." 
+          exit 1

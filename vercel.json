@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "workspace/shadcn-ui/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "workspace/shadcn-ui/dist" }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/workspace/shadcn-ui/dist/index.html" }
+  ]
+}
