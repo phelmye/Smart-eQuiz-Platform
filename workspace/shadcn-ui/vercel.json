@@ -1,9 +1,9 @@
 {
   "framework": "vite",
-  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
-  "buildCommand": "pnpm run build",
-  "outputDirectory": "dist",
-  "devCommand": "pnpm run dev",
+  "installCommand": "cd workspace/shadcn-ui && corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
+  "buildCommand": "cd workspace/shadcn-ui && pnpm run build",
+  "outputDirectory": "workspace/shadcn-ui/dist",
+  "devCommand": "cd workspace/shadcn-ui && pnpm run dev",
   "rewrites": [
     {
       "source": "(.*)",
