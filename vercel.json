@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm --prefix workspace/shadcn-ui install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
+  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
   "buildCommand": "pnpm --prefix workspace/shadcn-ui run build",
   "outputDirectory": "workspace/shadcn-ui/dist",
   "devCommand": "pnpm --prefix workspace/shadcn-ui run dev",
