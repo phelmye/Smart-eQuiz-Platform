@@ -1,6 +1,6 @@
 # Smart eQuiz Platform
 
-Smart eQuiz Platform is a role-based quiz and tournament management application built with React, TypeScript, Vite, Tailwind CSS and shadcn/ui components.
+Smart eQuiz Platform is a role-based bible quiz tournament management application built with React, TypeScript, Vite, Tailwind CSS and shadcn/ui components.
 
 This repository contains the application source under `workspace/shadcn-ui`.
 
