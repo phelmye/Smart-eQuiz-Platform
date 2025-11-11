@@ -3,7 +3,8 @@ import App from './App.tsx';
 import './index.css';
 
 // Vercel Speed Insights component (React entrypoint)
-import { SpeedInsights } from '@vercel/speed-insights';
+// Use the package's React entrypoint
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 console.log('🔍 main.tsx executing');
 console.log('🔍 About to render App');
