@@ -1,6 +1,7 @@
 {
   // Treat the repo root pnpm lockfile as plaintext to avoid YAML parser errors in VS Code
   "files.associations": {
-    "pnpm-lock.yaml": "plaintext"
+    "pnpm-lock.yaml": "plaintext",
+    "**/pnpm-lock.yaml": "plaintext"
   }
 }
