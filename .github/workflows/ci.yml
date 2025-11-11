@@ -34,7 +34,10 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies (workspace/shadcn-ui)
-        run: pnpm install --frozen-lockfile
+        run: |
+          corepack enable
+          corepack prepare pnpm@8.10.0 --activate
+          pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/
         working-directory: workspace/shadcn-ui
 
       - name: Run ESLint (optional)
