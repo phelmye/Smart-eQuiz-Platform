@@ -4,10 +4,10 @@
     {
       "src": "workspace/shadcn-ui/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "workspace/shadcn-ui/dist" }
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "/workspace/shadcn-ui/dist/index.html" }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
