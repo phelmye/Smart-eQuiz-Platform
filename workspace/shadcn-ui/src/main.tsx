@@ -2,8 +2,8 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Vercel Speed Insights component
-import { SpeedInsights } from '@vercel/speed-insights/next';
+// Vercel Speed Insights component (React entrypoint)
+import { SpeedInsights } from '@vercel/speed-insights';
 
 console.log('🔍 main.tsx executing');
 console.log('🔍 About to render App');
