@@ -66,3 +66,23 @@ pnpm run dev
 ```shell
 pnpm run build
 ```
+
+## Supabase (optional)
+
+This project can connect to a Supabase Postgres backend for auth, storage and database features. A quick setup:
+
+1. Create a Supabase project at https://app.supabase.com and create your tables.
+2. Copy `.env.example` to `.env` and fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+3. Add the same env vars to your Vercel project (Vite expects VITE_ prefixed variables for client-side access).
+4. Use the client exported from `src/lib/supabaseClient.ts` anywhere in the app.
+
+Example usage:
+
+```ts
+import { supabase } from '@/lib/supabaseClient';
+
+const { data, error } = await supabase.from('tournaments').select('*');
+```
+
+Security note: never commit service_role keys or expose them to the browser. Use serverless functions for privileged operations.
+
