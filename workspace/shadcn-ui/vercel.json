@@ -1,12 +1,12 @@
 {
   "framework": "vite",
-  "buildCommand": "pnpm install && pnpm run build",
+  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
+  "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
-  "installCommand": "pnpm install",
   "devCommand": "pnpm run dev",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "(.*)",
       "destination": "/index.html"
     }
   ]

@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "workspace/shadcn-ui/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
+  "buildCommand": "cd workspace/shadcn-ui && pnpm run build",
+  "outputDirectory": "workspace/shadcn-ui/dist",
+  "devCommand": "cd workspace/shadcn-ui && pnpm run dev",
+  "build": {
+    "env": {}
+  }
 }
