@@ -1,0 +1,42 @@
+name: Verify Supabase Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      expect_tournaments:
+        description: 'Minimum tournaments expected'
+        required: false
+        default: '1'
+      expect_questions:
+        description: 'Minimum questions expected'
+        required: false
+        default: '2'
+      expect_mappings:
+        description: 'Minimum tournament_questions expected'
+        required: false
+        default: '2'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install deps (none required)
+        run: npm ci --silent || true
+
+      - name: Verify seed via Supabase REST
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          EXPECT_TOURNAMENTS: ${{ github.event.inputs.expect_tournaments }}
+          EXPECT_QUESTIONS: ${{ github.event.inputs.expect_questions }}
+          EXPECT_MAPPINGS: ${{ github.event.inputs.expect_mappings }}
+        run: |
+          node scripts/verify-seed.mjs
