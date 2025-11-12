@@ -76,3 +76,29 @@ Note: `scripts/run-seed.mjs` dynamically imports `@supabase/supabase-js` at runt
 npm install @supabase/supabase-js
 ```
 
+GitHub Actions: add secrets & trigger nightly workflow manually
+----------------------------------------------------------
+
+If you want the nightly job to also verify seeding against a Supabase instance, add these repository secrets in GitHub (Settings → Secrets & variables → Actions):
+
+- `SUPABASE_URL` — the base URL of your Supabase project (e.g. `https://xyz.supabase.co`)
+- `SUPABASE_SERVICE_ROLE` — the service-role key for that Supabase project (keep secret)
+
+Once those secrets are set, the nightly workflow (`.github/workflows/infra-nightly.yml`) will automatically run the optional verifier step. You can also trigger the workflow manually from your machine using a GitHub personal access token (PAT) with `repo` and `workflow` permissions.
+
+PowerShell example to trigger the workflow (run in a secure environment):
+
+```powershell
+# Set your PAT temporarily in the environment (recommended to use a secure mechanism instead of hardcoding)
+$env:GITHUB_PAT = Read-Host -Prompt "Enter GitHub PAT" -AsSecureString | ConvertFrom-SecureString
+# If you have the plain token in a variable, set `$env:GITHUB_PAT = 'ghp_xxx'` (not recommended)
+
+$body = @{ ref = 'feat/admin-backend' } | ConvertTo-Json
+$headers = @{ Authorization = "Bearer $env:GITHUB_PAT"; Accept = 'application/vnd.github+json' }
+Invoke-RestMethod -Uri 'https://api.github.com/repos/phelmye/Smart-eQuiz-Platform/actions/workflows/infra-nightly.yml/dispatches' -Method Post -Headers $headers -Body $body -ContentType 'application/json'
+
+# If successful, GitHub returns 204 No Content; then visit Actions → infra-nightly in the repo to watch the run.
+```
+
+Alternatively, use the GitHub web UI: go to Actions → infra-nightly → Run workflow and choose the branch/ref to execute.
+
