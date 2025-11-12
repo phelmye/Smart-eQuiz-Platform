@@ -1,0 +1,57 @@
+Summary
+- Add safer, Windows-friendly local DB helpers for running migrations and seeding the local Postgres dev stack.
+- Make the migration script conditional so a local-only `auth.users` stub is applied by default but can be disabled when targeting a real Supabase instance.
+
+Files changed
+- `dev/scripts/run-migrations.ps1` — add `-UseLocalAuthStub` flag (default: $true), fix path resolution and quoting, and add an optional pre-migration helper (pgcrypto + auth.users) for local Postgres.
+- `dev/scripts/run-seed-direct.ps1` — new helper that writes a temp SQL file, copies it into the Postgres container, and runs `psql -f` to insert demo data.
+- `dev/README.md` — update with usage examples for starting the compose stack, running migrations, and seeding locally (PowerShell-friendly examples).
+
+Why
+- Makes local development easier and more reliable on Windows (addresses docker mount & PowerShell quoting issues).
+- Prevents accidental application of Supabase-only objects in production by making the local auth stub opt-in/flagged.
+- Provides a direct SQL seeder for quick local demos when not using Supabase client credentials.
+
+How to test (local)
+1. Start dev stack:
+   ```powershell
+   docker compose -f dev/docker-compose.yml up -d
+   ```
+2. Run migrations (local default, applies local auth stub):
+   ```powershell
+   .\dev\scripts\run-migrations.ps1
+   ```
+   Or skip the local stub (for real Supabase):
+   ```powershell
+   .\dev\scripts\run-migrations.ps1 -UseLocalAuthStub:$false
+   ```
+3. Seed demo data (direct SQL):
+   ```powershell
+   .\dev\scripts\run-seed-direct.ps1
+   ```
+   Or run the Supabase client seeder (requires SUPABASE_URL and SUPABASE_SERVICE_ROLE env vars):
+   ```powershell
+   $env:SUPABASE_URL = 'https://your-project-ref.supabase.co'
+   $env:SUPABASE_SERVICE_ROLE = 'service-role-key-for-local'
+   node .\scripts\run-seed.mjs
+   ```
+4. Inspect with Adminer:
+   - Open http://localhost:8080 (login: postgres / postgres)
+
+Verification performed (local)
+- Started dev compose and applied migrations using `run-migrations.ps1`. Output: CREATEs/INDEXes shown.
+- Ran `run-seed-direct.ps1`. Output: `INSERT 0 1` and `INSERT 0 2` confirming demo rows inserted into `tournaments` and `questions`.
+
+Risks & notes
+- The script creates a minimal `auth.users` stub and `pgcrypto` extension by default for local dev. Do NOT run the default local stub against production Supabase databases.
+- `-UseLocalAuthStub:$false` is provided to make migration safe for real Supabase instances.
+- Changes are scoped to `dev/` and should be safe to merge; README updated.
+
+Checklist
+- [x] Verified migrations apply locally
+- [x] Verified direct seeding completes
+- [x] README updated with usage examples
+
+Status: Ready for review — please assign reviewers when convenient.
+
+Suggested reviewers: backend, infra
