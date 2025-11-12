@@ -24,5 +24,17 @@ services:
     ports:
       - "8080:8080"
 
+  admin-backend:
+    build:
+      context: ../services/admin-backend
+    environment:
+      - ADMIN_TOKEN=local-admin-token
+      - CHECK_MIGRATE=false
+      # RUN_MIGRATE_CMD and RUN_SEED_CMD left empty by default for safety
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+
 volumes:
   pgdata:
