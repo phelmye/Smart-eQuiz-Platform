@@ -52,3 +52,27 @@ Important safety notes
 - Keep your `ADMIN_TOKEN` secret. For CI, use repository secrets and avoid enabling migration/seed commands unless needed.
 - The admin-backend by default will not execute migration/seed commands until `RUN_*` vars are set in the process environment that runs the server.
 
+Seeding Supabase (non-local)
+--------------------------------
+If you want to run the seeder directly against a Supabase project (non-local), you can use the repository script and the verifier:
+
+1. Set these environment variables (use only for a staging/dev Supabase project):
+
+```powershell
+$env:SUPABASE_URL = 'https://your-project.supabase.co'
+$env:SUPABASE_SERVICE_ROLE = 'service-role-key'
+```
+
+2. Run the seeder and then verification locally:
+
+```powershell
+# runs scripts/run-seed.mjs (Supabase client path) then scripts/verify-seed.mjs
+node .\scripts\seed-and-verify.mjs
+```
+
+Note: `scripts/run-seed.mjs` dynamically imports `@supabase/supabase-js` at runtime. If you plan to run the Supabase client path, ensure you have `@supabase/supabase-js` available in your environment (install it globally or in the repo):
+
+```powershell
+npm install @supabase/supabase-js
+```
+
