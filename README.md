@@ -72,3 +72,18 @@ If you'd like, I can add a `CONTRIBUTING.md`, set up CI, and run the dev server 
 ---
 
 If you want me to proceed, I recommend next to: (A) add a TypeScript + build GitHub Actions workflow, then (B) run the dev server locally and fix any runtime errors. Which should I do next? (I'll proceed automatically if you say "Go ahead".)
+
+## CI notes
+
+We run a small local-first test stack for database migrations and seeding during development and CI.
+
+- See `dev/CI.md` for a concise explanation of the CI compose override and local run instructions. In short:
+	- Local developers use `dev/docker-compose.yml` (uses `postgres:15-alpine`).
+	- CI workflows include `dev/docker-compose.ci.yml` which forces the Debian-based `postgres:15` image to avoid intermittent Alpine-specific behavior on GitHub-hosted runners.
+	- To run the same stack as CI locally, run:
+
+```powershell
+docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml up -d --wait
+```
+
+This file is intentionally short — for details and troubleshooting steps see `dev/CI.md`.
