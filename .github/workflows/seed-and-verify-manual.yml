@@ -23,12 +23,12 @@ jobs:
           CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
           echo "Postgres container: $CONTAINER"
           RETRY=0
-          until docker exec -T $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge 30 ]; do
+          until docker exec -T $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge 60 ]; do
             echo "Waiting for postgres... ($RETRY)"
             sleep 2
             RETRY=$((RETRY+1))
           done
-          if [ $RETRY -ge 30 ]; then
+          if [ $RETRY -ge 60 ]; then
             docker logs $CONTAINER || true
             exit 1
           fi
