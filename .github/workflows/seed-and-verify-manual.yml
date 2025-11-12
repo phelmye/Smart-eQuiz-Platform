@@ -1,11 +1,19 @@
 name: Seed and verify (manual)
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      collect_debug_artifacts:
+        description: 'Whether to collect and upload debug artifacts on failure'
+        required: false
+        default: 'true'
 
 jobs:
   seed-verify:
     runs-on: ubuntu-latest
+    env:
+      # Controlled by workflow_dispatch input for manual runs
+      DEBUG_ARTIFACTS: ${{ github.event.inputs.collect_debug_artifacts }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,7 +102,7 @@ jobs:
         run: docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml down -v
 
       - name: Gather postgres debug info (on failure)
-        if: failure()
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
         run: |
           mkdir -p debug
           CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
@@ -108,7 +116,7 @@ jobs:
           docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> debug/postgres-data-listing.txt 2>&1 || true
 
       - name: Upload postgres debug artifacts (on failure)
-        if: failure()
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: postgres-debug-logs

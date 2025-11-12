@@ -12,6 +12,9 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    env:
+      # Set to 'true' to enable failure debug artifact collection during a special run
+      DEBUG_ARTIFACTS: 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,7 +100,7 @@ jobs:
           if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
 
       - name: Gather postgres debug info (on failure)
-        if: failure()
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
         run: |
           mkdir -p infra-debug
           CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
@@ -111,7 +114,7 @@ jobs:
           docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> infra-debug/postgres-data-listing.txt 2>&1 || true
 
       - name: Upload postgres debug artifacts (on failure)
-        if: failure()
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: infra-postgres-debug
