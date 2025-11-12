@@ -61,16 +61,17 @@ jobs:
       - name: Run local seeder
         run: node scripts/run-seed.mjs --local
 
-      - name: Validate seeded counts
+      - name: Validate seeded counts (exact)
         run: |
-          set -eux
           CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
           TOURS=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournaments;")
           QUES=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM questions;")
           MAPS=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournament_questions;")
           echo "counts: tournaments=$TOURS questions=$QUES maps=$MAPS"
-          if [ "${TOURS:-0}" -lt 1 ]; then echo "Expected at least 1 tournament but found $TOURS" && exit 1; fi
-          if [ "${QUES:-0}" -lt 2 ]; then echo "Expected at least 2 questions but found $QUES" && exit 1; fi
+          # Expect exactly 1 tournament, 2 questions, and 2 tournament_questions from the local seeder
+          if [ "${TOURS:-0}" -ne 1 ]; then echo "Expected exactly 1 tournament but found $TOURS" && exit 1; fi
+          if [ "${QUES:-0}" -ne 2 ]; then echo "Expected exactly 2 questions but found $QUES" && exit 1; fi
+          if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
 
       - name: Collect logs (on failure)
         if: failure()
