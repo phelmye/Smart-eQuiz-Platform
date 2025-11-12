@@ -15,7 +15,27 @@ docker compose -f dev/docker-compose.yml up -d
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to start docker-compose stack (exit $LASTEXITCODE). Ensure Docker is running and you have permissions."; exit $LASTEXITCODE }
 
 Write-Output "Applying db/supabase_schema.sql to smart_equiz_dev database"
-docker compose -f dev/docker-compose.yml exec -T postgres sh -c "psql -U postgres -d smart_equiz_dev -f /workspace/db/supabase_schema.sql"
 
-if ($LASTEXITCODE -ne 0) { Write-Error "Migration command failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
+# Resolve container id for the postgres service created by docker compose
+$containerId = docker compose -f dev/docker-compose.yml ps -q postgres
+if (-not $containerId) {
+	Write-Error "Could not find running postgres container via docker compose."
+	exit 2
+}
+
+# Copy the SQL file into the container to avoid relying on host bind mounts
+$hostSqlPath = Join-Path -Path (Resolve-Path -Path "..\..\db\supabase_schema.sql") -ChildPath ''
+$hostSqlPath = $hostSqlPath.TrimEnd("\")
+if (-not (Test-Path $hostSqlPath)) {
+	Write-Error "Local SQL file not found at $hostSqlPath"
+	exit 3
+}
+
+Write-Output "Copying SQL file into container $containerId:/tmp/supabase_schema.sql"
+docker cp $hostSqlPath "$containerId":/tmp/supabase_schema.sql
+if ($LASTEXITCODE -ne 0) { Write-Error "docker cp failed (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
+
+Write-Output "Running psql inside container"
+docker exec -i $containerId sh -c "psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql"
+if ($LASTEXITCODE -ne 0) { Write-Error "Migration command inside container failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
 Write-Output "Migrations applied."
