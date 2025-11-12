@@ -12,6 +12,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Start docker-compose stack (postgres, redis, adminer)
         run: |
           docker compose -f dev/docker-compose.yml up -d postgres redis adminer
@@ -60,6 +65,18 @@ jobs:
 
       - name: Run local seeder
         run: node scripts/run-seed.mjs --local
+
+      - name: Run Supabase verifier (optional)
+        if: ${{ secrets.SUPABASE_SERVICE_ROLE != '' && secrets.SUPABASE_URL != '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+          EXPECT_TOURNAMENTS: '1'
+          EXPECT_QUESTIONS: '2'
+          EXPECT_TOURNAMENT_QUESTIONS: '2'
+        run: |
+          echo "Running Supabase verifier against $SUPABASE_URL"
+          node scripts/verify-seed.mjs
 
       - name: Validate seeded counts (exact)
         run: |
