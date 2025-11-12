@@ -26,13 +26,28 @@ jobs:
           CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
           echo "Postgres container: $CONTAINER"
           RETRY=0
-          until docker exec -i $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge 60 ]; do
+          MAX_RETRY=120
+          LOG_EVERY=10
+          until docker exec -i $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge $MAX_RETRY ]; do
             echo "Waiting for postgres... ($RETRY)"
+            if [ $((RETRY % LOG_EVERY)) -eq 0 ]; then
+              echo "--- docker logs (tail 200) at retry $RETRY ---"
+              docker logs --tail 200 $CONTAINER || true
+              echo "--- end docker logs ---"
+            fi
             sleep 2
             RETRY=$((RETRY+1))
           done
-          if [ $RETRY -ge 60 ]; then
+          if [ $RETRY -ge $MAX_RETRY ]; then
+            echo "Postgres did not become ready after $MAX_RETRY attempts. Gathering immediate diagnostics..."
+            echo "-- docker inspect --"
+            docker inspect $CONTAINER || true
+            echo "-- docker logs (full) --"
             docker logs $CONTAINER || true
+            echo "-- ps aux in container --"
+            docker exec -i $CONTAINER ps aux || true
+            echo "-- ls -la /var/lib/postgresql/data --"
+            docker exec -i $CONTAINER ls -la /var/lib/postgresql/data || true
             exit 1
           fi
 
@@ -90,21 +105,26 @@ jobs:
           if [ "${QUES:-0}" -ne 2 ]; then echo "Expected exactly 2 questions but found $QUES" && exit 1; fi
           if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
 
-      - name: Collect logs (on failure)
+      - name: Gather postgres debug info (on failure)
         if: failure()
         run: |
-          echo "Collecting docker and postgres logs for debugging..."
-          docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml logs postgres > infra-postgres-logs.txt || true
-          docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml logs > infra-compose-logs.txt || true
+          mkdir -p infra-debug
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          echo "Container: $CONTAINER" > infra-debug/postgres-inspect.txt || true
+          docker inspect $CONTAINER >> infra-debug/postgres-inspect.txt 2>&1 || true
+          echo "--- docker logs ---" > infra-debug/postgres-logs.txt || true
+          docker logs $CONTAINER >> infra-debug/postgres-logs.txt 2>&1 || true
+          echo "--- ps aux ---" > infra-debug/postgres-ps.txt || true
+          docker exec -i $CONTAINER ps aux >> infra-debug/postgres-ps.txt 2>&1 || true
+          echo "--- data dir listing ---" > infra-debug/postgres-data-listing.txt || true
+          docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> infra-debug/postgres-data-listing.txt 2>&1 || true
 
-      - name: Upload logs (on failure)
+      - name: Upload postgres debug artifacts (on failure)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: infra-logs
-          path: |
-            infra-postgres-logs.txt
-            infra-compose-logs.txt
+          name: infra-postgres-debug
+          path: infra-debug/*
 
       - name: Tear down
         if: always()
