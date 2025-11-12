@@ -1,3 +1,19 @@
+<#
+Usage: .\dev\scripts\run-migrations.ps1 [-UseLocalAuthStub <$true|$false>]
+
+Options:
+	-UseLocalAuthStub  When true (default) the script will create a minimal `auth.users` table
+										 and the `pgcrypto` extension in the local Postgres container so
+										 the Supabase schema that references `auth.users` can be applied
+										 on a plain Postgres instance used for local development.
+
+Set `-UseLocalAuthStub $false` when running migrations against a real Supabase
+instance (DO NOT apply the auth stub in production).
+#>
+param(
+		[bool]$UseLocalAuthStub = $true
+)
+
 Write-Output "Running DB migrations against local Postgres container..."
 
 # Check that Docker is available
@@ -24,18 +40,27 @@ if (-not $containerId) {
 }
 
 # Copy the SQL file into the container to avoid relying on host bind mounts
-$hostSqlPath = Join-Path -Path (Resolve-Path -Path "..\..\db\supabase_schema.sql") -ChildPath ''
-$hostSqlPath = $hostSqlPath.TrimEnd("\")
-if (-not (Test-Path $hostSqlPath)) {
-	Write-Error "Local SQL file not found at $hostSqlPath"
+# Resolve path relative to this script file (works no matter current working directory)
+$relativePath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\db\supabase_schema.sql"
+$resolved = Resolve-Path -Path $relativePath -ErrorAction SilentlyContinue
+if (-not $resolved) {
+	Write-Error "Local SQL file not found at path (looked for) $relativePath"
 	exit 3
 }
+$hostSqlPath = $resolved.Path
+$hostSqlPath = $hostSqlPath.TrimEnd("\")
 
-Write-Output "Copying SQL file into container $containerId:/tmp/supabase_schema.sql"
-docker cp $hostSqlPath "$containerId":/tmp/supabase_schema.sql
+Write-Output "Copying SQL file into container ${containerId}:/tmp/supabase_schema.sql"
+docker cp $hostSqlPath "${containerId}:/tmp/supabase_schema.sql"
 if ($LASTEXITCODE -ne 0) { Write-Error "docker cp failed (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
 
 Write-Output "Running psql inside container"
+# Ensure minimal Supabase-like environment for local dev: pgcrypto extension and auth.users stub
+Write-Output "Creating local helpers: pgcrypto extension and auth.users stub (if missing)"
+$prepSql = "CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE SCHEMA IF NOT EXISTS auth; CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY);"
+docker exec -i $containerId psql -U postgres -d smart_equiz_dev -c "$prepSql"
+if ($LASTEXITCODE -ne 0) { Write-Error "Pre-migration helper command failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
+
 docker exec -i $containerId sh -c "psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql"
 if ($LASTEXITCODE -ne 0) { Write-Error "Migration command inside container failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
 Write-Output "Migrations applied."

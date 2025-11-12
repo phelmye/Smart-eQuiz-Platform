@@ -16,13 +16,28 @@ Quick start (PowerShell)
 
 2. Apply DB schema
 
-   # Run the SQL schema into the local DB (the repository `db/supabase_schema.sql` will be used)
-   docker compose -f dev/docker-compose.yml exec -T postgres sh -c "psql -U postgres -d smart_equiz_dev -f /workspace/db/supabase_schema.sql"
+   There are helper scripts included that make this easier and safer on Windows:
+
+   # Start the dev stack (run from repo root)
+   docker compose -f dev/docker-compose.yml up -d
+
+   # Run migrations (default applies a small local auth stub so FKs to `auth.users` succeed)
+   .\dev\scripts\run-migrations.ps1
+
+   # If you are targeting a real Supabase instance (DO NOT use the local auth stub), run:
+   .\dev\scripts\run-migrations.ps1 -UseLocalAuthStub:$false
 
 3. Seed sample data (locally)
 
-   # Set your local Supabase service role and URL (DO NOT use production keys here)
-   $env:SUPABASE_URL = 'https://your-project-ref.supabase.co'
+   Option A — direct SQL seeding (no Supabase client required):
+
+   # Copies a small SQL file into the Postgres container and executes it
+   .\dev\scripts\run-seed-direct.ps1
+
+   Option B — use the Supabase client seeder (requires a Supabase URL + service role key):
+
+   # Set the env vars (local only) and run the Node seeder
+   $env:SUPABASE_URL = 'http://localhost:5432' # or your Supabase URL
    $env:SUPABASE_SERVICE_ROLE = 'service-role-key-for-local'
    node .\scripts\run-seed.mjs
 
