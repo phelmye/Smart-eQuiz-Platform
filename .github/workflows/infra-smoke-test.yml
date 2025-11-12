@@ -79,6 +79,22 @@ jobs:
           if [ -z "$TOURS" ] || [ "$TOURS" -lt 1 ]; then echo "No tournaments seeded" && exit 1; fi
           if [ -z "$QUES" ] || [ "$QUES" -lt 1 ]; then echo "No questions seeded" && exit 1; fi
 
+      - name: Collect logs (on failure)
+        if: failure()
+        run: |
+          echo "Collecting docker and postgres logs for debugging..."
+          docker compose -f dev/docker-compose.yml logs postgres > infra-postgres-logs.txt || true
+          docker compose -f dev/docker-compose.yml logs > infra-compose-logs.txt || true
+
+      - name: Upload logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-logs
+          path: |
+            infra-postgres-logs.txt
+            infra-compose-logs.txt
+
       - name: Tear down
         if: always()
         run: docker compose -f dev/docker-compose.yml down -v
