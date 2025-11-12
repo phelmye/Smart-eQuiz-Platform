@@ -61,6 +61,53 @@ $prepSql = "CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE SCHEMA IF NOT EXISTS
 docker exec -i $containerId psql -U postgres -d smart_equiz_dev -c "$prepSql"
 if ($LASTEXITCODE -ne 0) { Write-Error "Pre-migration helper command failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
 
-docker exec -i $containerId sh -c "psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql"
+$migrationsDir = Join-Path -Path $PSScriptRoot -ChildPath "..\..\db\migrations"
+if (Test-Path $migrationsDir) {
+    Write-Output "Found migrations directory - applying migrations from db/migrations"
+	# Ensure schema_migrations table exists
+	$createMigrationsTableSql = "CREATE TABLE IF NOT EXISTS schema_migrations (version text PRIMARY KEY, applied_at timestamptz DEFAULT now());"
+	docker exec -i $containerId psql -U postgres -d smart_equiz_dev -c "$createMigrationsTableSql"
+	if ($LASTEXITCODE -ne 0) { Write-Error "Failed to ensure schema_migrations table exists"; exit $LASTEXITCODE }
+
+	# Apply files in alphabetical order
+	$files = Get-ChildItem -Path $migrationsDir -Filter '*.sql' | Sort-Object Name
+	foreach ($f in $files) {
+		$version = $f.Name
+		Write-Output "Processing migration $version"
+
+		# If running locally, skip RLS migrations (they require Supabase auth helpers)
+		if ($UseLocalAuthStub -and ($version -match '(?i)rls')) {
+			Write-Output "Skipping RLS migration $version in local mode (UseLocalAuthStub=$UseLocalAuthStub)"
+			continue
+		}
+
+		# Copy the file into the container
+		docker cp $f.FullName "${containerId}:/tmp/$version"
+		if ($LASTEXITCODE -ne 0) { Write-Error "docker cp failed for $version"; exit $LASTEXITCODE }
+
+		# Check if applied
+		$checkCmd = "SELECT 1 FROM schema_migrations WHERE version = '$version';"
+		$checkOutput = docker exec -i $containerId psql -U postgres -d smart_equiz_dev -t -c $checkCmd
+		if ($LASTEXITCODE -ne 0) { Write-Error "Failed to query schema_migrations for $version"; exit $LASTEXITCODE }
+
+		if (-not ($checkOutput.Trim())) {
+			Write-Output "Applying migration $version"
+			# Capture apply output to detect errors even if psql exits zero
+			$applyOutput = docker exec -i $containerId psql -U postgres -d smart_equiz_dev -f "/tmp/$version" 2>&1
+			if ($LASTEXITCODE -ne 0 -or $applyOutput -match "ERROR:") {
+				Write-Error "Migration $version failed. Output:\n$applyOutput"
+				exit 1
+			}
+
+			# Record migration only after successful apply
+			docker exec -i $containerId psql -U postgres -d smart_equiz_dev -c "INSERT INTO schema_migrations(version) VALUES('$version');"
+			if ($LASTEXITCODE -ne 0) { Write-Error "Failed to record migration $version"; exit $LASTEXITCODE }
+		} else {
+			Write-Output "Skipping already-applied migration $version"
+		}
+	}
+} else {
+	docker exec -i $containerId sh -c "psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql"
+}
 if ($LASTEXITCODE -ne 0) { Write-Error "Migration command inside container failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
 Write-Output "Migrations applied."
