@@ -1,3 +1,4 @@
+// Workspace-level seeder for Vercel (ensures function deployed when project root is the workspace)
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
