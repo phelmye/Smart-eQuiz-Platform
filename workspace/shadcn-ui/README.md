@@ -83,6 +83,18 @@ import { supabase } from '@/lib/supabaseClient';
 
 const { data, error } = await supabase.from('tournaments').select('*');
 ```
+Seeding and schema
+------------------
+
+1. Run the SQL schema in `db/supabase_schema.sql` from the Supabase SQL editor to create the initial tables.
+2. If you want to seed demo data from the server, deploy the serverless function `api/seed-supabase.ts` (Vercel) and set the following server envs:
+
+	- `SUPABASE_URL` (same as VITE_SUPABASE_URL)
+	- `SUPABASE_SERVICE_ROLE` (service role key — keep this secret)
+
+	Then call the endpoint `/api/seed-supabase` once to insert demo records.
+
+Security note: never commit `SUPABASE_SERVICE_ROLE` to source or store it in client envs. Use the hosting provider's secret environment variables for server-only keys.
 
 Security note: never commit service_role keys or expose them to the browser. Use serverless functions for privileged operations.
 
