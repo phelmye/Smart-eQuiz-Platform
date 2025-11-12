@@ -1,0 +1,79 @@
+name: Seed and verify (manual)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  seed-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Start docker-compose stack (postgres, redis, adminer)
+        run: docker compose -f dev/docker-compose.yml up -d postgres redis adminer
+
+      - name: Wait for Postgres
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
+          echo "Postgres container: $CONTAINER"
+          RETRY=0
+          until docker exec -T $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge 30 ]; do
+            echo "Waiting for postgres... ($RETRY)"
+            sleep 2
+            RETRY=$((RETRY+1))
+          done
+          if [ $RETRY -ge 30 ]; then
+            docker logs $CONTAINER || true
+            exit 1
+          fi
+
+      - name: Ensure target DB exists
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
+          EXISTS=$(docker exec -T $CONTAINER psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='smart_equiz_dev';")
+          if [ "$EXISTS" != "1" ]; then
+            docker exec -T $CONTAINER psql -U postgres -c "CREATE DATABASE smart_equiz_dev;"
+          fi
+
+      - name: Apply base schema
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
+          docker cp db/supabase_schema.sql $CONTAINER:/tmp/supabase_schema.sql
+          docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql
+
+      - name: Apply migrations (skip RLS)
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
+          for f in db/migrations/*.sql; do
+            echo "Processing $f"
+            base=$(basename "$f")
+            case "$base" in
+              *rls*) echo "Skipping RLS migration $base"; continue ;;
+            esac
+            docker cp "$f" "$CONTAINER":/tmp/"$base"
+            docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -f /tmp/"$base"
+          done
+
+      - name: Run local seeder
+        run: node scripts/run-seed.mjs --local
+
+      - name: Validate seeded counts (exact)
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
+          TOURS=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournaments;")
+          QUES=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM questions;")
+          MAPS=$(docker exec -T $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournament_questions;")
+          echo "counts: tournaments=$TOURS questions=$QUES maps=$MAPS"
+          if [ "${TOURS:-0}" -ne 1 ]; then echo "Expected exactly 1 tournament but found $TOURS" && exit 1; fi
+          if [ "${QUES:-0}" -ne 2 ]; then echo "Expected exactly 2 questions but found $QUES" && exit 1; fi
+          if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f dev/docker-compose.yml down -v
