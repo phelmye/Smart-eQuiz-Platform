@@ -26,8 +26,9 @@ try {
 	exit 1
 }
 
-Write-Output "Starting docker-compose dev stack..."
-docker compose -f dev/docker-compose.yml up -d
+Write-Output "Starting docker-compose dev stack (postgres, redis, adminer only)..."
+# Start only the DB and supporting services to avoid port collisions with admin-backend
+docker compose -f dev/docker-compose.yml up -d postgres redis adminer
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to start docker-compose stack (exit $LASTEXITCODE). Ensure Docker is running and you have permissions."; exit $LASTEXITCODE }
 
 Write-Output "Applying db/supabase_schema.sql to smart_equiz_dev database"
