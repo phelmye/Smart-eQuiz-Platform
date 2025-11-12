@@ -23,13 +23,28 @@ jobs:
           CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
           echo "Postgres container: $CONTAINER"
           RETRY=0
-          until docker exec -T $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge 60 ]; do
+          MAX_RETRY=120
+          LOG_EVERY=10
+          until docker exec -T $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge $MAX_RETRY ]; do
             echo "Waiting for postgres... ($RETRY)"
+            if [ $((RETRY % LOG_EVERY)) -eq 0 ]; then
+              echo "--- docker logs (tail 200) at retry $RETRY ---"
+              docker logs --tail 200 $CONTAINER || true
+              echo "--- end docker logs ---"
+            fi
             sleep 2
             RETRY=$((RETRY+1))
           done
-          if [ $RETRY -ge 60 ]; then
+          if [ $RETRY -ge $MAX_RETRY ]; then
+            echo "Postgres did not become ready after $MAX_RETRY attempts. Gathering immediate diagnostics..."
+            echo "-- docker inspect --"
+            docker inspect $CONTAINER || true
+            echo "-- docker logs (full) --"
             docker logs $CONTAINER || true
+            echo "-- ps aux in container --"
+            docker exec -T $CONTAINER ps aux || true
+            echo "-- ls -la /var/lib/postgresql/data --"
+            docker exec -T $CONTAINER ls -la /var/lib/postgresql/data || true
             exit 1
           fi
 
@@ -77,3 +92,24 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml down -v
+
+      - name: Gather postgres debug info (on failure)
+        if: failure()
+        run: |
+          mkdir -p debug
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          echo "Container: $CONTAINER" > debug/postgres-inspect.txt || true
+          docker inspect $CONTAINER >> debug/postgres-inspect.txt 2>&1 || true
+          echo "--- docker logs ---" > debug/postgres-logs.txt || true
+          docker logs $CONTAINER >> debug/postgres-logs.txt 2>&1 || true
+          echo "--- ps aux ---" > debug/postgres-ps.txt || true
+          docker exec -T $CONTAINER ps aux >> debug/postgres-ps.txt 2>&1 || true
+          echo "--- data dir listing ---" > debug/postgres-data-listing.txt || true
+          docker exec -T $CONTAINER ls -la /var/lib/postgresql/data >> debug/postgres-data-listing.txt 2>&1 || true
+
+      - name: Upload postgres debug artifacts (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: postgres-debug-logs
+          path: debug/*
