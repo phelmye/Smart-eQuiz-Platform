@@ -13,12 +13,39 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'change-me-please';
 const CHECK_MIGRATE = process.env.CHECK_MIGRATE === 'true';
 const RUN_MIGRATE_CMD = process.env.RUN_MIGRATE_CMD || '';
 const RUN_SEED_CMD = process.env.RUN_SEED_CMD || '';
+const ADMIN_ALLOWLIST = (process.env.ADMIN_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
+// simple in-memory rate limiter for admin endpoints
+const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10);
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '60', 10);
+const rateMap = new Map();
+
+function checkRateLimit(key) {
+  const now = Date.now();
+  const entry = rateMap.get(key) || { ts: now, count: 0 };
+  if (now - entry.ts > RATE_LIMIT_WINDOW_MS) {
+    entry.ts = now;
+    entry.count = 1;
+  } else {
+    entry.count += 1;
+  }
+  rateMap.set(key, entry);
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+function ipAllowed(req) {
+  if (ADMIN_ALLOWLIST.length === 0) return true; // no allowlist = allow all (safe default)
+  const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || '').split(',')[0].trim();
+  return ADMIN_ALLOWLIST.includes(ip);
+}
 
 function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'] || req.body?.token;
   if (!token || token !== ADMIN_TOKEN) {
     return res.status(401).json({ error: 'unauthorized' });
   }
+  if (!ipAllowed(req)) return res.status(403).json({ error: 'forbidden' });
+  const key = token + '|' + (req.ip || req.connection.remoteAddress || '');
+  if (!checkRateLimit(key)) return res.status(429).json({ error: 'rate_limited' });
   next();
 }
 

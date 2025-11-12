@@ -1,0 +1,38 @@
+name: Admin backend CI
+
+on:
+  pull_request:
+    paths:
+      - 'services/admin-backend/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build admin-backend image
+        run: |
+          docker build -t admin-backend-ci ./services/admin-backend
+
+      - name: Run admin-backend container
+        run: |
+          docker run -d --name admin-backend-ci -p 40100:4000 -e ADMIN_TOKEN=ci-token admin-backend-ci
+
+      - name: Wait for service
+        run: |
+          for i in {1..20}; do
+            if curl --fail -sS http://localhost:40100/health >/dev/null; then echo ok && break; fi
+            echo "waiting... ($i)"; sleep 1
+          done
+
+      - name: Check /health
+        run: |
+          curl -sS http://localhost:40100/health | jq .
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker rm -f admin-backend-ci || true
