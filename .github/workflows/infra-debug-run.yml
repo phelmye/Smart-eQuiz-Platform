@@ -1,0 +1,119 @@
+name: Infra debug run (manual)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  debug-run:
+    runs-on: ubuntu-latest
+    env:
+      # Force artifact collection for this manual debug run
+      DEBUG_ARTIFACTS: 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Start docker-compose stack (postgres, redis, adminer)
+        run: |
+          docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml up -d postgres redis adminer
+
+      - name: Wait for Postgres
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          echo "Postgres container: $CONTAINER"
+          RETRY=0
+          MAX_RETRY=120
+          LOG_EVERY=10
+          until docker exec -i $CONTAINER pg_isready -U postgres -d postgres >/dev/null 2>&1 || [ $RETRY -ge $MAX_RETRY ]; do
+            echo "Waiting for postgres... ($RETRY)"
+            if [ $((RETRY % LOG_EVERY)) -eq 0 ]; then
+              echo "--- docker logs (tail 200) at retry $RETRY ---"
+              docker logs --tail 200 $CONTAINER || true
+              echo "--- end docker logs ---"
+            fi
+            sleep 2
+            RETRY=$((RETRY+1))
+          done
+          if [ $RETRY -ge $MAX_RETRY ]; then
+            echo "Postgres did not become ready after $MAX_RETRY attempts. Gathering immediate diagnostics..."
+            echo "-- docker inspect --"
+            docker inspect $CONTAINER || true
+            echo "-- docker logs (full) --"
+            docker logs $CONTAINER || true
+            echo "-- ps aux in container --"
+            docker exec -i $CONTAINER ps aux || true
+            echo "-- ls -la /var/lib/postgresql/data --"
+            docker exec -i $CONTAINER ls -la /var/lib/postgresql/data || true
+            exit 1
+          fi
+
+      - name: Ensure target DB exists
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          EXISTS=$(docker exec -i $CONTAINER psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='smart_equiz_dev';")
+          if [ "$EXISTS" != "1" ]; then
+            docker exec -i $CONTAINER psql -U postgres -c "CREATE DATABASE smart_equiz_dev;"
+          fi
+
+      - name: Apply base schema
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          docker cp db/supabase_schema.sql $CONTAINER:/tmp/supabase_schema.sql
+          docker exec -i $CONTAINER psql -U postgres -d smart_equiz_dev -f /tmp/supabase_schema.sql
+
+      - name: Apply migrations (skip RLS)
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          for f in db/migrations/*.sql; do
+            echo "Processing $f"
+            base=$(basename "$f")
+            case "$base" in
+              *rls*) echo "Skipping RLS migration $base"; continue ;;
+            esac
+            docker cp "$f" "$CONTAINER":/tmp/"$base"
+            docker exec -i $CONTAINER psql -U postgres -d smart_equiz_dev -f /tmp/"$base"
+          done
+
+      - name: Run local seeder
+        run: node scripts/run-seed.mjs --local
+
+      - name: Validate seeded counts (exact)
+        run: |
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          TOURS=$(docker exec -i $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournaments;")
+          QUES=$(docker exec -i $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM questions;")
+          MAPS=$(docker exec -i $CONTAINER psql -U postgres -d smart_equiz_dev -t -A -c "SELECT count(*) FROM tournament_questions;")
+          echo "counts: tournaments=$TOURS questions=$QUES maps=$MAPS"
+          if [ "${TOURS:-0}" -ne 1 ]; then echo "Expected exactly 1 tournament but found $TOURS" && exit 1; fi
+          if [ "${QUES:-0}" -ne 2 ]; then echo "Expected exactly 2 questions but found $QUES" && exit 1; fi
+          if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
+
+      - name: Gather postgres debug info (on failure)
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
+        run: |
+          mkdir -p infra-debug
+          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
+          echo "Container: $CONTAINER" > infra-debug/postgres-inspect.txt || true
+          docker inspect $CONTAINER >> infra-debug/postgres-inspect.txt 2>&1 || true
+          echo "--- docker logs ---" > infra-debug/postgres-logs.txt || true
+          docker logs $CONTAINER >> infra-debug/postgres-logs.txt 2>&1 || true
+          echo "--- ps aux ---" > infra-debug/postgres-ps.txt || true
+          docker exec -i $CONTAINER ps aux >> infra-debug/postgres-ps.txt 2>&1 || true
+          echo "--- data dir listing ---" > infra-debug/postgres-data-listing.txt || true
+          docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> infra-debug/postgres-data-listing.txt 2>&1 || true
+
+      - name: Upload postgres debug artifacts (on failure)
+        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-postgres-debug
+          path: infra-debug/*
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml down -v
