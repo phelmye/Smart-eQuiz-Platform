@@ -776,11 +776,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Role</p>
-                            <p className="font-medium capitalize">{user.role.replace('_', ' ')}</p>
+                            <p className="font-medium capitalize">{user.role?.replace('_', ' ') || 'User'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Organization</p>
-                            <p className="font-medium">{tenant?.name}</p>
+                            <p className="font-medium">{tenant?.name || 'Default'}</p>
                           </div>
                         </div>
                       </CardContent>
