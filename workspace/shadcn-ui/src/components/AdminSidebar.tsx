@@ -270,11 +270,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {onToggleCollapse && (
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onClick={onToggleCollapse}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 hover:bg-gray-100 border-gray-300"
+                title="Toggle sidebar"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-4 w-4 text-gray-700" />
               </Button>
             )}
           </div>
@@ -287,11 +288,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             {onToggleCollapse && (
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onClick={onToggleCollapse}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 hover:bg-gray-100 border-gray-300"
+                title="Toggle sidebar"
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-4 w-4 text-gray-700" />
               </Button>
             )}
           </div>
