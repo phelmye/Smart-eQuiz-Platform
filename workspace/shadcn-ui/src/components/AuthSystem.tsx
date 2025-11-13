@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData } from '@/lib/mockData';
+import { apiClient } from '@/lib/apiClient';
 
 interface AuthContextType {
   user: User | null;
@@ -133,46 +134,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('🔍 AuthProvider login called with:', email);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-    console.log('🔍 Available users:', users.map(u => u.email));
-    const foundUser = users.find((u: User) => u.email === email);
-    
-    // Simple password validation for demo (in real app, would hash and compare)
-    const isValidPassword = password === 'password';
-    console.log('🔍 Password valid:', isValidPassword);
-    
-    if (foundUser && isValidPassword) {
-      console.log('🔍 User found, setting auth state:', foundUser.email);
+    try {
+      // Call real API
+      const response = await apiClient.login(email, password);
+      console.log('🔍 API login successful:', response.user.email);
       
-      // Save to storage with multiple redundancy
-      storage.set(STORAGE_KEYS.CURRENT_USER, foundUser);
+      const loggedInUser: User = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.username || response.user.email,
+        role: response.user.role || 'participant',
+        tenantId: response.user.tenantId || 'default',
+        xp: response.user.totalXp || 0,
+        level: response.user.currentLevel || 1,
+        badges: [],
+        walletBalance: 0,
+        createdAt: response.user.createdAt || new Date().toISOString()
+      };
       
-      // Force immediate reload from storage to ensure it's working
-      const savedCheck = storage.get(STORAGE_KEYS.CURRENT_USER);
-      console.log('🔍 Verification - user saved to storage:', savedCheck?.email);
+      // Save to storage
+      storage.set(STORAGE_KEYS.CURRENT_USER, loggedInUser);
       
-      // Set state and trigger re-render
-      console.log('🔍 Setting user state to trigger re-render...');
-      setUser(foundUser);
-      const userTenant = mockTenants.find(t => t.id === foundUser.tenantId);
-      setTenant(userTenant || null);
+      // Set state
+      setUser(loggedInUser);
       
-      // Ensure initialization is complete
+      // Try to find tenant from mock data (will need API endpoint later)
+      const userTenant = mockTenants.find(t => t.id === loggedInUser.tenantId);
+      setTenant(userTenant || {
+        id: loggedInUser.tenantId,
+        name: 'Default Church',
+        domain: 'default',
+        planId: 'standard',
+        settings: {},
+        createdAt: new Date().toISOString()
+      });
+      
       setIsInitializing(false);
       
-      // Force a small delay to ensure state propagates
-      setTimeout(() => {
-        console.log('🔍 Login state set, user should be authenticated. isAuthenticated should be:', !!foundUser);
-        console.log('🔍 Current user in state:', foundUser.email);
-      }, 50);
-      
+      console.log('🔍 Login successful, user state set');
       return true;
+    } catch (error: any) {
+      console.error('🔍 Login error:', error.response?.data || error.message);
+      return false;
     }
-    console.log('🔍 Login failed - user not found or invalid password');
-    return false;
   };
 
   const register = async (userData: RegisterData): Promise<boolean> => {
@@ -211,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    apiClient.logout().catch(err => console.error('Logout error:', err));
     setUser(null);
     setTenant(null);
     storage.remove(STORAGE_KEYS.CURRENT_USER);
@@ -288,11 +294,11 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
         
       } else {
         console.log('🔍 Login failed - invalid credentials');
-        setError('Invalid credentials. Try: admin@church.com / password');
+        setError('Invalid credentials. Try: admin@demo.local / password123');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('🔍 Login error:', err);
-      setError('Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       console.log('🔍 Setting loading to false...');
       setIsLoading(false);
@@ -368,7 +374,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                     name="email"
                     type="email"
                     placeholder="Enter your email"
-                    defaultValue="admin@church.com"
+                    defaultValue="admin@demo.local"
                     autoComplete="email"
                     required
                   />
@@ -381,7 +387,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                     name="password"
                     type="password"
                     placeholder="Enter your password"
-                    defaultValue="password"
+                    defaultValue="password123"
                     autoComplete="current-password"
                     required
                   />
