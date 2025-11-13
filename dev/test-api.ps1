@@ -137,4 +137,86 @@ try {
 }
 Write-Host ""
 
+# 9. Test Matches - Create Match
+Write-Host "9. Testing Matches - Create Match..." -ForegroundColor Yellow
+try {
+    $tournamentId = $tournaments[0].id
+    $createMatch = @{
+        tournamentId = $tournamentId
+        roundNumber = 1
+    } | ConvertTo-Json
+    
+    $match = Invoke-RestMethod -Uri "http://localhost:3000/api/matches" -Method POST -Body $createMatch -Headers $headers -ContentType "application/json"
+    Write-Host "✓ Match created" -ForegroundColor Green
+    Write-Host "  Tournament: $($match.tournament.name)" -ForegroundColor Gray
+    Write-Host "  Round: $($match.roundNumber), Status: $($match.status)" -ForegroundColor Gray
+    
+    $matchId = $match.id
+} catch {
+    Write-Host "✗ Failed to create match: $_" -ForegroundColor Red
+}
+Write-Host ""
+
+# 10. Test Matches - Join Match
+Write-Host "10. Testing Matches - Join Match..." -ForegroundColor Yellow
+try {
+    $joinMatch = @{
+        matchId = $matchId
+    } | ConvertTo-Json
+    
+    $participant = Invoke-RestMethod -Uri "http://localhost:3000/api/matches/join" -Method POST -Body $joinMatch -Headers $headers -ContentType "application/json"
+    Write-Host "✓ Joined match" -ForegroundColor Green
+    Write-Host "  Player: $($participant.user.username)" -ForegroundColor Gray
+    Write-Host "  Score: $($participant.score)" -ForegroundColor Gray
+} catch {
+    Write-Host "✗ Failed to join match: $_" -ForegroundColor Red
+}
+Write-Host ""
+
+# 11. Test Matches - Record Score
+Write-Host "11. Testing Matches - Record Score..." -ForegroundColor Yellow
+try {
+    $recordScore = @{
+        matchId = $matchId
+        score = 150
+        answersCorrect = 8
+        answersWrong = 2
+        totalTimeTaken = 180
+    } | ConvertTo-Json
+    
+    $scoreResult = Invoke-RestMethod -Uri "http://localhost:3000/api/matches/score" -Method POST -Body $recordScore -Headers $headers -ContentType "application/json"
+    Write-Host "✓ Score recorded" -ForegroundColor Green
+    Write-Host "  Score: $($scoreResult.score)" -ForegroundColor Gray
+    Write-Host "  Correct: $($scoreResult.answersCorrect), Wrong: $($scoreResult.answersWrong)" -ForegroundColor Gray
+    Write-Host "  Rank: $($scoreResult.rank)" -ForegroundColor Gray
+} catch {
+    Write-Host "✗ Failed to record score: $_" -ForegroundColor Red
+}
+Write-Host ""
+
+# 12. Test Matches - Get Match Details
+Write-Host "12. Testing Matches - Get Match Details..." -ForegroundColor Yellow
+try {
+    $matchDetails = Invoke-RestMethod -Uri "http://localhost:3000/api/matches/$matchId" -Method GET -Headers $headers
+    Write-Host "✓ Match details retrieved" -ForegroundColor Green
+    Write-Host "  Status: $($matchDetails.status)" -ForegroundColor Gray
+    Write-Host "  Participants: $($matchDetails.participants.Count)" -ForegroundColor Gray
+} catch {
+    Write-Host "✗ Failed to fetch match details: $_" -ForegroundColor Red
+}
+Write-Host ""
+
+# 13. Test Matches - Tournament Leaderboard
+Write-Host "13. Testing Matches - Tournament Leaderboard..." -ForegroundColor Yellow
+try {
+    $matchLeaderboard = Invoke-RestMethod -Uri "http://localhost:3000/api/matches/leaderboard/$tournamentId" -Method GET -Headers $headers
+    Write-Host "✓ Tournament leaderboard retrieved ($($matchLeaderboard.Count) players)" -ForegroundColor Green
+    $matchLeaderboard | Select-Object -First 3 | ForEach-Object {
+        Write-Host "  $($_.rank). $($_.username) - $($_.totalScore) pts ($($_.wins) wins)" -ForegroundColor Gray
+    }
+} catch {
+    Write-Host "✗ Failed to fetch tournament leaderboard: $_" -ForegroundColor Red
+}
+Write-Host ""
+
 Write-Host "API Test Complete!" -ForegroundColor Cyan

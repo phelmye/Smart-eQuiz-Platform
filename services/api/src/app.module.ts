@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { QuestionsModule } from './questions/questions.module';
 import { PracticeModule } from './practice/practice.module';
+import { MatchesModule } from './matches/matches.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -17,6 +18,7 @@ import { PrismaModule } from './prisma.module';
     TournamentsModule,
     QuestionsModule,
     PracticeModule,
+    MatchesModule,
   ],
 })
 export class AppModule implements NestModule {
