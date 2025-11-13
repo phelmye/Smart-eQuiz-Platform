@@ -56,34 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔍 AuthProvider initializing - checking storage...');
       
-      // Add a small delay for hash-based recovery after component remounting
-      const urlHash = window.location.hash;
-      if (urlHash.includes('user=') && !localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
-        console.log('Detected URL hash with user but no localStorage - waiting briefly for initialization');
-        // Force a quick re-check after component mounts
-        setTimeout(() => {
-          const hashUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-          if (hashUser) {
-            console.log('Hash user recovered on delayed check:', hashUser.email);
-            setUser(hashUser);
-          }
-        }, 50);
+      // Clean up any URL hash that might be present
+      if (window.location.hash) {
+        console.log('🔍 Cleaning up URL hash:', window.location.hash);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
       
       const savedUser = storage.get(STORAGE_KEYS.CURRENT_USER);
       console.log('AuthProvider initializing with saved user:', savedUser?.email || 'none');
-      
-      // If we got a basic user from URL hash, upgrade to full user details
-      if (savedUser?.email && !savedUser.name) {
-        const allUsers = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-        const fullUser = allUsers.find((u: User) => u.email === savedUser.email);
-        if (fullUser) {
-          console.log('Upgraded URL hash user to full user:', fullUser.email);
-          // Save the full user details back to storage
-          storage.set(STORAGE_KEYS.CURRENT_USER, fullUser);
-          return fullUser;
-        }
-      }
       
       return savedUser;
     } catch (error) {
@@ -112,15 +92,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('AuthProvider mounted, current user:', user?.email);
     
-    // Check URL hash on every mount as a fallback
-    const urlHash = window.location.hash;
-    if (urlHash.includes('user=') && !user) {
-      console.log('AuthProvider mounted with URL hash but no user - attempting recovery');
-      const hashUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-      if (hashUser && hashUser.email) {
-        console.log('Recovered user from hash on mount:', hashUser.email);
-        setUser(hashUser);
-      }
+    // Clean up any URL hash that might be present
+    if (window.location.hash) {
+      console.log('🔍 Cleaning up URL hash on mount:', window.location.hash);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     
     // Give a brief moment for storage to be checked and state to settle
