@@ -4,196 +4,283 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Clock, Trophy, Star, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Trophy, Star, RotateCcw, CheckCircle, XCircle, Zap } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Question, BIBLE_CATEGORIES, User } from '@/lib/mockData';
+import { apiClient } from '@/lib/apiClient';
+import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/hooks/use-toast';
 
 interface PracticeModeProps {
   onBack: () => void;
 }
 
+interface PracticeQuestion {
+  id: string;
+  prompt: string;
+  correctOption: string;
+  options: string[];
+  difficulty: string;
+  points: number;
+  timeLimit: number;
+}
+
+interface PracticeProgress {
+  id: string;
+  currentLevel: number;
+  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalQuestionsAnswered: number;
+}
+
 interface PracticeSession {
-  questions: Question[];
+  progress: PracticeProgress;
+  questions: PracticeQuestion[];
   currentQuestionIndex: number;
-  answers: number[];
-  score: number;
+  selectedAnswer: string | null;
+  showResult: boolean;
+  isCorrect: boolean | null;
+  xpEarned: number;
   timeLeft: number;
-  isCompleted: boolean;
   startTime: number;
+}
+
+interface PracticeStats {
+  currentLevel: number;
+  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalQuestionsAnswered: number;
+  correctAnswers: number;
+  accuracy: number;
 }
 
 export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
   const { user } = useAuth();
-  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
-  const [questionCount, setQuestionCount] = useState(10);
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [stats, setStats] = useState<PracticeStats | null>(null);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [session, setSession] = useState<PracticeSession | null>(null);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [timePerQuestion] = useState(30); // 30 seconds per question
+  const [isLoading, setIsLoading] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
-    loadQuestions();
-  }, [user]);
+    loadCategories();
+    loadStats();
+    loadLeaderboard();
+  }, []);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (session && !session.isCompleted && session.timeLeft > 0) {
+    if (session && session.timeLeft > 0 && !session.showResult) {
       timer = setTimeout(() => {
         setSession(prev => prev ? { ...prev, timeLeft: prev.timeLeft - 1 } : null);
       }, 1000);
-    } else if (session && session.timeLeft === 0 && !session.isCompleted) {
+    } else if (session && session.timeLeft === 0 && !session.showResult) {
       handleTimeUp();
     }
     return () => clearTimeout(timer);
   }, [session?.timeLeft]);
 
-  const loadQuestions = () => {
-    const savedQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
-    const tenantQuestions = savedQuestions.filter((q: Question) => 
-      user?.role === 'super_admin' || q.tenantId === user?.tenantId
-    );
-    setAvailableQuestions(tenantQuestions);
-  };
-
-  const getFilteredQuestions = () => {
-    let filtered = availableQuestions;
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(q => q.category === selectedCategory);
+  const loadCategories = async () => {
+    try {
+      const data = await apiClient.getCategories();
+      setCategories(data);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to load categories',
+      });
     }
+  };
 
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(q => q.difficulty === selectedDifficulty);
+  const loadStats = async () => {
+    try {
+      const data = await apiClient.getPracticeStats();
+      setStats(data);
+    } catch (error: any) {
+      console.error('Failed to load stats:', error);
     }
-
-    return filtered;
   };
 
-  const startPractice = () => {
-    const filtered = getFilteredQuestions();
-    if (filtered.length === 0) {
-      alert('No questions available for the selected criteria');
-      return;
+  const loadLeaderboard = async () => {
+    try {
+      const data = await apiClient.getPracticeLeaderboard();
+      setLeaderboard(data);
+    } catch (error: any) {
+      console.error('Failed to load leaderboard:', error);
     }
-
-    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-    const practiceQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length));
-
-    setSession({
-      questions: practiceQuestions,
-      currentQuestionIndex: 0,
-      answers: new Array(practiceQuestions.length).fill(-1),
-      score: 0,
-      timeLeft: timePerQuestion,
-      isCompleted: false,
-      startTime: Date.now()
-    });
-    setSelectedAnswer(null);
-    setShowResult(false);
   };
 
-  const handleAnswerSelect = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
-  };
-
-  const handleSubmitAnswer = () => {
-    if (!session || selectedAnswer === null) return;
-
-    const currentQuestion = session.questions[session.currentQuestionIndex];
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-    
-    const newAnswers = [...session.answers];
-    newAnswers[session.currentQuestionIndex] = selectedAnswer;
-    
-    const newScore = session.score + (isCorrect ? 1 : 0);
-
-    setSession(prev => prev ? {
-      ...prev,
-      answers: newAnswers,
-      score: newScore
-    } : null);
-
-    setShowResult(true);
-
-    // Auto advance after 2 seconds
-    setTimeout(() => {
-      if (session.currentQuestionIndex < session.questions.length - 1) {
-        setSession(prev => prev ? {
-          ...prev,
-          currentQuestionIndex: prev.currentQuestionIndex + 1,
-          timeLeft: timePerQuestion
-        } : null);
-        setSelectedAnswer(null);
-        setShowResult(false);
-      } else {
-        completeSession(newScore);
+  const startPractice = async () => {
+    setIsStarting(true);
+    try {
+      const data = await apiClient.startPractice(selectedCategory || undefined);
+      
+      if (data.questions.length === 0) {
+        toast({
+          variant: 'destructive',
+          title: 'No Questions',
+          description: 'No questions available for this category',
+        });
+        return;
       }
-    }, 2000);
+
+      setSession({
+        progress: data.progress,
+        questions: data.questions,
+        currentQuestionIndex: 0,
+        selectedAnswer: null,
+        showResult: false,
+        isCorrect: null,
+        xpEarned: 0,
+        timeLeft: data.questions[0].timeLimit,
+        startTime: Date.now(),
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to start practice',
+      });
+    } finally {
+      setIsStarting(false);
+    }
   };
 
-  const handleTimeUp = () => {
+  const handleAnswerSelect = (option: string) => {
+    if (session && !session.showResult) {
+      setSession(prev => prev ? { ...prev, selectedAnswer: option } : null);
+    }
+  };
+
+  const handleSubmitAnswer = async () => {
+    if (!session || !session.selectedAnswer) return;
+
+    setIsLoading(true);
+    const currentQuestion = session.questions[session.currentQuestionIndex];
+    const isCorrect = session.selectedAnswer === currentQuestion.correctOption;
+    const timeSpent = currentQuestion.timeLimit - session.timeLeft;
+
+    try {
+      const result = await apiClient.answerPracticeQuestion(session.progress.id, {
+        questionId: currentQuestion.id,
+        selectedOption: session.selectedAnswer,
+        isCorrect,
+        timeSpent,
+      });
+
+      setSession(prev => prev ? {
+        ...prev,
+        showResult: true,
+        isCorrect: result.correct,
+        xpEarned: result.xpEarned,
+        progress: result.progress,
+      } : null);
+
+      if (result.leveledUp) {
+        toast({
+          title: '🎉 Level Up!',
+          description: `You reached level ${result.progress.currentLevel}!`,
+        });
+      }
+
+      // Refresh stats
+      await loadStats();
+
+      // Auto advance after 2.5 seconds
+      setTimeout(() => {
+        if (session.currentQuestionIndex < session.questions.length - 1) {
+          const nextQuestion = session.questions[session.currentQuestionIndex + 1];
+          setSession(prev => prev ? {
+            ...prev,
+            currentQuestionIndex: prev.currentQuestionIndex + 1,
+            selectedAnswer: null,
+            showResult: false,
+            isCorrect: null,
+            xpEarned: 0,
+            timeLeft: nextQuestion.timeLimit,
+          } : null);
+        } else {
+          completeSession();
+        }
+      }, 2500);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to submit answer',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTimeUp = async () => {
     if (!session) return;
 
-    const newAnswers = [...session.answers];
-    newAnswers[session.currentQuestionIndex] = -1; // -1 indicates no answer
+    const currentQuestion = session.questions[session.currentQuestionIndex];
 
-    setSession(prev => prev ? {
-      ...prev,
-      answers: newAnswers
-    } : null);
+    try {
+      const result = await apiClient.answerPracticeQuestion(session.progress.id, {
+        questionId: currentQuestion.id,
+        selectedOption: '',
+        isCorrect: false,
+        timeSpent: currentQuestion.timeLimit,
+      });
 
-    setShowResult(true);
+      setSession(prev => prev ? {
+        ...prev,
+        showResult: true,
+        isCorrect: false,
+        xpEarned: 0,
+        progress: result.progress,
+      } : null);
 
-    setTimeout(() => {
-      if (session.currentQuestionIndex < session.questions.length - 1) {
-        setSession(prev => prev ? {
-          ...prev,
-          currentQuestionIndex: prev.currentQuestionIndex + 1,
-          timeLeft: timePerQuestion
-        } : null);
-        setSelectedAnswer(null);
-        setShowResult(false);
-      } else {
-        completeSession(session.score);
-      }
-    }, 2000);
+      await loadStats();
+
+      setTimeout(() => {
+        if (session.currentQuestionIndex < session.questions.length - 1) {
+          const nextQuestion = session.questions[session.currentQuestionIndex + 1];
+          setSession(prev => prev ? {
+            ...prev,
+            currentQuestionIndex: prev.currentQuestionIndex + 1,
+            selectedAnswer: null,
+            showResult: false,
+            isCorrect: null,
+            xpEarned: 0,
+            timeLeft: nextQuestion.timeLimit,
+          } : null);
+        } else {
+          completeSession();
+        }
+      }, 2500);
+    } catch (error: any) {
+      console.error('Failed to submit time-up answer:', error);
+    }
   };
 
-  const completeSession = (finalScore: number) => {
-    if (!session || !user) return;
-
-    const totalQuestions = session.questions.length;
-    const percentage = Math.round((finalScore / totalQuestions) * 100);
-    const timeTaken = Math.round((Date.now() - session.startTime) / 1000);
-    
-    // Calculate XP earned (base 10 XP per correct answer, bonus for perfect score)
-    const baseXP = finalScore * 10;
-    const perfectBonus = percentage === 100 ? 50 : 0;
-    const speedBonus = timeTaken < (totalQuestions * timePerQuestion * 0.5) ? 25 : 0;
-    const totalXP = baseXP + perfectBonus + speedBonus;
-
-    // Update user XP
-    const users = storage.get(STORAGE_KEYS.USERS) || [];
-    const updatedUsers = users.map((u: User) => 
-      u.id === user.id ? { ...u, xp: u.xp + totalXP } : u
-    );
-    storage.set(STORAGE_KEYS.USERS, updatedUsers);
-
-    setSession(prev => prev ? { ...prev, isCompleted: true } : null);
+  const completeSession = () => {
+    setSession(null);
+    loadStats();
+    loadLeaderboard();
+    toast({
+      title: 'Practice Complete!',
+      description: 'Great job! Check your updated stats below.',
+    });
   };
 
   const resetPractice = () => {
     setSession(null);
-    setSelectedAnswer(null);
-    setShowResult(false);
   };
 
   if (!session) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center space-x-4 mb-4">
@@ -202,88 +289,144 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
               </Button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Practice Mode</h1>
-                <p className="text-gray-600">Test your Bible knowledge with practice questions</p>
+                <p className="text-gray-600">Test your Bible knowledge and level up!</p>
               </div>
             </div>
           </div>
 
-          {/* Setup Card */}
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                <span>Start Practice Session</span>
-              </CardTitle>
-              <CardDescription>
-                Configure your practice session settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Stats Dashboard */}
+          {stats && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                    <div className="text-2xl font-bold">Level {stats.currentLevel}</div>
+                    <div className="text-sm text-gray-500">{stats.totalXp} Total XP</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Zap className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                    <div className="text-2xl font-bold">{stats.currentStreak}</div>
+                    <div className="text-sm text-gray-500">Current Streak</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Star className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                    <div className="text-2xl font-bold">{stats.longestStreak}</div>
+                    <div className="text-sm text-gray-500">Best Streak</div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                    <div className="text-2xl font-bold">{stats.accuracy}%</div>
+                    <div className="text-sm text-gray-500">Accuracy</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Start Practice Card */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <span>Start Practice Session</span>
+                </CardTitle>
+                <CardDescription>
+                  Practice with 10 random questions to improve your skills
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <label className="block text-sm font-medium mb-2">Category (Optional)</label>
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {BIBLE_CATEGORIES.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      <SelectItem value="">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.icon} {category.name} ({category._count?.questions || 0})
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">Difficulty</label>
-                  <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Difficulties</SelectItem>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">📝 How Practice Works</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Answer 10 random questions</li>
+                    <li>• Earn XP based on speed and accuracy</li>
+                    <li>• Build your streak with correct answers</li>
+                    <li>• Level up every 100 XP!</li>
+                  </ul>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Number of Questions</label>
-                <Select value={questionCount.toString()} onValueChange={(value) => setQuestionCount(parseInt(value))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 Questions</SelectItem>
-                    <SelectItem value="10">10 Questions</SelectItem>
-                    <SelectItem value="15">15 Questions</SelectItem>
-                    <SelectItem value="20">20 Questions</SelectItem>
-                    <SelectItem value="25">25 Questions</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                <Button 
+                  onClick={startPractice} 
+                  className="w-full" 
+                  size="lg"
+                  disabled={isStarting}
+                >
+                  {isStarting ? 'Starting...' : 'Start Practice Session'}
+                </Button>
+              </CardContent>
+            </Card>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Available Questions</h4>
-                <p className="text-sm text-blue-700">
-                  {getFilteredQuestions().length} questions match your criteria
-                </p>
-              </div>
-
-              <Button 
-                onClick={startPractice} 
-                className="w-full" 
-                size="lg"
-                disabled={getFilteredQuestions().length === 0}
-              >
-                Start Practice Session
-              </Button>
-            </CardContent>
-          </Card>
+            {/* Leaderboard Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <span>Top Players</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {leaderboard.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No players yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {leaderboard.map((player, index) => (
+                      <div key={player.userId} className="flex items-center space-x-3">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          index === 0 ? 'bg-yellow-500 text-white' :
+                          index === 1 ? 'bg-gray-400 text-white' :
+                          index === 2 ? 'bg-orange-600 text-white' :
+                          'bg-gray-200'
+                        }`}>
+                          {player.rank}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">{player.username}</div>
+                          <div className="text-xs text-gray-500">Level {player.level}</div>
+                        </div>
+                        <div className="text-sm font-medium text-blue-600">
+                          {player.totalXp} XP
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -374,7 +517,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" onClick={onBack}>
+              <Button variant="ghost" size="sm" onClick={() => resetPractice()}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
@@ -386,10 +529,16 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-blue-600">
                 <Clock className="h-4 w-4" />
-                <span className="font-mono text-lg">{session.timeLeft}s</span>
+                <span className={`font-mono text-lg ${session.timeLeft <= 5 ? 'text-red-600 animate-pulse' : ''}`}>
+                  {session.timeLeft}s
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Zap className="h-4 w-4 text-orange-500" />
+                <span className="font-medium">Level {session.progress.currentLevel}</span>
               </div>
               <Badge variant="outline">
-                Score: {session.score}/{session.currentQuestionIndex + (showResult ? 1 : 0)}
+                Streak: {session.progress.currentStreak}
               </Badge>
             </div>
           </div>
@@ -401,77 +550,100 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <Badge variant="outline">{currentQuestion.category}</Badge>
               <Badge variant={
-                currentQuestion.difficulty === 'easy' ? 'secondary' :
-                currentQuestion.difficulty === 'medium' ? 'default' : 'destructive'
+                currentQuestion.difficulty === 'EASY' ? 'secondary' :
+                currentQuestion.difficulty === 'MEDIUM' ? 'default' : 'destructive'
               }>
                 {currentQuestion.difficulty}
               </Badge>
+              <Badge variant="outline">
+                {currentQuestion.points} points
+              </Badge>
             </div>
-            <CardTitle className="text-xl leading-relaxed">
-              {currentQuestion.text}
+            <CardTitle className="text-xl leading-relaxed mt-4">
+              {currentQuestion.prompt}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => !showResult && handleAnswerSelect(index)}
-                  disabled={showResult}
-                  className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
-                    showResult
-                      ? index === currentQuestion.correctAnswer
+              {currentQuestion.options.map((option, index) => {
+                const isSelected = session.selectedAnswer === option;
+                const isCorrect = option === currentQuestion.correctOption;
+                const showCorrect = session.showResult && isCorrect;
+                const showWrong = session.showResult && isSelected && !isCorrect;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerSelect(option)}
+                    disabled={session.showResult || isLoading}
+                    className={`w-full p-4 text-left rounded-lg border-2 transition-all ${
+                      showCorrect
                         ? 'border-green-500 bg-green-50 text-green-800'
-                        : index === selectedAnswer && index !== currentQuestion.correctAnswer
+                        : showWrong
                         ? 'border-red-500 bg-red-50 text-red-800'
-                        : 'border-gray-200 bg-gray-50'
-                      : selectedAnswer === index
-                      ? 'border-blue-500 bg-blue-50 text-blue-800'
-                      : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium ${
-                      showResult
-                        ? index === currentQuestion.correctAnswer
+                        : isSelected
+                        ? 'border-blue-500 bg-blue-50 text-blue-800'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                    } ${session.showResult ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium ${
+                        showCorrect
                           ? 'border-green-500 bg-green-500 text-white'
-                          : index === selectedAnswer && index !== currentQuestion.correctAnswer
+                          : showWrong
                           ? 'border-red-500 bg-red-500 text-white'
+                          : isSelected
+                          ? 'border-blue-500 bg-blue-500 text-white'
                           : 'border-gray-300'
-                        : selectedAnswer === index
-                        ? 'border-blue-500 bg-blue-500 text-white'
-                        : 'border-gray-300'
-                    }`}>
-                      {String.fromCharCode(65 + index)}
+                      }`}>
+                        {showCorrect ? '✓' : showWrong ? '✗' : String.fromCharCode(65 + index)}
+                      </div>
+                      <span className="flex-1">{option}</span>
                     </div>
-                    <span>{option}</span>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
 
-            {showResult && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Explanation</h4>
-                <p className="text-sm text-gray-700">{currentQuestion.explanation}</p>
-                {currentQuestion.verse && (
-                  <p className="text-sm text-blue-600 mt-2 font-medium">
-                    Reference: {currentQuestion.verse}
-                  </p>
-                )}
+            {session.showResult && (
+              <div className={`mt-6 p-4 rounded-lg ${
+                session.isCorrect ? 'bg-green-50 border-2 border-green-200' : 'bg-red-50 border-2 border-red-200'
+              }`}>
+                <div className="flex items-start space-x-3">
+                  {session.isCorrect ? (
+                    <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
+                  )}
+                  <div className="flex-1">
+                    <h4 className={`font-bold mb-1 ${session.isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                      {session.isCorrect ? '🎉 Correct!' : '❌ Incorrect'}
+                    </h4>
+                    <p className={`text-sm mb-2 ${session.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                      {session.isCorrect 
+                        ? `Great job! You earned ${session.xpEarned} XP` 
+                        : `The correct answer was: ${currentQuestion.correctOption}`
+                      }
+                    </p>
+                    {session.progress.currentStreak > 0 && (
+                      <p className="text-sm font-medium text-orange-600">
+                        🔥 {session.progress.currentStreak} question streak!
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
-            {!showResult && (
+            {!session.showResult && (
               <Button 
                 onClick={handleSubmitAnswer}
-                disabled={selectedAnswer === null}
+                disabled={!session.selectedAnswer || isLoading}
                 className="w-full"
                 size="lg"
               >
-                Submit Answer
+                {isLoading ? 'Submitting...' : 'Submit Answer'}
               </Button>
             )}
           </CardContent>
