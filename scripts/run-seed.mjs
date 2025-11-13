@@ -3,10 +3,23 @@ import { spawnSync } from 'child_process';
 
 const args = process.argv.slice(2);
 const isLocal = args.includes('--local');
+const isFresh = args.includes('--fresh');
 
 if (isLocal) {
   // Use docker exec + psql to seed local Postgres (no extra Node deps)
   console.log('Seeding locally via docker/psql...');
+
+  if (isFresh) {
+    console.log('Fresh mode enabled: truncating tables before seeding');
+    const truncateCmd = `TRUNCATE TABLE tournament_questions, questions, tournaments RESTART IDENTITY CASCADE;`;
+    const resT = spawnSync('docker', ['compose', '-f', 'dev/docker-compose.yml', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', 'smart_equiz_dev', '-c', truncateCmd], { encoding: 'utf8' });
+    if (resT.status !== 0) {
+      console.error('Failed to truncate tables:', resT.stderr || resT.stdout);
+      // Continue — sometimes tables might not exist yet; don't abort
+    } else {
+      console.log('Truncated existing tables.');
+    }
+  }
 
   const insertTourn = `INSERT INTO tournaments (title, description) VALUES ('Demo Tournament', 'Seeded sample tournament') RETURNING id;`;
   const res1 = spawnSync('docker', ['compose', '-f', 'dev/docker-compose.yml', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', 'smart_equiz_dev', '-t', '-A', '-c', insertTourn], { encoding: 'utf8' });
