@@ -12,6 +12,28 @@ enum Role {
   ORG_ADMIN
   PARTICIPANT
   SPECTATOR
+  QUESTION_MANAGER
+  INSPECTOR
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TournamentStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
 }
 
 model Plan {
@@ -23,22 +45,29 @@ model Plan {
 }
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  planId    String?
-  plan      Plan?    @relation(fields: [planId], references: [id])
-  createdAt DateTime @default(now())
-  users     UserTenant[]
+  id          String       @id @default(cuid())
+  name        String
+  planId      String?
+  plan        Plan?        @relation(fields: [planId], references: [id])
+  createdAt   DateTime     @default(now())
+  users       UserTenant[]
+  tournaments Tournament[]
+  questions   Question[]
+  categories  Category[]
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  refreshTokenHash String?
-  role         Role      @default(PARTICIPANT)
-  createdAt    DateTime  @default(now())
-  tenants      UserTenant[]
+  id                String            @id @default(cuid())
+  email             String            @unique
+  passwordHash      String
+  refreshTokenHash  String?
+  role              Role              @default(PARTICIPANT)
+  createdAt         DateTime          @default(now())
+  tenants           UserTenant[]
+  tournamentEntries TournamentEntry[]
+  matches           MatchParticipant[]
+  practiceProgress  PracticeProgress[]
+  badges            UserBadge[]
 }
 
 model UserTenant {
@@ -49,4 +78,171 @@ model UserTenant {
   user      User    @relation(fields: [userId], references: [id])
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
   @@unique([userId, tenantId])
+}
+
+// Category for organizing questions (Bible books, topics, etc.)
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  questions Question[]
+  createdAt DateTime   @default(now())
+  @@unique([tenantId, name])
+}
+
+// Question bank
+model Question {
+  id              String     @id @default(cuid())
+  tenantId        String
+  categoryId      String
+  prompt          String     @db.Text
+  correctAnswer   String
+  wrongAnswers    Json       // Array of wrong answer strings
+  difficulty      Difficulty @default(MEDIUM)
+  points          Int        @default(10)
+  timeLimit       Int        @default(30) // seconds
+  explanation     String?    @db.Text
+  isActive        Boolean    @default(true)
+  createdBy       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  category        Category   @relation(fields: [categoryId], references: [id])
+  tournaments     TournamentQuestion[]
+  practiceAnswers PracticeAnswer[]
+  @@index([tenantId, categoryId])
+  @@index([difficulty])
+}
+
+// Tournament
+model Tournament {
+  id                String              @id @default(cuid())
+  tenantId          String
+  name              String
+  description       String?             @db.Text
+  entryFee          Float               @default(0)
+  prizePool         Float               @default(0)
+  maxParticipants   Int                 @default(50)
+  status            TournamentStatus    @default(DRAFT)
+  startDate         DateTime
+  endDate           DateTime
+  createdBy         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  questions         TournamentQuestion[]
+  entries           TournamentEntry[]
+  matches           Match[]
+  @@index([tenantId, status])
+  @@index([startDate, endDate])
+}
+
+// Many-to-many: Tournament <-> Question
+model TournamentQuestion {
+  id           String     @id @default(cuid())
+  tournamentId String
+  questionId   String
+  orderIndex   Int        @default(0)
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  question     Question   @relation(fields: [questionId], references: [id])
+  @@unique([tournamentId, questionId])
+  @@index([tournamentId, orderIndex])
+}
+
+// Tournament participant entry
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  userId       String
+  isPaid       Boolean    @default(false)
+  enteredAt    DateTime   @default(now())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+}
+
+// Match (tournament round/game)
+model Match {
+  id           String             @id @default(cuid())
+  tournamentId String
+  roundNumber  Int                @default(1)
+  status       MatchStatus        @default(PENDING)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime           @default(now())
+  tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participants MatchParticipant[]
+  @@index([tournamentId, roundNumber])
+}
+
+// Match participant scores
+model MatchParticipant {
+  id        String   @id @default(cuid())
+  matchId   String
+  userId    String
+  score     Int      @default(0)
+  rank      Int?
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  @@unique([matchId, userId])
+  @@index([matchId, score])
+}
+
+// Practice mode progress
+model PracticeProgress {
+  id            String   @id @default(cuid())
+  userId        String
+  categoryId    String?
+  totalXp       Int      @default(0)
+  currentLevel  Int      @default(1)
+  questionsAnswered Int  @default(0)
+  correctAnswers    Int  @default(0)
+  currentStreak     Int  @default(0)
+  longestStreak     Int  @default(0)
+  lastPracticeAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+  answers       PracticeAnswer[]
+  @@unique([userId, categoryId])
+  @@index([userId])
+}
+
+// Practice answer records
+model PracticeAnswer {
+  id          String           @id @default(cuid())
+  progressId  String
+  questionId  String
+  isCorrect   Boolean
+  timeSpent   Int              // seconds
+  xpEarned    Int              @default(0)
+  answeredAt  DateTime         @default(now())
+  progress    PracticeProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  question    Question         @relation(fields: [questionId], references: [id])
+  @@index([progressId, answeredAt])
+}
+
+// Badge definitions
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  iconUrl     String?
+  createdAt   DateTime    @default(now())
+  users       UserBadge[]
+}
+
+// User badges (earned)
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  @@unique([userId, badgeId])
+  @@index([userId])
 }
