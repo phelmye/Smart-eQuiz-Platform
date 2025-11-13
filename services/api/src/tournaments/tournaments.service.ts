@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { TournamentStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+
+type TournamentStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export interface CreateTournamentDto {
   name: string;
@@ -40,7 +42,7 @@ export class TournamentsService {
         startDate: new Date(dto.startDate),
         endDate: new Date(dto.endDate),
         createdBy: userId,
-        status: TournamentStatus.DRAFT,
+        status: 'DRAFT' as TournamentStatus,
       },
       include: {
         tenant: { select: { id: true, name: true } },

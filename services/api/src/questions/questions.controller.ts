@@ -17,7 +17,8 @@ import {
   CreateCategoryDto,
 } from './questions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Difficulty } from '@prisma/client';
+
+type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 @Controller('questions')
 @UseGuards(JwtAuthGuard)

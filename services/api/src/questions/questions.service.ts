@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Difficulty } from '@prisma/client';
+
+type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 export interface CreateQuestionDto {
   categoryId: string;
@@ -62,7 +63,7 @@ export class QuestionsService {
         prompt: dto.prompt,
         correctAnswer: dto.correctAnswer,
         wrongAnswers: dto.wrongAnswers,
-        difficulty: dto.difficulty || Difficulty.MEDIUM,
+        difficulty: dto.difficulty || 'MEDIUM' as Difficulty,
         points: dto.points || 10,
         timeLimit: dto.timeLimit || 30,
         explanation: dto.explanation,
