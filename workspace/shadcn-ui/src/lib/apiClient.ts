@@ -84,13 +84,15 @@ class ApiClient {
   // Auth endpoints
   async login(email: string, password: string) {
     const response = await this.client.post('/auth/login', { email, password });
-    const { accessToken, refreshToken, user } = response.data;
+    const { access_token, refresh_token, user } = response.data;
     
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('accessToken', access_token);
+    if (refresh_token) {
+      localStorage.setItem('refreshToken', refresh_token);
+    }
     localStorage.setItem('user', JSON.stringify(user));
     
-    return response.data;
+    return { accessToken: access_token, refreshToken: refresh_token, user };
   }
 
   async logout() {

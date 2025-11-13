@@ -18,11 +18,24 @@ export class AuthController {
     const tokens = await this.authService.login(user);
     // set refresh token as httpOnly cookie
     res.cookie('refresh_token', tokens.refresh_token, { httpOnly: true, sameSite: 'lax' });
+    
+    // Return user info along with access token
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      username: user.email.split('@')[0], // Use email prefix as username
+      role: user.role,
+      tenantId: user.tenantId || null,
+      totalXp: user.totalXp || 0,
+      currentLevel: user.currentLevel || 1,
+      createdAt: user.createdAt,
+    };
+    
     // Return refresh token in body only when explicitly enabled for dev/test flows
     if (process.env.RETURN_REFRESH_IN_BODY === 'true') {
-      return { access_token: tokens.access_token, refresh_token: tokens.refresh_token };
+      return { access_token: tokens.access_token, refresh_token: tokens.refresh_token, user: userResponse };
     }
-    return { access_token: tokens.access_token };
+    return { access_token: tokens.access_token, user: userResponse };
   }
 
   @Post('refresh')
