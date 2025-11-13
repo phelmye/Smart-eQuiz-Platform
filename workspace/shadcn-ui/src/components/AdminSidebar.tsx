@@ -257,14 +257,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         {!collapsed && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Trophy className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <h2 className="font-bold text-gray-900">Admin Panel</h2>
-                <p className="text-xs text-gray-500">Management Console</p>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-bold text-gray-900 truncate">Admin Panel</h2>
+                <p className="text-xs text-gray-500 truncate">Management Console</p>
               </div>
             </div>
             {onToggleCollapse && (
@@ -272,7 +272,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={onToggleCollapse}
-                className="h-8 w-8 p-0 hover:bg-gray-100 border-gray-300"
+                className="h-8 w-8 p-0 hover:bg-gray-100 border-gray-300 flex-shrink-0"
                 title="Toggle sidebar"
               >
                 <Menu className="h-4 w-4 text-gray-700" />
