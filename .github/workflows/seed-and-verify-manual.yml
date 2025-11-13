@@ -101,23 +101,4 @@ jobs:
         if: always()
         run: docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml down -v
 
-      - name: Gather postgres debug info (on failure)
-        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
-        run: |
-          mkdir -p debug
-          CONTAINER=$(docker compose -f dev/docker-compose.yml -f dev/docker-compose.ci.yml ps -q postgres)
-          echo "Container: $CONTAINER" > debug/postgres-inspect.txt || true
-          docker inspect $CONTAINER >> debug/postgres-inspect.txt 2>&1 || true
-          echo "--- docker logs ---" > debug/postgres-logs.txt || true
-          docker logs $CONTAINER >> debug/postgres-logs.txt 2>&1 || true
-          echo "--- ps aux ---" > debug/postgres-ps.txt || true
-          docker exec -i $CONTAINER ps aux >> debug/postgres-ps.txt 2>&1 || true
-          echo "--- data dir listing ---" > debug/postgres-data-listing.txt || true
-          docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> debug/postgres-data-listing.txt 2>&1 || true
-
-      - name: Upload postgres debug artifacts (on failure)
-        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: postgres-debug-logs
-          path: debug/*
+      # Debug artifact collection removed in cleanup branch. Kept here in main but can be managed via DEBUG_ARTIFACTS.

@@ -35,6 +35,28 @@ services:
       - "4000:4000"
     depends_on:
       - postgres
+  api:
+    build:
+      context: ../services/api
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/smart_equiz_dev?schema=public
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+
+  # Optional one-shot initializer for local development. Run explicitly when you want
+  # to reset the dev database and seed demo data:
+  #   docker compose -f dev/docker-compose.yml up --build api-init
+  api-init:
+    build:
+      context: ../services/api
+    depends_on:
+      - postgres
+    entrypoint: ["/bin/sh","-c","npx prisma migrate reset --force --schema=prisma/schema.prisma && node prisma/seed.js"]
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/smart_equiz_dev?schema=public
+    restart: "no"
 
 volumes:
   pgdata:

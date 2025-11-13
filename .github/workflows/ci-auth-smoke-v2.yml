@@ -1,0 +1,92 @@
+name: CI - Auth Migration & Seed Smoke (v2)
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Auth migration & seed smoke (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      RETURN_REFRESH_IN_BODY: "true"
+      NODE_ENV: "development"
+      API_BASE: "http://localhost:3000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Start DB services
+        run: |
+          docker compose -f dev/docker-compose.yml up -d postgres redis || true
+          echo "Waiting for Postgres readiness..."
+          for i in {1..40}; do
+            docker compose -f dev/docker-compose.yml exec -T postgres pg_isready -U postgres >/dev/null 2>&1 && break || true
+            sleep 2
+          done
+
+      - name: Run api-init (migrate & seed)
+        id: api_init
+        run: |
+          set -o pipefail
+          docker compose -f dev/docker-compose.yml run --rm api-init 2>&1 | tee api-init.log
+
+      - name: Build and start API container
+        run: docker compose -f dev/docker-compose.yml up --build -d api
+
+      - name: Wait for API
+        run: |
+          echo "Waiting for API to become healthy..."
+          for i in {1..40}; do
+            if curl -sSf ${{ env.API_BASE }}/health >/dev/null 2>&1; then
+              echo "API is up"; break
+            fi
+            sleep 2
+          done
+
+      - name: Install service dependencies (services/api)
+        run: |
+          pushd services/api
+          corepack enable
+          corepack prepare pnpm@latest --activate
+          pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+          popd
+
+      - name: Run auth E2E harness (host runner)
+        env:
+          API_BASE: ${{ env.API_BASE }}
+        run: |
+          node services/api/test/e2e/auth.e2e.js 2>&1 | tee auth-e2e.log
+
+      - name: Upload successful artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-e2e-logs
+          path: |
+            auth-e2e.log
+            api-init.log
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p logs
+          docker compose -f dev/docker-compose.yml logs api > logs/api.log 2>&1 || true
+          docker compose -f dev/docker-compose.yml logs postgres > logs/postgres.log 2>&1 || true
+          docker compose -f dev/docker-compose.yml logs redis > logs/redis.log 2>&1 || true
+          docker compose -f dev/docker-compose.yml ps --all > logs/ps.log 2>&1 || true
+          docker inspect $(docker compose -f dev/docker-compose.yml ps -q api) > logs/api-inspect.log 2>&1 || true
+          ls -la logs || true
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-logs
+          path: logs/
