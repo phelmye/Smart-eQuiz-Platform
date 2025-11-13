@@ -25,7 +25,7 @@ interface RegisterData {
   password: string;
   name: string;
   tenantId: string;
-  role: 'org_admin' | 'participant' | 'spectator';
+  role: 'org_admin' | 'participant';
 }
 
 interface AuthSystemProps {
@@ -164,9 +164,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setTenant(userTenant || {
         id: loggedInUser.tenantId,
         name: 'Default Church',
-        domain: 'default',
         planId: 'standard',
-        settings: {},
+        primaryColor: '#3b82f6',
+        maxUsers: 100,
+        maxTournaments: 10,
+        paymentIntegrationEnabled: false,
         createdAt: new Date().toISOString()
       });
       
@@ -319,7 +321,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
         password: formData.get('password') as string,
         name: formData.get('name') as string,
         tenantId: formData.get('tenantId') as string,
-        role: formData.get('role') as 'org_admin' | 'participant' | 'spectator'
+        role: formData.get('role') as 'org_admin' | 'participant'
       };
       
       console.log('🔍 Registration data:', userData);
@@ -560,7 +562,6 @@ Check browser console (F12) for detailed debug info.`;
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="participant">Participant</SelectItem>
-                      <SelectItem value="spectator">Spectator</SelectItem>
                       <SelectItem value="org_admin">Organization Admin</SelectItem>
                     </SelectContent>
                   </Select>
