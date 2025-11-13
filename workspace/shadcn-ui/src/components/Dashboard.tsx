@@ -425,9 +425,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* Right Section - User Info */}
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium">{user.name}</span>
+                  <span className="font-medium">{user.name || user.email}</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {user.role.replace('_', ' ').toUpperCase()}
+                    {user.role?.replace('_', ' ').toUpperCase() || 'USER'}
                   </span>
                 </div>
               </div>
@@ -510,16 +510,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Coins className="h-4 w-4 text-yellow-600" />
-                  <span className="font-medium">${user.walletBalance.toFixed(2)}</span>
+                  <span className="font-medium">${(user.walletBalance || 0).toFixed(2)}</span>
                 </div>
                 
                 <Avatar>
-                  <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('') || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 
                 <div className="text-sm">
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-gray-500 capitalize">{user.role.replace('_', ' ')}</p>
+                  <p className="font-medium">{user.name || user.email}</p>
+                  <p className="text-gray-500 capitalize">{user.role?.replace('_', ' ') || 'User'}</p>
                 </div>
                 
                 <Button variant="ghost" size="sm" onClick={logout}>
@@ -768,7 +768,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm text-gray-600">Name</p>
-                            <p className="font-medium">{user.name}</p>
+                            <p className="font-medium">{user.name || user.email}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Email</p>
