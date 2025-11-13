@@ -257,21 +257,43 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         {!collapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Trophy className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Trophy className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900">Admin Panel</h2>
+                <p className="text-xs text-gray-500">Management Console</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-gray-900">Admin Panel</h2>
-              <p className="text-xs text-gray-500">Management Console</p>
-            </div>
+            {onToggleCollapse && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onToggleCollapse}
+                className="h-8 w-8 p-0"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
         {collapsed && (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Trophy className="h-5 w-5 text-white" />
             </div>
+            {onToggleCollapse && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onToggleCollapse}
+                className="h-8 w-8 p-0"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )}
       </div>
