@@ -99,26 +99,7 @@ jobs:
           if [ "${QUES:-0}" -ne 2 ]; then echo "Expected exactly 2 questions but found $QUES" && exit 1; fi
           if [ "${MAPS:-0}" -ne 2 ]; then echo "Expected exactly 2 tournament_questions but found $MAPS" && exit 1; fi
 
-      - name: Gather postgres debug info (on failure)
-        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
-        run: |
-          mkdir -p infra-debug
-          CONTAINER=$(docker compose -f dev/docker-compose.yml ps -q postgres)
-          echo "Container: $CONTAINER" > infra-debug/postgres-inspect.txt || true
-          docker inspect $CONTAINER >> infra-debug/postgres-inspect.txt 2>&1 || true
-          echo "--- docker logs ---" > infra-debug/postgres-logs.txt || true
-          docker logs $CONTAINER >> infra-debug/postgres-logs.txt 2>&1 || true
-          echo "--- ps aux ---" > infra-debug/postgres-ps.txt || true
-          docker exec -i $CONTAINER ps aux >> infra-debug/postgres-ps.txt 2>&1 || true
-          echo "--- data dir listing ---" > infra-debug/postgres-data-listing.txt || true
-          docker exec -i $CONTAINER ls -la /var/lib/postgresql/data >> infra-debug/postgres-data-listing.txt 2>&1 || true
-
-      - name: Upload postgres debug artifacts (on failure)
-        if: ${{ failure() && env.DEBUG_ARTIFACTS == 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: infra-postgres-debug
-          path: infra-debug/*
+      # Debug artifact collection removed in cleanup branch. Kept here in main but can be managed via DEBUG_ARTIFACTS.
 
       - name: Tear down
         if: always()

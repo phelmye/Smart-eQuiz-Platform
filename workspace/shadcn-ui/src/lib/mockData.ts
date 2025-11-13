@@ -40,6 +40,13 @@ export interface User {
   createdAt: string;
 }
 
+// Type guard for runtime checks when dealing with unknown values
+export function isUser(obj: unknown): obj is User {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const maybe = obj as Record<string, unknown>;
+  return typeof maybe.email === 'string';
+}
+
 // Plan interface
 export interface Plan {
   id: string;
@@ -1054,7 +1061,7 @@ export const storage = {
                 // Fall back to mockUsers
               }
               
-              const fullUser = allUsers.find((u: any) => u.email === userEmail);
+              const fullUser = (allUsers as User[]).find(u => u.email === userEmail);
               
               if (fullUser) {
                 console.log(`Found full user details for ${userEmail}, restoring to storage`);
@@ -1115,10 +1122,10 @@ export const storage = {
       const jsonValue = JSON.stringify(value);
       
       // For current user, also save to URL hash as emergency backup
-      if (key === STORAGE_KEYS.CURRENT_USER && value && (value as any)?.email) {
+      if (key === STORAGE_KEYS.CURRENT_USER && value && isUser(value)) {
         try {
           // Use URL hash to persist user across all reloads and HMR
-          const userParam = `user=${encodeURIComponent((value as any).email)}`;
+          const userParam = `user=${encodeURIComponent(value.email)}`;
           const currentHash = window.location.hash;
           
           // Remove existing user param and add new one
@@ -1127,7 +1134,7 @@ export const storage = {
           const newHash = cleanHash + separator + userParam;
           
           window.location.hash = newHash;
-          console.log(`Saved user to URL hash: ${(value as any).email}`);
+          console.log(`Saved user to URL hash: ${value.email}`);
         } catch (hashError) {
           console.warn('Could not save to URL hash:', hashError);
         }
@@ -1153,8 +1160,8 @@ export const storage = {
       });
       
       console.log(`Saved ${key} to ${successCount}/4 storage locations + URL hash`);
-      if (key === STORAGE_KEYS.CURRENT_USER && value) {
-        console.log('User saved:', (value as User)?.email);
+      if (key === STORAGE_KEYS.CURRENT_USER && isUser(value)) {
+        console.log('User saved:', value.email);
       }
     } catch (error) {
       console.error('Error writing to storage:', error);
