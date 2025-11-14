@@ -65,13 +65,16 @@ Users must show interest and qualify for each specific tournament individually t
      - Time limit (default: 30 minutes)
      - Difficulty level matching tournament
    
-3. **Quiz Attempt**
-   - User has **ONE attempt** per tournament application
+3. **Quiz Attempt & Retakes**
+   - **Default**: User has **3 attempts** per tournament application
+   - Admin can configure: 1-5 retakes allowed
+   - Admin can disable retakes (1 attempt only)
    - Real-time scoring
    - Timer countdown visible
+   - Each attempt uses different questions from pool
    
 4. **Pass Scenario** ✅
-   - Score >= Required Pass Mark
+   - Score >= Required Pass Mark (on any attempt)
    - **Celebration Effects**:
      - Confetti animation
      - Success sound effect
@@ -81,31 +84,315 @@ Users must show interest and qualify for each specific tournament individually t
      - Grant `participant` status for THIS tournament only
      - Update `tournamentParticipants` table
      - Award XP points for qualification
+     - Record which attempt succeeded
      - Send multi-channel notifications
    
 5. **Fail Scenario** ❌
    - Score < Required Pass Mark
-   - **User Feedback**:
-     - Score breakdown showing weak areas
-     - Encouragement message
-     - Options: "Review answers" or "Practice more"
-   - **System Actions**:
-     - Mark application as `failed`
-     - Cannot reapply for THIS tournament
-     - Suggest practice mode to improve
+   - **After Each Failed Attempt**:
+     - Show score breakdown with weak areas
+     - Display attempts remaining: "2 attempts left"
+     - Encouragement message based on score proximity
+     - Wait time before next attempt (optional, admin configurable)
+   - **After Final Failed Attempt**:
+     - Cannot retake for THIS tournament
+     - Detailed performance analysis
+     - Suggest specific practice areas
      - Send notification with results
 
 #### Quiz Configuration (Admin Settings)
 ```typescript
 interface PreTournamentQuizConfig {
   enabled: boolean;
-  questionsCount: number; // 10-50
+  questionsCount: number; // 10-50 questions per attempt
   passPercentage: number; // 50-90%
   timeLimitMinutes: number; // 15-60
-  allowRetakes: boolean; // Usually false
-  maxRetakes?: number; // If allowRetakes = true
+  
+  // RETAKE SETTINGS
+  allowRetakes: boolean; // Default: true
+  maxRetakes: number; // Default: 3 (total attempts)
+  retakeWaitTimeMinutes?: number; // Optional cooldown between attempts (e.g., 30 minutes)
+  
+  // QUESTION POOL REQUIREMENT
+  // If maxRetakes = 3 and questionsCount = 10
+  // Then questionPoolSize MUST BE >= 30 (10 × 3)
+  questionPoolSize: number; // Auto-calculated: questionsCount × maxRetakes
+  questionPoolRequirementMet: boolean; // System validation flag
+  
   categoryMatch: boolean; // Use same category as tournament
   difficultyLevel: 'easy' | 'medium' | 'hard';
+  
+  // Question rotation prevents showing same questions
+  preventQuestionReuse: boolean; // Default: true
+}
+```
+
+---
+
+## 📚 Question Pool Management & Retake System
+
+### The Multiplier Rule
+
+**CRITICAL REQUIREMENT**: To enable retakes, the question pool must be **at least** the number of questions multiplied by the number of allowed attempts.
+
+#### Formula
+```
+Required Question Pool Size = Questions Per Attempt × Max Attempts
+```
+
+#### Examples
+
+**Example 1: Standard Configuration**
+- Questions per attempt: **10**
+- Max retakes allowed: **3** (default)
+- **Required question pool: 10 × 3 = 30 questions minimum**
+
+**Example 2: More Retakes**
+- Questions per attempt: **15**
+- Max retakes allowed: **5**
+- **Required question pool: 15 × 5 = 75 questions minimum**
+
+**Example 3: No Retakes**
+- Questions per attempt: **20**
+- Max retakes allowed: **1** (no retakes)
+- **Required question pool: 20 × 1 = 20 questions minimum**
+
+### Admin Configuration Validation
+
+When tenant admin configures pre-tournament quiz settings:
+
+```typescript
+interface QuizConfigurationValidation {
+  questionsPerAttempt: number;      // e.g., 10
+  maxAttempts: number;               // e.g., 3
+  requiredPoolSize: number;          // Auto-calculated: 10 × 3 = 30
+  availableQuestions: number;        // Current questions in database
+  canEnableRetakes: boolean;         // true if availableQuestions >= requiredPoolSize
+  missingQuestionsCount?: number;    // How many more questions needed
+}
+```
+
+### Admin UI - Quiz Settings Panel
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Pre-Tournament Quiz Configuration                            │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ ☑ Enable Pre-Tournament Quiz                               │
+│                                                              │
+│ Questions Per Attempt: [10] ▼                               │
+│ Pass Mark Percentage:  [70]%                                │
+│ Time Limit:           [30] minutes                          │
+│                                                              │
+│ ┌────────────────────────────────────────────────────────┐ │
+│ │ RETAKE SETTINGS                                         │ │
+│ │                                                         │ │
+│ │ ☑ Allow Retakes                                        │ │
+│ │                                                         │ │
+│ │ Maximum Attempts: [3] ▼  (includes first attempt)     │ │
+│ │                                                         │ │
+│ │ Wait Time Between Attempts: [30] minutes (optional)   │ │
+│ │                                                         │ │
+│ │ ⚠️ QUESTION POOL REQUIREMENT                           │ │
+│ │ ─────────────────────────────────────────────────────  │ │
+│ │ Questions needed: 10 × 3 = 30 questions minimum       │ │
+│ │                                                         │ │
+│ │ Available questions: [45] ✓                           │ │
+│ │ Status: Sufficient questions ✓                        │ │
+│ │                                                         │ │
+│ │ ☑ Prevent question reuse across attempts              │ │
+│ │                                                         │ │
+│ └────────────────────────────────────────────────────────┘ │
+│                                                              │
+│ [Save Settings]  [Test Configuration]                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Insufficient Questions Warning
+
+If admin tries to enable retakes without enough questions:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⚠️ WARNING: Insufficient Questions                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Cannot enable 3 attempts with current question pool.        │
+│                                                              │
+│ Required: 10 × 3 = 30 questions                             │
+│ Available: 18 questions                                     │
+│ Missing: 12 questions                                       │
+│                                                              │
+│ Options:                                                     │
+│ • Reduce questions per attempt to 6 (18 ÷ 3)               │
+│ • Reduce max attempts to 1 (no retakes)                    │
+│ • Add 12 more questions to the question bank               │
+│                                                              │
+│ [Add Questions] [Adjust Settings] [Cancel]                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Question Selection Algorithm
+
+```typescript
+interface QuizAttempt {
+  attemptNumber: number; // 1, 2, or 3
+  questionsShown: string[]; // Question IDs shown in this attempt
+  previousAttempts: string[][]; // Question IDs from previous attempts
+}
+
+function selectQuestionsForAttempt(
+  userId: string,
+  tournamentId: string,
+  attemptNumber: number,
+  questionsNeeded: number
+): Question[] {
+  // Get all available questions for tournament category
+  const availableQuestions = getQuestionsByCategory(tournament.category);
+  
+  // Get questions already shown in previous attempts
+  const previousAttempts = getUserPreviousAttempts(userId, tournamentId);
+  const usedQuestionIds = previousAttempts.flatMap(attempt => attempt.questionsShown);
+  
+  // Filter out previously used questions
+  const unusedQuestions = availableQuestions.filter(
+    q => !usedQuestionIds.includes(q.id)
+  );
+  
+  // Validation check
+  if (unusedQuestions.length < questionsNeeded) {
+    throw new Error(
+      `Insufficient unused questions. Need ${questionsNeeded}, have ${unusedQuestions.length}`
+    );
+  }
+  
+  // Randomly select required number of questions
+  const selectedQuestions = shuffle(unusedQuestions).slice(0, questionsNeeded);
+  
+  // Log which questions are shown in this attempt
+  logQuestionsShown(userId, tournamentId, attemptNumber, selectedQuestions.map(q => q.id));
+  
+  return selectedQuestions;
+}
+```
+
+### User Experience - Retake Flow
+
+#### Attempt 1 (First Try)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📝 Pre-Tournament Qualification Quiz                        │
+│ Attempt 1 of 3                                              │
+├─────────────────────────────────────────────────────────────┤
+│ Questions: 10                                                │
+│ Pass Mark: 70%                                              │
+│ Time Remaining: 29:45                                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Failed Attempt - Show Retake Option
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Quiz Results - Attempt 1                                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Your Score: 60% (6/10 correct)                             │
+│ Pass Mark:  70%                                             │
+│                                                              │
+│ ❌ Not passed yet, but don't give up!                      │
+│                                                              │
+│ You have 2 more attempts remaining.                         │
+│                                                              │
+│ Weak Areas:                                                  │
+│ • New Testament History (3/5)                               │
+│ • Old Testament Prophets (1/3)                              │
+│                                                              │
+│ 💡 Tip: Review these topics before your next attempt       │
+│                                                              │
+│ Next attempt available in: 29:45                            │
+│                                                              │
+│ [Review Answers] [Practice These Topics] [Try Again Later] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Attempt 2 (Second Try)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📝 Pre-Tournament Qualification Quiz                        │
+│ Attempt 2 of 3 - Last attempt was 60%                      │
+├─────────────────────────────────────────────────────────────┤
+│ Different questions will be shown this time                 │
+│                                                              │
+│ Questions: 10 (NEW questions)                               │
+│ Pass Mark: 70%                                              │
+│ Time Limit: 30 minutes                                      │
+│                                                              │
+│ [Start Attempt 2]                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Final Failed Attempt (All Retakes Exhausted)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 📊 Final Quiz Results                                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ Attempt 1: 60%                                              │
+│ Attempt 2: 65%                                              │
+│ Attempt 3: 68%                                              │
+│                                                              │
+│ Best Score: 68% (Pass Mark: 70%)                           │
+│                                                              │
+│ ❌ Unfortunately, you did not qualify for this tournament.  │
+│                                                              │
+│ You're so close! Just 2% away from qualifying.              │
+│                                                              │
+│ 📚 Recommended Next Steps:                                  │
+│ • Continue practicing in Practice Mode                      │
+│ • Focus on: New Testament, Prophets                        │
+│ • Earn practice points for automatic qualification          │
+│ • Apply for the next tournament                             │
+│                                                              │
+│ [View Detailed Analysis] [Go to Practice Mode]             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Retake Tracking Schema
+
+```typescript
+interface QuizAttemptRecord {
+  id: string;
+  userId: string;
+  tournamentId: string;
+  attemptNumber: number; // 1, 2, or 3
+  questionsShownIds: string[]; // Track which questions were shown
+  userAnswers: {
+    questionId: string;
+    selectedAnswer: string;
+    isCorrect: boolean;
+    timeSpent: number; // seconds
+  }[];
+  score: number;
+  percentage: number;
+  passed: boolean;
+  startedAt: string;
+  completedAt: string;
+  timeSpent: number; // total seconds
+}
+
+interface UserQuizProgress {
+  userId: string;
+  tournamentId: string;
+  totalAttemptsAllowed: number; // e.g., 3
+  attemptsUsed: number; // e.g., 2
+  attemptsRemaining: number; // e.g., 1
+  allAttempts: QuizAttemptRecord[];
+  bestScore: number;
+  bestAttemptNumber: number;
+  finalStatus: 'in_progress' | 'passed' | 'failed' | 'expired';
+  canRetake: boolean;
+  nextAttemptAvailableAt?: string; // If wait time configured
 }
 ```
 
@@ -720,24 +1007,62 @@ User Applies to Participate → [Notification Sent]
         ↓
 Pre-Tournament Quiz Available → [Notification Sent]
         ↓
-User Takes Quiz (1 attempt)
+┌─────────────────────────────────────────────────┐
+│         RETAKE SYSTEM (Default: 3 Attempts)     │
+└─────────────────────────────────────────────────┘
+        ↓
+User Takes Quiz - Attempt 1
         ↓
     ┌───────────────┐
     │  Pass (≥70%)  │────→ [Celebration Effects]
     │               │────→ [Multi-Channel Notifications]
     │               │────→ Grant Participant Status (THIS tournament)
     │               │────→ Award XP & Badge
+    │               │────→ END (Success)
     └───────────────┘
     
     ┌───────────────┐
-    │  Fail (<70%)  │────→ [Encouraging Notification]
-    │               │────→ Show Score Breakdown
-    │               │────→ Suggest Practice Mode
-    └───────────────┘
+    │  Fail (<70%)  │────→ Show Score & Weak Areas
+    │   Attempt 1   │────→ "2 attempts remaining"
+    │               │────→ Wait time if configured (e.g., 30 min)
+    └───────┬───────┘
+            ↓
+    User Takes Quiz - Attempt 2 (Different Questions)
+            ↓
+        ┌───────────────┐
+        │  Pass (≥70%)  │────→ [Celebration Effects]
+        │               │────→ [Success on 2nd Try!]
+        │               │────→ Grant Participant Status
+        │               │────→ END (Success)
+        └───────────────┘
+        
+        ┌───────────────┐
+        │  Fail (<70%)  │────→ Show Progress: Attempt 1 vs 2
+        │   Attempt 2   │────→ "1 final attempt remaining"
+        │               │────→ Encouragement message
+        └───────┬───────┘
+                ↓
+        User Takes Quiz - Attempt 3 (Different Questions Again)
+                ↓
+            ┌───────────────┐
+            │  Pass (≥70%)  │────→ [Celebration Effects]
+            │               │────→ [Success on Final Try!]
+            │               │────→ Grant Participant Status
+            │               │────→ END (Success)
+            └───────────────┘
+            
+            ┌───────────────┐
+            │  Fail (<70%)  │────→ Show All 3 Attempts
+            │   Attempt 3   │────→ Best Score Highlighted
+            │   (FINAL)     │────→ Detailed Analysis
+            │               │────→ Cannot Retake for THIS Tournament
+            │               │────→ Suggest Practice Mode
+            │               │────→ [Encouraging Notification]
+            └───────────────┘
         ↓
 Tournament Starts → [24h & 1h Reminders]
         ↓
-User Participates
+Qualified Users Participate
         ↓
 Tournament Ends
         ↓
@@ -809,14 +1134,31 @@ User Participates
 ## 🛠️ Implementation Checklist
 
 ### Phase 1: Core Qualification System
-- [ ] Create `TournamentParticipant` model
-- [ ] Create `PreTournamentQuiz` model
+- [ ] Create `TournamentParticipant` model with retake tracking
+- [ ] Create `PreTournamentQuiz` model with attempt history
+- [ ] Create `QuizAttemptRecord` model for each attempt
 - [ ] Create `PracticePoints` tracking system
 - [ ] Implement `applyForTournament(userId, tournamentId)` function
-- [ ] Implement `takeQualificationQuiz()` function
+- [ ] Implement `takeQualificationQuiz(attemptNumber)` function
+- [ ] Implement **Question Pool Validation** system
+  - [ ] Calculate required pool size (questions × attempts)
+  - [ ] Validate sufficient questions before enabling retakes
+  - [ ] Admin warning if insufficient questions
+- [ ] Implement **Question Selection Algorithm**
+  - [ ] Track questions shown in each attempt
+  - [ ] Prevent question reuse across attempts
+  - [ ] Random selection from unused questions
+- [ ] Implement **Retake Management**
+  - [ ] Track attempts used and remaining
+  - [ ] Enforce wait time between attempts (if configured)
+  - [ ] Allow max 3 attempts by default (configurable 1-5)
 - [ ] Implement `checkPracticePointsEligibility()` function
 - [ ] Implement `directlyAddParticipant()` admin function
 - [ ] Create quiz scoring and pass/fail logic
+- [ ] Implement **Attempt Progress Tracking**
+  - [ ] Show "Attempt X of Y"
+  - [ ] Display score history across attempts
+  - [ ] Show best score achieved
 - [ ] Implement celebration effects system
 - [ ] Reset participant status after tournament
 
@@ -844,21 +1186,43 @@ User Participates
 
 ### Phase 4: Admin Dashboard
 - [ ] Tournament qualification settings panel
+  - [ ] **Retake configuration UI** with validation
+  - [ ] **Question pool requirement calculator**
+  - [ ] **Insufficient questions warning**
+  - [ ] **Auto-adjust suggestions** (reduce questions or attempts)
 - [ ] Applications overview dashboard
-- [ ] Applicants management table
+- [ ] Applicants management table with attempt history
+  - [ ] Show attempt count for each applicant
+  - [ ] Display best score across attempts
+  - [ ] View detailed attempt history per user
 - [ ] Direct invitation interface
 - [ ] Quiz results review panel
+  - [ ] **Multi-attempt score comparison**
+  - [ ] **Progress tracking across attempts**
 - [ ] Practice points dashboard
 - [ ] Bulk actions (approve, remind, export)
 - [ ] Notification sending interface
 - [ ] Analytics & reporting
+  - [ ] **Retake success rates** (1st vs 2nd vs 3rd attempt)
+  - [ ] **Question difficulty analysis** based on attempts
 
 ### Phase 5: UI/UX Enhancements
 - [ ] Tournament application page
 - [ ] Pre-tournament quiz interface
+  - [ ] **Attempt counter display** ("Attempt 2 of 3")
+  - [ ] **Previous attempt score shown** for context
+  - [ ] **Wait timer** if cooldown configured
 - [ ] Quiz timer and progress bar
 - [ ] Celebration effects (confetti, sounds, animations)
+  - [ ] **Different celebrations** based on attempt (1st try vs final try)
 - [ ] Score breakdown page
+  - [ ] **Multi-attempt comparison view**
+  - [ ] **Improvement tracking** between attempts
+  - [ ] **Weak area identification** across all attempts
+- [ ] **Retake encouragement UI**
+  - [ ] Show attempts remaining
+  - [ ] Display score improvement tips
+  - [ ] Highlight near-miss scenarios ("Just 2% away!")
 - [ ] Practice points progress tracker
 - [ ] Tournament status badges
 - [ ] Notification preferences UI
@@ -866,6 +1230,15 @@ User Participates
 
 ### Phase 6: Testing & Optimization
 - [ ] Unit tests for all qualification paths
+- [ ] **Retake system tests**
+  - [ ] Question selection algorithm validation
+  - [ ] Duplicate question prevention
+  - [ ] Attempt limit enforcement
+  - [ ] Wait time enforcement
+- [ ] **Question pool validation tests**
+  - [ ] Insufficient pool scenarios
+  - [ ] Pool size calculations
+  - [ ] Admin warning triggers
 - [ ] Integration tests for notification system
 - [ ] Load testing for concurrent quiz-takers
 - [ ] UI/UX testing for celebration effects
@@ -873,6 +1246,8 @@ User Participates
 - [ ] Cross-channel notification testing
 - [ ] Performance optimization
 - [ ] Security audit
+  - [ ] Prevent attempt manipulation
+  - [ ] Prevent question extraction/sharing
 
 ---
 
@@ -883,9 +1258,14 @@ User Participates
 - Send deadline reminders to interested users
 - Close applications automatically at cutoff time
 
-### 2. **Quiz Question Pool Rotation**
-- Rotate questions to prevent sharing
-- Track which questions each user received
+### 2. **Quiz Question Pool Rotation & Retake Strategy**
+- **CRITICAL**: Maintain question pool at least Questions × MaxAttempts
+- Rotate questions to prevent sharing between users
+- Track which questions each user received in each attempt
+- **Smart pool management**:
+  - Alert admin when pool depletes below threshold
+  - Suggest adding more questions or reducing attempts
+  - Auto-disable retakes if pool insufficient
 - Prevent repeat questions in retakes (if allowed)
 
 ### 3. **Practice Points Decay** (Optional)
