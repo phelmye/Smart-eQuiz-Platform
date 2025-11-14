@@ -46,14 +46,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     currentStreak: 0
   });
 
-  const isAdmin = user?.role === 'org_admin' || user?.role === 'super_admin';
-
-  // Debug log
-  useEffect(() => {
-    console.log('Dashboard user:', user);
-    console.log('User role:', user?.role);
-    console.log('isAdmin:', isAdmin);
-  }, [user, isAdmin]);
+  const isAdmin = user?.role?.toLowerCase() === 'org_admin' || user?.role?.toLowerCase() === 'super_admin';
 
   useEffect(() => {
     // Load tournaments

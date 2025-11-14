@@ -354,8 +354,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   // Helper function to check if menu item/group should be visible
   const isItemVisible = (item: any) => {
+    // Normalize user role to lowercase for comparison
+    const normalizedUserRole = userRole?.toLowerCase();
+    const normalizedRequiredRoles = item.requiredRoles.map((role: string) => role.toLowerCase());
+    
     // Check if user role is allowed
-    if (!item.requiredRoles.includes(userRole)) {
+    if (!normalizedRequiredRoles.includes(normalizedUserRole)) {
       return false;
     }
     
@@ -365,7 +369,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     }
     
     // Check plan feature access for org_admin (super_admin bypasses plan restrictions)
-    if (item.planFeature && user && user.role === 'org_admin' && !hasFeatureAccess(user, item.planFeature)) {
+    if (item.planFeature && user && user.role?.toLowerCase() === 'org_admin' && !hasFeatureAccess(user, item.planFeature)) {
       return false;
     }
     
