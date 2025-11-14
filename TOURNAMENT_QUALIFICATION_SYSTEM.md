@@ -123,9 +123,432 @@ interface PreTournamentQuizConfig {
   difficultyLevel: 'easy' | 'medium' | 'hard';
   
   // Question rotation prevents showing same questions
-  preventQuestionReuse: boolean; // Default: true
+  preventQuestionReuse: boolean; // Default: true (CORE FEATURE)
+  randomizeQuestionOrder: boolean; // Default: true - Different order per participant
+  randomizeAnswerOptions: boolean; // Default: true - Shuffle answer choices
+  
+  // SCORING METHOD (Advanced Feature - Plan-Dependent)
+  scoringMethod: 'average' | 'highest' | 'latest'; // Default: 'average' (Core = average only)
+  // 'average': Total score ÷ number of attempts (CORE FEATURE - FREE/ALL PLANS)
+  // 'highest': Best score achieved (ADVANCED - Pro/Enterprise plans)
+  // 'latest': Most recent attempt score (ADVANCED - Pro/Enterprise plans)
 }
 ```
+
+---
+
+## 🎲 Question & Answer Randomization System
+
+### Randomization Rules (CORE FEATURES)
+
+#### 1. **Question Order Randomization**
+- Each participant receives questions in a **unique random order**
+- Even with same question pool, order differs per participant
+- Prevents copying from neighbors in group settings
+
+**Example**:
+```
+Participant A: Q15, Q3, Q42, Q8, Q27...
+Participant B: Q8, Q42, Q15, Q27, Q3...
+Participant C: Q27, Q8, Q3, Q15, Q42...
+(Same questions, different order)
+```
+
+#### 2. **Answer Options Randomization**
+- Multiple choice answer positions shuffled for each participant
+- Correct answer not always in same position
+- Prevents pattern memorization
+
+**Example**:
+```
+Question: "Who was the first king of Israel?"
+
+Participant A sees:
+A) David
+B) Solomon  
+C) Saul ✓
+D) Samuel
+
+Participant B sees:
+A) Saul ✓
+B) David
+C) Samuel
+D) Solomon
+
+Participant C sees:
+A) Solomon
+B) Samuel
+C) David
+D) Saul ✓
+```
+
+#### 3. **Unique Question Sets Per Attempt**
+- **NO question repeats** across attempts for same user
+- Attempt 1: Set A (questions 1-10)
+- Attempt 2: Set B (questions 11-20) - completely different
+- Attempt 3: Set C (questions 21-30) - all new questions
+
+#### 4. **Randomization Tracking**
+```typescript
+interface QuizRandomization {
+  userId: string;
+  tournamentId: string;
+  attemptNumber: number;
+  questionOrder: string[]; // IDs in order shown
+  answerShuffles: {
+    questionId: string;
+    originalOrder: string[]; // Original answer positions
+    shuffledOrder: string[]; // Randomized positions shown to user
+  }[];
+  randomizationSeed: string; // For audit purposes
+  timestamp: string;
+}
+```
+
+---
+
+## 📊 Scoring Methods (Core + Advanced Features)
+
+### CORE FEATURE: Average Scoring (All Plans)
+
+**Default Method**: Final score = Sum of all attempts ÷ Number of attempts taken
+
+**Formula**: `Final Score = (Attempt1 + Attempt2 + ... + AttemptN) ÷ N`
+
+**Examples**:
+
+**Scenario 1**: Pass on Attempt 2
+- Attempt 1: 60%
+- Attempt 2: 75% ✓ (Passed)
+- **Final Score**: (60 + 75) ÷ 2 = **67.5%**
+
+**Scenario 2**: Pass on Attempt 3
+- Attempt 1: 55%
+- Attempt 2: 65%
+- Attempt 3: 72% ✓ (Passed)
+- **Final Score**: (55 + 65 + 72) ÷ 3 = **64%**
+
+**Scenario 3**: Pass on First Try
+- Attempt 1: 85% ✓ (Passed)
+- **Final Score**: 85 ÷ 1 = **85%**
+
+**Rationale**: 
+- ✅ Encourages careful preparation before first attempt
+- ✅ Rewards those who pass early
+- ✅ Fair for those who need retakes but penalizes rushed attempts
+
+---
+
+### ADVANCED FEATURE: Alternative Scoring Methods (Pro/Enterprise Plans)
+
+Tenant admin can choose scoring method per tournament:
+
+#### Option 1: Highest Score (Pro+ Plans)
+**Formula**: `Final Score = MAX(Attempt1, Attempt2, ..., AttemptN)`
+
+**Example**:
+- Attempt 1: 60%
+- Attempt 2: 75%
+- Attempt 3: 68%
+- **Final Score**: **75%** (highest)
+
+**Benefits**:
+- Encourages learning and improvement
+- Allows bad days without permanent penalty
+- Focus on mastery, not first impression
+
+#### Option 2: Latest Score (Pro+ Plans)
+**Formula**: `Final Score = Last Attempt Score`
+
+**Example**:
+- Attempt 1: 80%
+- Attempt 2: 65%
+- Attempt 3: 90%
+- **Final Score**: **90%** (latest)
+
+**Benefits**:
+- Values most recent knowledge
+- Reflects current competency level
+- Can override poor early attempts
+
+---
+
+### Scoring Method Configuration UI (Admin)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ SCORING METHOD                                               │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ ● Average Score (Default - All Plans)                       │
+│   Sum of all attempts ÷ number of attempts                  │
+│   Encourages careful first attempts                         │
+│                                                              │
+│ ○ Highest Score (Pro/Enterprise Only) 🔒                   │
+│   Best attempt score counts                                 │
+│   Rewards improvement and learning                          │
+│                                                              │
+│ ○ Latest Score (Pro/Enterprise Only) 🔒                    │
+│   Most recent attempt counts                                │
+│   Values current knowledge level                            │
+│                                                              │
+│ [Upgrade to Pro] to unlock advanced scoring methods         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Plan-Based Feature Access
+
+```typescript
+interface PlanFeatures {
+  planId: 'free' | 'starter' | 'pro' | 'enterprise';
+  
+  scoringMethods: {
+    average: boolean;    // true for all plans
+    highest: boolean;    // true for pro+
+    latest: boolean;     // true for pro+
+  };
+  
+  // Other advanced features
+  advancedAnalytics: boolean;
+  customCelebrations: boolean;
+  prioritySupport: boolean;
+}
+
+// Examples
+FREE_PLAN = {
+  scoringMethods: { average: true, highest: false, latest: false }
+}
+
+PRO_PLAN = {
+  scoringMethods: { average: true, highest: true, latest: true }
+}
+```
+
+---
+
+## 🚫 Post-Qualification Access Control
+
+### Lockout Rules (CORE FEATURES)
+
+#### 1. **Maximum Attempts Exhausted**
+When user completes all allowed attempts without passing:
+
+```typescript
+interface PostAttemptsLockout {
+  status: 'attempts_exhausted';
+  canRetake: false;
+  canApplyAgain: false; // For THIS tournament only
+  lockoutMessage: 'You have used all 3 attempts for this tournament';
+  nextOpportunity: 'Apply for the next tournament';
+  suggestedActions: [
+    'Continue practicing to improve',
+    'Earn practice points for auto-qualification in future tournaments',
+    'Review weak areas identified in attempts'
+  ];
+}
+```
+
+**User Experience**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│ ⛔ All Attempts Used                                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│ You have completed all 3 attempts for this tournament.      │
+│                                                              │
+│ Your Attempts:                                               │
+│ • Attempt 1: 60%                                            │
+│ • Attempt 2: 65%                                            │
+│ • Attempt 3: 68%                                            │
+│                                                              │
+│ Final Score: 64.3% (Pass Mark: 70%)                        │
+│                                                              │
+│ ❌ You cannot retake this qualification quiz.              │
+│ ❌ You cannot participate in this tournament.              │
+│                                                              │
+│ 💡 What's Next?                                             │
+│ • Keep practicing in Practice Mode                          │
+│ • Earn 500 practice points for auto-qualification          │
+│ • Apply when the next tournament is announced              │
+│                                                              │
+│ [Go to Practice Mode] [View Next Tournaments]              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 2. **Failed All Attempts - Permanent Tournament Lock**
+```typescript
+interface TournamentLockout {
+  tournamentId: string;
+  userId: string;
+  status: 'permanently_locked';
+  reason: 'failed_all_qualification_attempts';
+  attemptsUsed: number;
+  bestScore: number;
+  requiredScore: number;
+  lockedAt: string;
+  canApplyToOtherTournaments: true; // Only THIS tournament is locked
+}
+```
+
+**System Behavior**:
+- ❌ Cannot retake quiz for THIS specific tournament
+- ❌ Cannot be manually added by admin to THIS tournament
+- ✅ CAN apply to other/future tournaments
+- ✅ CAN continue practicing
+- ✅ CAN earn points for future auto-qualification
+
+#### 3. **Database Flag - Lockout Tracking**
+```typescript
+interface UserTournamentStatus {
+  userId: string;
+  tournamentId: string;
+  applicationStatus: 'locked_out' | 'qualified' | 'pending' | 'in_progress';
+  lockoutReason?: 'max_attempts_exceeded' | 'failed_qualification';
+  canReapply: false; // For this tournament
+  attemptsHistory: QuizAttemptRecord[];
+  finalDecision: 'disqualified';
+  disqualifiedAt: string;
+}
+```
+
+---
+
+## 👁️ Spectator Mode - Live Tournament Viewing (CORE FEATURE)
+
+### Access Levels
+
+#### Inspector Role (Default for all registered users)
+**Base spectator capabilities** - Can view ongoing tournaments:
+
+```typescript
+interface SpectatorAccess {
+  canView: {
+    liveTournaments: true;           // Watch tournaments in progress
+    liveScoreboard: true;             // Real-time scores
+    leaderboard: true;                // Current rankings
+    participantList: true;            // Who's playing
+    questionProgress: true;           // Which question participants are on
+    tournamentMetrics: true;          // Overall stats
+    performanceGraphs: true;          // Visual analytics
+  };
+  
+  cannotView: {
+    actualQuestions: true;            // Cannot see question content
+    participantAnswers: true;         // Cannot see individual answers
+    detailedScoreBreakdown: true;    // Cannot see question-by-question scores during tournament
+  };
+  
+  cannotInteract: {
+    participate: true;                // Cannot join mid-tournament
+    chat: true;                       // No interference with participants
+    submitAnswers: true;              // Read-only spectator
+  };
+}
+```
+
+### Live Tournament Spectator Dashboard
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🏆 LIVE: Bible Quiz Championship 2025                    👁️ 245    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│ Status: IN PROGRESS  •  Question 7 of 20  •  12:34 remaining       │
+│                                                                      │
+│ ┌──────────────────────────────────────────────────────────────┐   │
+│ │ 📊 LIVE SCOREBOARD                                            │   │
+│ ├──────────────────────────────────────────────────────────────┤   │
+│ │ Rank │ Participant      │ Score │ Correct │ Time Avg │ Status│   │
+│ │   1  │ 🥇 John Doe      │  650  │  6/7    │  45s     │  ✓   │   │
+│ │   2  │ 🥈 Jane Smith    │  620  │  6/7    │  52s     │  ✓   │   │
+│ │   3  │ 🥉 Mike Johnson  │  580  │  5/7    │  48s     │  ✓   │   │
+│ │   4  │    Sarah Wilson  │  550  │  5/7    │  55s     │  ⏳  │   │
+│ │   5  │    Tom Brown     │  520  │  5/7    │  60s     │  ✓   │   │
+│ │  ... │  (45 more)       │       │         │          │       │   │
+│ └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│ ┌──────────────────────────────────────────────────────────────┐   │
+│ │ 📈 TOURNAMENT METRICS                                         │   │
+│ ├──────────────────────────────────────────────────────────────┤   │
+│ │ Total Participants: 50                                        │   │
+│ │ Active Now: 48  •  Finished: 0  •  Dropped: 2               │   │
+│ │ Average Score: 587 points                                    │   │
+│ │ Average Time/Question: 51 seconds                            │   │
+│ │ Fastest Answer: 18s (Question 3)                             │   │
+│ │ Hardest Question: Question 5 (40% correct rate)              │   │
+│ └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│ ┌──────────────────────────────────────────────────────────────┐   │
+│ │ 📊 PERFORMANCE GRAPH                                          │   │
+│ │                                                               │   │
+│ │  Score                                                        │   │
+│ │  700 ├──────────────────────────────────────────            │   │
+│ │  600 ├─────●────●────────●───────●──────                    │   │
+│ │  500 ├──●──────────●──────────●─────●────                   │   │
+│ │  400 ├─────────────────────────────────────                 │   │
+│ │       Q1   Q2   Q3   Q4   Q5   Q6   Q7                       │   │
+│ │                                                               │   │
+│ │ ── Top 3 Average    ── Overall Average                       │   │
+│ └──────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+│ [Refresh Auto: ON] [Full Screen] [Share Link]                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Real-Time Updates (WebSocket/Server-Sent Events)
+
+```typescript
+interface LiveTournamentUpdate {
+  tournamentId: string;
+  updateType: 'score_change' | 'question_progress' | 'participant_status' | 'tournament_complete';
+  timestamp: string;
+  
+  data: {
+    // Updated leaderboard
+    leaderboard: {
+      rank: number;
+      userId: string;
+      displayName: string;
+      currentScore: number;
+      correctAnswers: number;
+      averageTime: number;
+      status: 'active' | 'finished' | 'disconnected';
+    }[];
+    
+    // Current question info (not content)
+    questionProgress: {
+      currentQuestion: number;
+      totalQuestions: number;
+      answeredBy: number; // How many finished this question
+      averageTime: number; // For this question
+    };
+    
+    // Tournament-wide metrics
+    metrics: {
+      totalParticipants: number;
+      activeParticipants: number;
+      finishedParticipants: number;
+      droppedParticipants: number;
+      averageScore: number;
+      averageTimePerQuestion: number;
+    };
+  };
+}
+```
+
+### Spectator Features by User Type
+
+| Feature | Inspector (Free) | Practice User | Qualified Participant | Admin |
+|---------|------------------|---------------|----------------------|-------|
+| View live scoreboard | ✅ | ✅ | ✅ | ✅ |
+| View leaderboard | ✅ | ✅ | ✅ | ✅ |
+| View metrics | ✅ | ✅ | ✅ | ✅ |
+| View performance graphs | ✅ | ✅ | ✅ | ✅ |
+| See participant names | ✅ | ✅ | ✅ | ✅ |
+| See questions (during) | ❌ | ❌ | ✅ (only own) | ✅ (all) |
+| See answers (during) | ❌ | ❌ | ✅ (only own) | ✅ (all) |
+| Detailed analytics | ❌ | ❌ | ✅ (post-tournament) | ✅ (real-time) |
+| Question-by-question breakdown | ❌ | ❌ | ✅ (post-tournament) | ✅ (real-time) |
 
 ---
 
