@@ -4,7 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Trophy, Clock, Users, CheckCircle2, XCircle, AlertCircle, Loader2, Target } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trophy, Clock, Users, CheckCircle2, XCircle, AlertCircle, Loader2, Target, Building2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthSystem';
 import {
   Tournament,
@@ -14,6 +17,9 @@ import {
   getUserTournamentApplications,
   hasFeatureAccess,
   canAccessPracticeMode,
+  getAllParishes,
+  getUserProfile,
+  getFieldLabels,
   User
 } from '@/lib/mockData';
 
@@ -27,6 +33,10 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
   const [applications, setApplications] = useState<TournamentApplicationType[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(tournament || null);
   const [isApplying, setIsApplying] = useState(false);
+  const [participationType, setParticipationType] = useState<'individual' | 'parish'>('individual');
+  const [selectedParishId, setSelectedParishId] = useState<string>('');
+  const [parishes, setParishes] = useState<any[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [applicationStatus, setApplicationStatus] = useState<{
     success: boolean;
     message: string;
@@ -36,6 +46,20 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
     if (user) {
       const userApps = getUserTournamentApplications(user.id);
       setApplications(userApps);
+      
+      // Load parishes
+      const allParishes = getAllParishes();
+      const tenantParishes = allParishes.filter(p => p.tenantId === user.tenantId);
+      setParishes(tenantParishes);
+      
+      // Load user profile
+      const profile = getUserProfile(user.id);
+      setUserProfile(profile);
+      
+      // Set default parish if user has one in profile
+      if (profile?.parishId) {
+        setSelectedParishId(profile.parishId);
+      }
     }
   }, [user]);
 
@@ -58,6 +82,16 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
     setApplicationStatus(null);
 
     try {
+      // Validate parish selection if parish participation
+      if (participationType === 'parish' && !selectedParishId) {
+        setApplicationStatus({
+          success: false,
+          message: 'Please select a parish/organization to represent'
+        });
+        setIsApplying(false);
+        return;
+      }
+
       // Check if user can apply
       const canApply = canApplyToTournament(user, tournamentId);
       if (!canApply.allowed) {
@@ -69,18 +103,29 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
         return;
       }
 
-      // Submit application
-      const result = applyToTournament(user.id, tournamentId);
+      // Submit application with participation type and parish
+      const result = applyToTournament(
+        user.id, 
+        tournamentId,
+        participationType,
+        participationType === 'parish' ? selectedParishId : undefined
+      );
       
       if (result.success) {
         setApplicationStatus({
           success: true,
-          message: 'Application submitted successfully! Check your email for next steps.'
+          message: result.message || 'Application submitted successfully! Check your email for next steps.'
         });
         
         // Refresh applications
         const updatedApps = getUserTournamentApplications(user.id);
         setApplications(updatedApps);
+        
+        // Reset form
+        setParticipationType('individual');
+        if (!userProfile?.parishId) {
+          setSelectedParishId('');
+        }
       } else {
         setApplicationStatus({
           success: false,
@@ -173,6 +218,189 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
               {applicationStatus.message}
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Tournament Application Form */}
+        {selectedTournament && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Apply to Tournament</CardTitle>
+              <CardDescription>
+                Complete your application for {selectedTournament.name}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Tournament Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">{selectedTournament.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{selectedTournament.description}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-500">Category</p>
+                      <p className="font-medium">{selectedTournament.category}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Difficulty</p>
+                      <p className="font-medium capitalize">{selectedTournament.difficulty}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Entry Fee</p>
+                      <p className="font-medium">${selectedTournament.entryFee}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Prize Pool</p>
+                      <p className="font-medium">${selectedTournament.prizePool}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Participation Type Selector */}
+                {selectedTournament.participationConfig && selectedTournament.participationConfig.mode !== 'individual' && (() => {
+                  const config = selectedTournament.participationConfig!;
+                  
+                  return (
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-semibold">Participation Type</Label>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Choose how you want to participate in this tournament
+                        </p>
+                      </div>
+
+                      <RadioGroup 
+                        value={participationType} 
+                        onValueChange={(value) => setParticipationType(value as 'individual' | 'parish')}
+                        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                      >
+                        {config.mode === 'both' && (
+                          <>
+                            <div className="relative">
+                              <RadioGroupItem value="individual" id="type-individual" className="peer sr-only" />
+                              <Label
+                                htmlFor="type-individual"
+                                className="flex flex-col items-center justify-between rounded-lg border-2 border-gray-200 bg-white p-4 hover:bg-gray-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:bg-blue-50 cursor-pointer transition-all"
+                              >
+                                <Users className="h-8 w-8 text-gray-600 mb-2" />
+                                <div className="text-center">
+                                  <p className="font-semibold text-gray-900">Individual</p>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Compete on your own
+                                  </p>
+                                </div>
+                              </Label>
+                            </div>
+                            <div className="relative">
+                              <RadioGroupItem value="parish" id="type-parish" className="peer sr-only" />
+                              <Label
+                                htmlFor="type-parish"
+                                className="flex flex-col items-center justify-between rounded-lg border-2 border-gray-200 bg-white p-4 hover:bg-gray-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:bg-blue-50 cursor-pointer transition-all"
+                              >
+                                <Building2 className="h-8 w-8 text-gray-600 mb-2" />
+                                <div className="text-center">
+                                  <p className="font-semibold text-gray-900">
+                                    {getFieldLabels(user.tenantId).parishSingular}
+                                  </p>
+                                  <p className="text-xs text-gray-600 mt-1">
+                                    Represent your {getFieldLabels(user.tenantId).parishSingular.toLowerCase()}
+                                  </p>
+                                </div>
+                              </Label>
+                            </div>
+                          </>
+                        )}
+                        {config.mode === 'parish' && (
+                          <div className="relative">
+                            <RadioGroupItem value="parish" id="type-parish" className="peer sr-only" />
+                            <Label
+                              htmlFor="type-parish"
+                              className="flex flex-col items-center justify-between rounded-lg border-2 border-gray-200 bg-white p-4 hover:bg-gray-50 peer-data-[state=checked]:border-blue-600 peer-data-[state=checked]:bg-blue-50 cursor-pointer transition-all"
+                            >
+                              <Building2 className="h-8 w-8 text-gray-600 mb-2" />
+                              <div className="text-center">
+                                <p className="font-semibold text-gray-900">
+                                  {getFieldLabels(user.tenantId).parishSingular}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-1">
+                                  Represent your {getFieldLabels(user.tenantId).parishSingular.toLowerCase()}
+                                </p>
+                              </div>
+                            </Label>
+                          </div>
+                        )}
+                      </RadioGroup>
+
+                      {/* Parish Selection */}
+                      {participationType === 'parish' && (
+                        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div>
+                            <Label htmlFor="parish-select" className="text-sm font-medium">
+                              Select {getFieldLabels(user.tenantId).parishSingular}
+                            </Label>
+                            <p className="text-xs text-gray-600 mb-2">
+                              Choose which {getFieldLabels(user.tenantId).parishSingular.toLowerCase()} you want to represent
+                            </p>
+                            <Select value={selectedParishId} onValueChange={setSelectedParishId}>
+                              <SelectTrigger id="parish-select">
+                                <SelectValue placeholder={`Select a ${getFieldLabels(user.tenantId).parishSingular.toLowerCase()}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {parishes.length > 0 ? (
+                                  parishes.map((parish) => (
+                                    <SelectItem key={parish.id} value={parish.id}>
+                                      {parish.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="none" disabled>
+                                    No {getFieldLabels(user.tenantId).parishPlural.toLowerCase()} available
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {selectedParishId && config.maxParticipantsPerParish && (
+                            <Alert className="bg-white border-blue-300">
+                              <AlertCircle className="h-4 w-4 text-blue-600" />
+                              <AlertDescription className="text-xs text-blue-800">
+                                Maximum {config.maxParticipantsPerParish} participants per {getFieldLabels(user.tenantId).parishSingular.toLowerCase()}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Apply Button */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    {selectedTournament.qualificationConfig?.quizEnabled ? (
+                      <p>✓ Pre-tournament quiz required after application</p>
+                    ) : (
+                      <p>✓ Application will be reviewed by admin</p>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => handleApply(selectedTournament.id)}
+                    disabled={isApplying || (participationType === 'parish' && !selectedParishId)}
+                    size="lg"
+                  >
+                    {isApplying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Submit Application'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* User Status Overview */}

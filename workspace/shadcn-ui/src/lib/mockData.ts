@@ -2319,7 +2319,12 @@ export function canApplyToTournament(user: User, tournamentId: string): { allowe
 }
 
 // Apply to tournament
-export function applyToTournament(userId: string, tournamentId: string): { success: boolean; message?: string; applicationId?: string } {
+export function applyToTournament(
+  userId: string, 
+  tournamentId: string,
+  participationType: 'individual' | 'parish' = 'individual',
+  parishId?: string
+): { success: boolean; message?: string; applicationId?: string } {
   const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
   const user = users.find((u: User) => u.id === userId);
   
@@ -2337,6 +2342,37 @@ export function applyToTournament(userId: string, tournamentId: string): { succe
   
   if (!tournament?.qualificationConfig?.enabled) {
     return { success: false, message: 'Tournament qualification is not configured' };
+  }
+
+  // Check eligibility restrictions
+  const eligibilityCheck = checkTournamentEligibility(userId, tournamentId);
+  if (!eligibilityCheck.eligible) {
+    return { 
+      success: false, 
+      message: `Eligibility requirements not met:\n${eligibilityCheck.reasons.join('\n')}` 
+    };
+  }
+
+  // Validate participation type against tournament config
+  const participationMode = tournament.participationConfig?.mode || 'individual';
+  if (participationMode === 'individual' && participationType === 'parish') {
+    return { success: false, message: 'This tournament only allows individual participation' };
+  }
+  if (participationMode === 'parish' && participationType === 'individual') {
+    return { success: false, message: 'This tournament only allows parish/group participation' };
+  }
+
+  // Validate parish participation
+  if (participationType === 'parish') {
+    if (!parishId) {
+      return { success: false, message: 'Parish ID is required for parish participation' };
+    }
+
+    // Check if parish has reached max participants
+    const parishCheck = canParishAcceptParticipants(tournamentId, parishId);
+    if (!parishCheck.canAccept) {
+      return { success: false, message: parishCheck.reason || 'Parish cannot accept more participants' };
+    }
   }
 
   const applications = getAllTournamentApplications();
@@ -2358,10 +2394,20 @@ export function applyToTournament(userId: string, tournamentId: string): { succe
     qualificationPathway = 'quiz';
   }
 
+  // Get parish display name if applicable
+  let parishDisplayName: string | undefined;
+  if (participationType === 'parish' && parishId) {
+    const parish = getParishById(parishId);
+    parishDisplayName = parish?.name;
+  }
+
   const application: TournamentApplication = {
     id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     userId,
     tournamentId,
+    participationType,
+    parishId,
+    parishDisplayName,
     status,
     qualificationPathway,
     appliedAt: new Date().toISOString(),
@@ -2380,12 +2426,17 @@ export function applyToTournament(userId: string, tournamentId: string): { succe
   applications.push(application);
   storage.set(STORAGE_KEYS.TOURNAMENT_APPLICATIONS, applications);
 
+  // Update parish stats if parish participation
+  if (participationType === 'parish' && parishId) {
+    updateParishStats(tournamentId, parishId);
+  }
+
   logAuditEvent({
     userId,
     action: 'apply_tournament',
     entityType: 'tournament',
     entityId: tournamentId,
-    details: { applicationId: application.id, pathway: qualificationPathway, autoQualified }
+    details: { applicationId: application.id, pathway: qualificationPathway, autoQualified, participationType, parishId }
   });
 
   return { 
