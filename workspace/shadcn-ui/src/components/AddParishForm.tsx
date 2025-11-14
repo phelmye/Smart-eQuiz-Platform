@@ -15,7 +15,8 @@ import {
   ParishAuthority,
   ParishContactPerson,
   ParishLocation,
-  addParish
+  addParish,
+  getFieldLabels
 } from '@/lib/mockData';
 
 interface AddParishFormProps {
@@ -27,6 +28,9 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  
+  // Get custom field labels
+  const fieldLabels = getFieldLabels(user?.tenantId);
   
   const [formData, setFormData] = useState({
     parishName: '',
@@ -192,10 +196,10 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Building className="h-6 w-6" />
-              Add New Parish/Organization
+              Add New {fieldLabels.parishSingular}
             </CardTitle>
             <CardDescription>
-              Please provide complete information about the parish or organization. All fields marked with * are required.
+              Please provide complete information about the {fieldLabels.parishSingular.toLowerCase()}. All fields marked with * are required.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -217,14 +221,14 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
         {/* Parish Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Parish/Organization Information</CardTitle>
+            <CardTitle className="text-lg">{fieldLabels.parishSingular} Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="parishName">Parish/Organization Name *</Label>
+              <Label htmlFor="parishName">{fieldLabels.parishSingular} Name *</Label>
               <Input
                 id="parishName"
-                placeholder="e.g., St. Mary's Catholic Church, Grace Baptist Church"
+                placeholder={`e.g., St. Mary's ${fieldLabels.parishSingular}, Grace ${fieldLabels.parishSingular}`}
                 value={formData.parishName}
                 onChange={(e) => setFormData({ ...formData, parishName: e.target.value })}
                 className={errors.parishName ? 'border-red-500' : ''}
@@ -233,7 +237,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="parishPhone">Parish Phone Number *</Label>
+              <Label htmlFor="parishPhone">{fieldLabels.parishSingular} Phone Number *</Label>
               <Input
                 id="parishPhone"
                 type="tel"
@@ -246,7 +250,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="parishEmail">Parish Email Address *</Label>
+              <Label htmlFor="parishEmail">{fieldLabels.parishSingular} Email Address *</Label>
               <Input
                 id="parishEmail"
                 type="email"
@@ -259,13 +263,13 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label>Parish Image (Landscape 16:9 ratio)</Label>
+              <Label>{fieldLabels.parishSingular} Image (Landscape 16:9 ratio)</Label>
               <div className="mt-2 space-y-3">
                 {formData.parishImage ? (
                   <div className="relative">
                     <img 
                       src={formData.parishImage} 
-                      alt="Parish" 
+                      alt={fieldLabels.parishSingular} 
                       className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
                     />
                     <Button
@@ -280,7 +284,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
                 ) : (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                     <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm text-gray-600 mb-3">Upload a landscape photo of the parish (16:9 ratio)</p>
+                    <p className="text-sm text-gray-600 mb-3">Upload a landscape photo of the {fieldLabels.parishSingular.toLowerCase()} (16:9 ratio)</p>
                     <Input
                       type="file"
                       accept="image/*"
@@ -299,9 +303,9 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
-              Authority (Person in Charge) *
+              {fieldLabels.parishLeader} *
             </CardTitle>
-            <CardDescription>Information about the main authority or pastor</CardDescription>
+            <CardDescription>Information about the {fieldLabels.parishLeader.toLowerCase()}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -412,16 +416,16 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Parish Location *
+              {fieldLabels.parishSingular} Location *
             </CardTitle>
-            <CardDescription>Physical location of the parish/organization</CardDescription>
+            <CardDescription>Physical location of the {fieldLabels.parishSingular.toLowerCase()}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="locationAddress">Full Address *</Label>
               <Textarea
                 id="locationAddress"
-                placeholder="Complete parish address with landmarks"
+                placeholder={`Complete ${fieldLabels.parishSingular.toLowerCase()} address with landmarks`}
                 value={formData.locationAddress}
                 onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value })}
                 rows={3}

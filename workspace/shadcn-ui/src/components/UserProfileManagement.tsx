@@ -28,7 +28,8 @@ import {
   saveUserProfile,
   getProfileCompletionStatus,
   searchParishes,
-  getParishById
+  getParishById,
+  getFieldLabels
 } from '@/lib/mockData';
 
 interface UserProfileManagementProps {
@@ -52,6 +53,9 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
   const [selectedParish, setSelectedParish] = useState<Parish | null>(null);
   const [showParishSearch, setShowParishSearch] = useState(false);
   const [showAddParish, setShowAddParish] = useState(false);
+  
+  // Get custom field labels
+  const fieldLabels = getFieldLabels(user?.tenantId);
 
   useEffect(() => {
     if (user) {
@@ -207,7 +211,7 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
             </TabsTrigger>
             <TabsTrigger value="parish">
               <Building className="h-4 w-4 mr-2" />
-              Parish
+              {fieldLabels.parishSingular}
             </TabsTrigger>
             <TabsTrigger value="nextofkin">
               <Users className="h-4 w-4 mr-2" />
@@ -345,8 +349,8 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
           <TabsContent value="parish">
             <Card>
               <CardHeader>
-                <CardTitle>Parish/Organization *</CardTitle>
-                <CardDescription>Select your church or organization</CardDescription>
+                <CardTitle>{fieldLabels.parishSingular} *</CardTitle>
+                <CardDescription>Select your {fieldLabels.parishSingular.toLowerCase()}. This is required for tournament participation.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Selected Parish Display */}
@@ -396,19 +400,19 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
                     <Alert className="bg-blue-50 border-blue-200">
                       <AlertCircle className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-blue-800 text-sm">
-                        Please select your parish/organization or add a new one if not found.
+                        Please select your {fieldLabels.parishSingular.toLowerCase()} or add a new one if not found.
                       </AlertDescription>
                     </Alert>
 
                     {/* Search Parish */}
                     {!showAddParish && (
                       <div>
-                        <Label htmlFor="parishSearch">Search Parish/Organization</Label>
+                        <Label htmlFor="parishSearch">Search {fieldLabels.parishSingular}</Label>
                         <div className="flex gap-2 mt-2">
                           <Input
-                            id="parishSearch"
-                            placeholder="Type parish name to search..."
-                            value={parishSearchQuery}
+                          id="parishSearch"
+                          placeholder={`Type ${fieldLabels.parishSingular.toLowerCase()} name to search...`}
+                          value={parishSearchQuery}
                             onChange={(e) => {
                               setParishSearchQuery(e.target.value);
                               setShowParishSearch(true);
@@ -444,7 +448,7 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
                           <Alert className="mt-2 bg-yellow-50 border-yellow-200">
                             <AlertCircle className="h-4 w-4 text-yellow-600" />
                             <AlertDescription className="text-yellow-800 text-sm">
-                              No parishes found. Try a different search or add a new parish.
+                              No {fieldLabels.parishPlural.toLowerCase()} found. Try a different search or add a new {fieldLabels.parishSingular.toLowerCase()}.
                             </AlertDescription>
                           </Alert>
                         )}
@@ -454,7 +458,7 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
                           className="w-full mt-3"
                           onClick={() => setShowAddParish(true)}
                         >
-                          + Add New Parish/Organization
+                          + Add New {fieldLabels.parishSingular}
                         </Button>
                       </div>
                     )}
@@ -464,12 +468,12 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
                       <Alert className="bg-purple-50 border-purple-200">
                         <Building className="h-4 w-4 text-purple-600" />
                         <AlertDescription className="text-purple-800">
-                          <strong>Adding a new parish requires detailed information.</strong>
+                          <strong>Adding a new {fieldLabels.parishSingular.toLowerCase()} requires detailed information.</strong>
                           <br />
-                          Please use the dedicated "Add Parish" form in your dashboard to register a new parish/organization.
+                          Please use the dedicated "Add {fieldLabels.parishSingular}" form in your dashboard to register a new {fieldLabels.parishSingular.toLowerCase()}.
                           <div className="mt-3 space-x-2">
                             <Button size="sm" onClick={() => {/* Navigate to add parish form */}}>
-                              Go to Add Parish Form
+                              Go to Add {fieldLabels.parishSingular} Form
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setShowAddParish(false)}>
                               Cancel

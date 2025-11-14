@@ -33,6 +33,12 @@ interface BrandingConfig {
     twitter: string;
     instagram: string;
   };
+  customFieldLabels: {
+    parishSingular: string;
+    parishPlural: string;
+    parishMember: string;
+    parishLeader: string;
+  };
 }
 
 const defaultBranding: BrandingConfig = {
@@ -52,6 +58,12 @@ const defaultBranding: BrandingConfig = {
     facebook: '',
     twitter: '',
     instagram: ''
+  },
+  customFieldLabels: {
+    parishSingular: 'Parish/Organization',
+    parishPlural: 'Parishes/Organizations',
+    parishMember: 'Member',
+    parishLeader: 'Authority/Pastor'
   }
 };
 
@@ -72,13 +84,17 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
                           storage.get(STORAGE_KEYS.BRANDING) || 
                           defaultBranding;
     
-    // Ensure socialLinks property exists to prevent errors
+    // Ensure socialLinks and customFieldLabels properties exist to prevent errors
     const brandingWithDefaults = {
       ...defaultBranding,
       ...savedBranding,
       socialLinks: {
         ...defaultBranding.socialLinks,
         ...(savedBranding?.socialLinks || {})
+      },
+      customFieldLabels: {
+        ...defaultBranding.customFieldLabels,
+        ...(savedBranding?.customFieldLabels || {})
       }
     };
     
@@ -252,10 +268,11 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
         </div>
 
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="logos">Logos & Images</TabsTrigger>
             <TabsTrigger value="colors">Colors & Fonts</TabsTrigger>
+            <TabsTrigger value="terminology">Field Labels</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
@@ -619,6 +636,122 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
                     The quick brown fox jumps over the lazy dog.
                   </p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="terminology" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Customize Field Labels</CardTitle>
+                <CardDescription>
+                  Customize terminology to match your organization's language. 
+                  These labels will be used throughout the platform in forms, profiles, and tournaments.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Type className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Examples:</strong> If you run a school quiz platform, you might change "Parish/Organization" to "School" 
+                    or "Class". For sports teams, use "Team" or "Club". These changes apply everywhere in your platform.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="parish-singular">
+                      Group Name (Singular) *
+                      <span className="text-sm text-gray-500 ml-2">Default: "Parish/Organization"</span>
+                    </Label>
+                    <Input
+                      id="parish-singular"
+                      value={branding.customFieldLabels.parishSingular}
+                      onChange={(e) => setBranding(prev => ({ 
+                        ...prev, 
+                        customFieldLabels: { ...prev.customFieldLabels, parishSingular: e.target.value }
+                      }))}
+                      placeholder="e.g., Parish, Church, School, Team, Organization"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Used in: Registration form, User profile, Tournament application
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="parish-plural">
+                      Group Name (Plural) *
+                      <span className="text-sm text-gray-500 ml-2">Default: "Parishes/Organizations"</span>
+                    </Label>
+                    <Input
+                      id="parish-plural"
+                      value={branding.customFieldLabels.parishPlural}
+                      onChange={(e) => setBranding(prev => ({ 
+                        ...prev, 
+                        customFieldLabels: { ...prev.customFieldLabels, parishPlural: e.target.value }
+                      }))}
+                      placeholder="e.g., Parishes, Churches, Schools, Teams, Organizations"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Used in: Lists, Search results, Dashboard headings
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="parish-member">
+                      Member Title
+                      <span className="text-sm text-gray-500 ml-2">Default: "Member"</span>
+                    </Label>
+                    <Input
+                      id="parish-member"
+                      value={branding.customFieldLabels.parishMember}
+                      onChange={(e) => setBranding(prev => ({ 
+                        ...prev, 
+                        customFieldLabels: { ...prev.customFieldLabels, parishMember: e.target.value }
+                      }))}
+                      placeholder="e.g., Member, Parishioner, Student, Team Member, Participant"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Used in: Tournament rosters, Group listings, Member counts
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="parish-leader">
+                      Leader Title
+                      <span className="text-sm text-gray-500 ml-2">Default: "Authority/Pastor"</span>
+                    </Label>
+                    <Input
+                      id="parish-leader"
+                      value={branding.customFieldLabels.parishLeader}
+                      onChange={(e) => setBranding(prev => ({ 
+                        ...prev, 
+                        customFieldLabels: { ...prev.customFieldLabels, parishLeader: e.target.value }
+                      }))}
+                      placeholder="e.g., Pastor, Priest, Principal, Coach, Team Captain"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Used in: Group registration forms, Contact information
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="font-semibold mb-3">Preview</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Registration:</strong> "Select your {branding.customFieldLabels.parishSingular.toLowerCase()}"</p>
+                    <p><strong>Dashboard:</strong> "Browse {branding.customFieldLabels.parishPlural}"</p>
+                    <p><strong>Tournament:</strong> "Compete as a {branding.customFieldLabels.parishMember.toLowerCase()}"</p>
+                    <p><strong>Contact:</strong> "{branding.customFieldLabels.parishLeader} Information"</p>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertDescription>
+                    <strong>Note:</strong> Changes will take effect immediately for all new forms and displays. 
+                    Existing data labels will update on next page load.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
           </TabsContent>

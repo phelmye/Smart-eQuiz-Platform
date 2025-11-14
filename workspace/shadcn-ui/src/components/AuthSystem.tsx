@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData } from '@/lib/mockData';
+import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData, getFieldLabels } from '@/lib/mockData';
 import { apiClient } from '@/lib/apiClient';
 
 interface AuthContextType {
@@ -232,7 +232,11 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const { login, register, user } = useAuth();
+  
+  // Get custom field labels for selected tenant
+  const fieldLabels = getFieldLabels(selectedTenantId || undefined);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     console.log('🔍 FORM SUBMISSION STARTED!');
@@ -510,10 +514,14 @@ Check browser console (F12) for detailed debug info.`;
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="tenantId">Organization</Label>
-                  <Select name="tenantId" required>
+                  <Label htmlFor="tenantId">{fieldLabels.parishSingular}</Label>
+                  <Select 
+                    name="tenantId" 
+                    required
+                    onValueChange={(value) => setSelectedTenantId(value)}
+                  >
                     <SelectTrigger id="tenantId">
-                      <SelectValue placeholder="Select your organization" />
+                      <SelectValue placeholder={`Select your ${fieldLabels.parishSingular.toLowerCase()}`} />
                     </SelectTrigger>
                     <SelectContent>
                       {mockTenants.map(tenant => {

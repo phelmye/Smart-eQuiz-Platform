@@ -56,6 +56,7 @@ export interface ParishLocation {
 export interface Parish {
   id: string;
   name: string;
+  displayName?: string; // Custom display name set by tenant admin
   tenantId: string;
   
   // Authority (Person in charge)
@@ -390,6 +391,13 @@ export interface Tenant {
   maxTournaments: number;
   paymentIntegrationEnabled: boolean; // Default false - tenant admin must enable
   createdAt: string;
+  // Customizable field labels for tenant-specific terminology
+  customFieldLabels?: {
+    parishSingular?: string; // e.g., "Parish", "Church", "Organization", "Team"
+    parishPlural?: string; // e.g., "Parishes", "Churches", "Organizations", "Teams"
+    parishMember?: string; // e.g., "Member", "Parishioner", "Team Member"
+    parishLeader?: string; // e.g., "Parish Priest", "Pastor", "Team Leader"
+  };
 }
 
 // Tournament interface
@@ -2611,5 +2619,37 @@ export function getProfileCompletionStatus(userId: string): {
     percentage: profile.profileCompletionPercentage,
     missingFields,
     isComplete: profile.isProfileComplete
+  };
+}
+
+// Get custom field labels for tenant
+export function getFieldLabels(tenantId?: string): {
+  parishSingular: string;
+  parishPlural: string;
+  parishMember: string;
+  parishLeader: string;
+} {
+  const defaultLabels = {
+    parishSingular: 'Parish/Organization',
+    parishPlural: 'Parishes/Organizations',
+    parishMember: 'Member',
+    parishLeader: 'Authority/Pastor'
+  };
+
+  if (!tenantId) return defaultLabels;
+
+  // Get branding config for tenant
+  const brandingKey = `${STORAGE_KEYS.BRANDING}_${tenantId}`;
+  const branding = storage.get(brandingKey);
+
+  if (!branding || !branding.customFieldLabels) {
+    return defaultLabels;
+  }
+
+  return {
+    parishSingular: branding.customFieldLabels.parishSingular || defaultLabels.parishSingular,
+    parishPlural: branding.customFieldLabels.parishPlural || defaultLabels.parishPlural,
+    parishMember: branding.customFieldLabels.parishMember || defaultLabels.parishMember,
+    parishLeader: branding.customFieldLabels.parishLeader || defaultLabels.parishLeader
   };
 }
