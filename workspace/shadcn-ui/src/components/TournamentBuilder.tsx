@@ -7,9 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tournament, Question, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
+import { 
+  storage, 
+  STORAGE_KEYS, 
+  Tournament, 
+  Question, 
+  BIBLE_CATEGORIES, 
+  hasPermission,
+  TOURNAMENT_FEATURES,
+  hasTournamentFeatureAccess,
+  getRequiredPlanForFeature,
+  getAllParishes
+} from '@/lib/mockData';
+import { UpgradePrompt } from './UpgradePrompt';
 
 interface TournamentBuilderProps {
   onBack: () => void;
@@ -20,6 +32,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   const { user, tenant } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
+  const [parishes, setParishes] = useState<any[]>([]);
   const [tournament, setTournament] = useState({
     name: '',
     description: '',
@@ -35,11 +48,28 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     questionCount: 10,
     timeLimit: 30,
     allowSpectators: true,
-    requireApproval: false
+    requireApproval: false,
+    // Participation config
+    participationMode: 'individual' as 'individual' | 'parish' | 'both',
+    maxParticipantsPerParish: undefined as number | undefined,
+    minParticipantsPerParish: undefined as number | undefined,
+    // Parish scoring config
+    enableParishScoring: false,
+    parishScoringMethod: 'average' as 'average' | 'total' | 'topN' | 'weighted',
+    topNCount: 5,
+    parishDisplayMode: 'dual' as 'parish_only' | 'individual_only' | 'dual',
+    // Eligibility restrictions
+    enableEligibility: false,
+    ageMin: undefined as number | undefined,
+    ageMax: undefined as number | undefined,
+    allowedGenders: [] as Array<'male' | 'female' | 'other' | 'prefer_not_to_say'>,
+    allowedParishes: [] as string[],
+    requiredProfileCompletion: undefined as number | undefined
   });
 
   useEffect(() => {
     loadQuestions();
+    loadParishes();
   }, [user, tenant]);
 
   const loadQuestions = () => {
@@ -48,6 +78,12 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
       user?.role === 'super_admin' || q.tenantId === user?.tenantId
     );
     setAvailableQuestions(tenantQuestions);
+  };
+
+  const loadParishes = () => {
+    const allParishes = getAllParishes();
+    const tenantParishes = allParishes.filter(p => p.tenantId === user?.tenantId);
+    setParishes(tenantParishes);
   };
 
   const handleCreateTournament = () => {
@@ -92,7 +128,31 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
       questions: selectedQuestions,
       createdBy: user?.id || 'user1',
       tenantId: user?.tenantId || 'tenant1',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      // Participation config
+      participationConfig: tournament.participationMode !== 'individual' ? {
+        mode: tournament.participationMode,
+        maxParticipantsPerParish: tournament.maxParticipantsPerParish,
+        minParticipantsPerParish: tournament.minParticipantsPerParish,
+        allowParishCaptains: false,
+        allowMultiParishTeams: false
+      } : undefined,
+      // Parish scoring config
+      parishScoringConfig: tournament.enableParishScoring ? {
+        enabled: true,
+        scoringMethod: tournament.parishScoringMethod,
+        topNCount: tournament.parishScoringMethod === 'topN' ? tournament.topNCount : undefined,
+        displayMode: tournament.parishDisplayMode
+      } : undefined,
+      // Eligibility restrictions
+      eligibilityRestrictions: tournament.enableEligibility ? {
+        enabled: true,
+        ageMin: tournament.ageMin,
+        ageMax: tournament.ageMax,
+        allowedGenders: tournament.allowedGenders.length > 0 ? tournament.allowedGenders : undefined,
+        allowedParishes: tournament.allowedParishes.length > 0 ? tournament.allowedParishes : undefined,
+        requiredProfileCompletion: tournament.requiredProfileCompletion
+      } : undefined
     };
 
     const allTournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
@@ -112,9 +172,10 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   const steps = [
     { id: 1, title: 'Basic Info', icon: Settings },
     { id: 2, title: 'Participants', icon: Users },
-    { id: 3, title: 'Questions', icon: Trophy },
-    { id: 4, title: 'Schedule', icon: Calendar },
-    { id: 5, title: 'Review', icon: Play }
+    { id: 3, title: 'Advanced', icon: Shield },
+    { id: 4, title: 'Questions', icon: Trophy },
+    { id: 5, title: 'Schedule', icon: Calendar },
+    { id: 6, title: 'Review', icon: Play }
   ];
 
   if (!user || !hasPermission(user, 'tournaments.create')) {
@@ -321,6 +382,392 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center">
+                    <Shield className="h-5 w-5 mr-2 text-purple-600" />
+                    Advanced Tournament Features
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Configure parish/group participation, scoring methods, and eligibility restrictions
+                  </p>
+
+                  {/* Participation Mode Section */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        Participation Mode
+                      </CardTitle>
+                      <CardDescription>
+                        Choose how participants can register for this tournament
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.PARISH_GROUP_MODE) ? (
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Participation Type</Label>
+                            <Select 
+                              value={tournament.participationMode} 
+                              onValueChange={(value) => setTournament(prev => ({ 
+                                ...prev, 
+                                participationMode: value as 'individual' | 'parish' | 'both' 
+                              }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="individual">Individual Only</SelectItem>
+                                <SelectItem value="parish">Parish/Group Only</SelectItem>
+                                <SelectItem value="both">Both (Individual + Parish)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {tournament.participationMode === 'individual' && 'Participants compete as individuals'}
+                              {tournament.participationMode === 'parish' && 'Participants must register as part of a parish/group'}
+                              {tournament.participationMode === 'both' && 'Participants can choose to compete individually or as part of a parish/group'}
+                            </p>
+                          </div>
+
+                          {tournament.participationMode !== 'individual' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                              <div>
+                                <Label htmlFor="min-parish-participants">Min per Parish (optional)</Label>
+                                <Input
+                                  id="min-parish-participants"
+                                  type="number"
+                                  min="1"
+                                  placeholder="e.g., 3"
+                                  value={tournament.minParticipantsPerParish || ''}
+                                  onChange={(e) => setTournament(prev => ({ 
+                                    ...prev, 
+                                    minParticipantsPerParish: e.target.value ? parseInt(e.target.value) : undefined 
+                                  }))}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="max-parish-participants">Max per Parish (optional)</Label>
+                                <Input
+                                  id="max-parish-participants"
+                                  type="number"
+                                  min="1"
+                                  placeholder="e.g., 10"
+                                  value={tournament.maxParticipantsPerParish || ''}
+                                  onChange={(e) => setTournament(prev => ({ 
+                                    ...prev, 
+                                    maxParticipantsPerParish: e.target.value ? parseInt(e.target.value) : undefined 
+                                  }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <UpgradePrompt
+                          feature="Parish/Group Tournament Mode"
+                          requiredPlan={getRequiredPlanForFeature(TOURNAMENT_FEATURES.PARISH_GROUP_MODE) || 'Professional'}
+                          description="Enable team-based competition where parishes or groups compete together"
+                          benefits={[
+                            'Allow parishes/groups to compete as teams',
+                            'Track parish-level scores and rankings',
+                            'Build community engagement',
+                            'Control participants per parish'
+                          ]}
+                          size="small"
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Parish Scoring Section */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Parish Scoring
+                      </CardTitle>
+                      <CardDescription>
+                        Configure how parish/group scores are calculated
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.PARISH_SCORING) ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="enable-parish-scoring"
+                              checked={tournament.enableParishScoring}
+                              onCheckedChange={(checked) => setTournament(prev => ({ 
+                                ...prev, 
+                                enableParishScoring: !!checked 
+                              }))}
+                              disabled={tournament.participationMode === 'individual'}
+                            />
+                            <Label htmlFor="enable-parish-scoring">
+                              Enable parish/group scoring
+                            </Label>
+                          </div>
+
+                          {tournament.enableParishScoring && (
+                            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                              <div>
+                                <Label>Scoring Method</Label>
+                                <Select 
+                                  value={tournament.parishScoringMethod} 
+                                  onValueChange={(value) => setTournament(prev => ({ 
+                                    ...prev, 
+                                    parishScoringMethod: value as 'average' | 'total' | 'topN' | 'weighted' 
+                                  }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="average">Average (Total ÷ Active Members)</SelectItem>
+                                    <SelectItem value="total">Total (Sum of All Scores)</SelectItem>
+                                    <SelectItem value="topN">Top N (Best N Scores)</SelectItem>
+                                    <SelectItem value="weighted">Weighted (With Participation Bonus)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {tournament.parishScoringMethod === 'average' && 'Fair for groups with different sizes'}
+                                  {tournament.parishScoringMethod === 'total' && 'Rewards larger participation'}
+                                  {tournament.parishScoringMethod === 'topN' && 'Quality over quantity'}
+                                  {tournament.parishScoringMethod === 'weighted' && 'Average with participation rate bonus'}
+                                </p>
+                              </div>
+
+                              {tournament.parishScoringMethod === 'topN' && (
+                                <div>
+                                  <Label htmlFor="top-n-count">Number of Top Scores</Label>
+                                  <Input
+                                    id="top-n-count"
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={tournament.topNCount}
+                                    onChange={(e) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      topNCount: parseInt(e.target.value) || 5 
+                                    }))}
+                                  />
+                                </div>
+                              )}
+
+                              <div>
+                                <Label>Leaderboard Display</Label>
+                                <Select 
+                                  value={tournament.parishDisplayMode} 
+                                  onValueChange={(value) => setTournament(prev => ({ 
+                                    ...prev, 
+                                    parishDisplayMode: value as 'parish_only' | 'individual_only' | 'dual' 
+                                  }))}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="parish_only">Parish Names Only</SelectItem>
+                                    <SelectItem value="individual_only">Individual Names Only</SelectItem>
+                                    <SelectItem value="dual">Both (Dual Leaderboards)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <UpgradePrompt
+                          feature="Parish Scoring System"
+                          requiredPlan={getRequiredPlanForFeature(TOURNAMENT_FEATURES.PARISH_SCORING) || 'Professional'}
+                          description="Calculate and display parish/group scores with multiple scoring methods"
+                          benefits={[
+                            'Average, total, or top-N scoring methods',
+                            'Weighted scoring with participation bonus',
+                            'Dual leaderboards (parish + individual)',
+                            'Automatic score calculation'
+                          ]}
+                          size="small"
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Eligibility Restrictions Section */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <Target className="h-4 w-4 mr-2" />
+                        Eligibility Restrictions
+                      </CardTitle>
+                      <CardDescription>
+                        Control who can apply to this tournament
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.ELIGIBILITY_RESTRICTIONS) ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="enable-eligibility"
+                              checked={tournament.enableEligibility}
+                              onCheckedChange={(checked) => setTournament(prev => ({ 
+                                ...prev, 
+                                enableEligibility: !!checked 
+                              }))}
+                            />
+                            <Label htmlFor="enable-eligibility">
+                              Enable eligibility restrictions
+                            </Label>
+                          </div>
+
+                          {tournament.enableEligibility && (
+                            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                              {/* Age Restrictions */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="age-min">Minimum Age (optional)</Label>
+                                  <Input
+                                    id="age-min"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    placeholder="e.g., 18"
+                                    value={tournament.ageMin || ''}
+                                    onChange={(e) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      ageMin: e.target.value ? parseInt(e.target.value) : undefined 
+                                    }))}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="age-max">Maximum Age (optional)</Label>
+                                  <Input
+                                    id="age-max"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    placeholder="e.g., 65"
+                                    value={tournament.ageMax || ''}
+                                    onChange={(e) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      ageMax: e.target.value ? parseInt(e.target.value) : undefined 
+                                    }))}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Gender Restrictions */}
+                              <div>
+                                <Label>Allowed Genders (leave empty for all)</Label>
+                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                  {(['male', 'female', 'other', 'prefer_not_to_say'] as const).map((gender) => (
+                                    <div key={gender} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`gender-${gender}`}
+                                        checked={tournament.allowedGenders.includes(gender)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setTournament(prev => ({
+                                              ...prev,
+                                              allowedGenders: [...prev.allowedGenders, gender]
+                                            }));
+                                          } else {
+                                            setTournament(prev => ({
+                                              ...prev,
+                                              allowedGenders: prev.allowedGenders.filter(g => g !== gender)
+                                            }));
+                                          }
+                                        }}
+                                      />
+                                      <Label htmlFor={`gender-${gender}`} className="text-sm capitalize">
+                                        {gender.replace('_', ' ')}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Parish Restrictions */}
+                              <div>
+                                <Label>Allowed Parishes (leave empty for all)</Label>
+                                <div className="mt-2 max-h-40 overflow-y-auto border rounded-md p-3">
+                                  {parishes.length > 0 ? (
+                                    parishes.map((parish) => (
+                                      <div key={parish.id} className="flex items-center space-x-2 mb-2">
+                                        <Checkbox
+                                          id={`parish-${parish.id}`}
+                                          checked={tournament.allowedParishes.includes(parish.id)}
+                                          onCheckedChange={(checked) => {
+                                            if (checked) {
+                                              setTournament(prev => ({
+                                                ...prev,
+                                                allowedParishes: [...prev.allowedParishes, parish.id]
+                                              }));
+                                            } else {
+                                              setTournament(prev => ({
+                                                ...prev,
+                                                allowedParishes: prev.allowedParishes.filter(id => id !== parish.id)
+                                              }));
+                                            }
+                                          }}
+                                        />
+                                        <Label htmlFor={`parish-${parish.id}`} className="text-sm">
+                                          {parish.name}
+                                        </Label>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-sm text-gray-500">No parishes available</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Profile Completion Requirement */}
+                              <div>
+                                <Label htmlFor="profile-completion">Required Profile Completion (%)</Label>
+                                <Input
+                                  id="profile-completion"
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  placeholder="e.g., 80"
+                                  value={tournament.requiredProfileCompletion || ''}
+                                  onChange={(e) => setTournament(prev => ({ 
+                                    ...prev, 
+                                    requiredProfileCompletion: e.target.value ? parseInt(e.target.value) : undefined 
+                                  }))}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Users must have completed their profile to this percentage to apply
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <UpgradePrompt
+                          feature="Eligibility Restrictions"
+                          requiredPlan={getRequiredPlanForFeature(TOURNAMENT_FEATURES.ELIGIBILITY_RESTRICTIONS) || 'Professional'}
+                          description="Control tournament access with age, gender, location, and profile requirements"
+                          benefits={[
+                            'Age range restrictions',
+                            'Gender-specific tournaments',
+                            'Parish/location filtering',
+                            'Profile completion requirements'
+                          ]}
+                          size="small"
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 4 && (
+              <div className="space-y-6">
+                <div>
                   <h3 className="text-lg font-semibold mb-4">Question Selection</h3>
                   
                   <div className="space-y-4">
@@ -394,7 +841,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
               </div>
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 5 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Schedule Tournament</h3>
@@ -435,7 +882,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
               </div>
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 6 && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Review Tournament</h3>
@@ -500,9 +947,9 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                 Previous
               </Button>
               
-              {currentStep < 5 ? (
+              {currentStep < 6 ? (
                 <Button
-                  onClick={() => setCurrentStep(prev => Math.min(5, prev + 1))}
+                  onClick={() => setCurrentStep(prev => Math.min(6, prev + 1))}
                 >
                   Next
                 </Button>

@@ -2839,3 +2839,424 @@ export function getFieldLabels(tenantId?: string): {
     parishLeader: branding.customFieldLabels.parishLeader || defaultLabels.parishLeader
   };
 }
+
+// ============================================================================
+// Parish Tournament Scoring Functions
+// ============================================================================
+
+// Calculate parish score based on tournament configuration
+export function calculateParishScore(
+  tournamentId: string, 
+  parishId: string
+): ParishTournamentStats | null {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament || !tournament.parishScoringConfig?.enabled) return null;
+  
+  const applications = getAllApplicationsForTournament(tournamentId)
+    .filter(app => app.parishId === parishId && app.participationType === 'parish');
+  
+  if (applications.length === 0) return null;
+  
+  const memberScores: Record<string, number> = {};
+  let totalScore = 0;
+  
+  // Collect member scores
+  applications.forEach(app => {
+    if (app.finalScore !== undefined) {
+      memberScores[app.userId] = app.finalScore;
+      totalScore += app.finalScore;
+    }
+  });
+  
+  const activeMembers = Object.keys(memberScores);
+  const activeMemberCount = activeMembers.length;
+  
+  if (activeMemberCount === 0) return null;
+  
+  let finalScore = 0;
+  let topNScore: number | undefined;
+  let weightedScore: number | undefined;
+  const method = tournament.parishScoringConfig.scoringMethod;
+  
+  switch (method) {
+    case 'average':
+      // Divide total by number of active members (user's requirement)
+      finalScore = totalScore / activeMemberCount;
+      break;
+      
+    case 'total':
+      // Sum of all member scores
+      finalScore = totalScore;
+      break;
+      
+    case 'topN':
+      // Sum of top N scores
+      const topN = tournament.parishScoringConfig.topNCount || 5;
+      const sortedScores = Object.values(memberScores).sort((a, b) => b - a);
+      topNScore = sortedScores.slice(0, Math.min(topN, sortedScores.length))
+        .reduce((sum, score) => sum + score, 0);
+      finalScore = topNScore;
+      break;
+      
+    case 'weighted':
+      // Weighted calculation (can be customized)
+      // Default: Average with bonus for participation rate
+      const participationRate = activeMemberCount / applications.length;
+      weightedScore = (totalScore / activeMemberCount) * (1 + participationRate * 0.1);
+      finalScore = weightedScore;
+      break;
+  }
+  
+  // Get parish details
+  const parish = getParishById(parishId);
+  const parishName = parish?.name || 'Unknown Parish';
+  const parishDisplayName = applications[0]?.parishDisplayName || parishName;
+  
+  const stats: ParishTournamentStats = {
+    id: `stats_${tournamentId}_${parishId}`,
+    tournamentId,
+    parishId,
+    parishName,
+    parishDisplayName,
+    registeredMembers: applications.map(a => a.userId),
+    qualifiedMembers: applications.filter(a => a.status === 'qualified').map(a => a.userId),
+    activeMembers,
+    memberScores,
+    totalScore,
+    averageScore: totalScore / activeMemberCount,
+    topNScore,
+    weightedScore,
+    finalScore,
+    individualRanks: {},
+    lastUpdated: new Date().toISOString()
+  };
+  
+  return stats;
+}
+
+// Get parish leaderboard for a tournament
+export function getParishLeaderboard(tournamentId: string): ParishTournamentStats[] {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament || !tournament.parishScoringConfig?.enabled) return [];
+  
+  // Get all parishes with participants
+  const applications = getAllApplicationsForTournament(tournamentId);
+  const parishIds = [...new Set(applications
+    .filter(app => app.participationType === 'parish' && app.parishId)
+    .map(app => app.parishId!)
+  )];
+  
+  // Calculate scores for each parish
+  const parishStats = parishIds
+    .map(parishId => calculateParishScore(tournamentId, parishId))
+    .filter((stats): stats is ParishTournamentStats => stats !== null);
+  
+  // Sort by final score (descending)
+  parishStats.sort((a, b) => b.finalScore - a.finalScore);
+  
+  // Assign ranks
+  parishStats.forEach((stats, index) => {
+    stats.parishRank = index + 1;
+  });
+  
+  return parishStats;
+}
+
+// Update parish statistics after member completes tournament
+export function updateParishStats(tournamentId: string, parishId: string): void {
+  const stats = calculateParishScore(tournamentId, parishId);
+  if (!stats) return;
+  
+  // Save to storage
+  const allStats = storage.get(STORAGE_KEYS.PARISH_TOURNAMENT_STATS) || [];
+  const existingIndex = allStats.findIndex(
+    (s: ParishTournamentStats) => s.tournamentId === tournamentId && s.parishId === parishId
+  );
+  
+  if (existingIndex >= 0) {
+    allStats[existingIndex] = stats;
+  } else {
+    allStats.push(stats);
+  }
+  
+  storage.set(STORAGE_KEYS.PARISH_TOURNAMENT_STATS, allStats);
+}
+
+// Get parish stats for a specific tournament and parish
+export function getParishStats(tournamentId: string, parishId: string): ParishTournamentStats | null {
+  const allStats = storage.get(STORAGE_KEYS.PARISH_TOURNAMENT_STATS) || [];
+  const stats = allStats.find(
+    (s: ParishTournamentStats) => s.tournamentId === tournamentId && s.parishId === parishId
+  );
+  
+  // If not found or outdated, recalculate
+  if (!stats) {
+    return calculateParishScore(tournamentId, parishId);
+  }
+  
+  return stats;
+}
+
+// ============================================================================
+// Tournament Eligibility Validation Functions
+// ============================================================================
+
+// Main eligibility check for a tournament
+export function checkTournamentEligibility(
+  userId: string,
+  tournamentId: string
+): { eligible: boolean; reasons: string[] } {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  const user = getUserById(userId);
+  
+  if (!tournament) {
+    return { eligible: false, reasons: ['Tournament not found'] };
+  }
+  
+  if (!user) {
+    return { eligible: false, reasons: ['User not found'] };
+  }
+  
+  // If restrictions not enabled, everyone is eligible
+  if (!tournament.eligibilityRestrictions?.enabled) {
+    return { eligible: true, reasons: [] };
+  }
+  
+  const restrictions = tournament.eligibilityRestrictions;
+  const reasons: string[] = [];
+  
+  // Get user profile for detailed checks
+  const profile = getUserProfile(userId);
+  
+  // Check age restrictions
+  if (restrictions.ageMin !== undefined || restrictions.ageMax !== undefined) {
+    const ageCheck = validateAge(profile, restrictions);
+    if (!ageCheck.valid) {
+      reasons.push(...ageCheck.reasons);
+    }
+  }
+  
+  // Check gender restrictions
+  if (restrictions.allowedGenders && restrictions.allowedGenders.length > 0) {
+    const genderCheck = validateGender(profile, restrictions);
+    if (!genderCheck.valid) {
+      reasons.push(...genderCheck.reasons);
+    }
+  }
+  
+  // Check parish restrictions
+  if (restrictions.allowedParishes && restrictions.allowedParishes.length > 0) {
+    const parishCheck = validateParish(profile, restrictions);
+    if (!parishCheck.valid) {
+      reasons.push(...parishCheck.reasons);
+    }
+  }
+  
+  // Check profile completion requirement
+  if (restrictions.requiredProfileCompletion !== undefined) {
+    const completionCheck = validateProfileCompletion(user, profile, restrictions);
+    if (!completionCheck.valid) {
+      reasons.push(...completionCheck.reasons);
+    }
+  }
+  
+  // Check custom rules (Enterprise feature)
+  if (restrictions.customRules && restrictions.customRules.length > 0) {
+    const customCheck = validateCustomRules(profile, restrictions.customRules);
+    if (!customCheck.valid) {
+      reasons.push(...customCheck.reasons);
+    }
+  }
+  
+  return {
+    eligible: reasons.length === 0,
+    reasons
+  };
+}
+
+// Validate age restrictions
+function validateAge(
+  profile: UserProfile | null,
+  restrictions: NonNullable<Tournament['eligibilityRestrictions']>
+): { valid: boolean; reasons: string[] } {
+  if (!profile || !profile.dateOfBirth) {
+    return { valid: false, reasons: ['Date of birth not set in profile'] };
+  }
+  
+  const birthDate = new Date(profile.dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  const reasons: string[] = [];
+  
+  if (restrictions.ageMin !== undefined && age < restrictions.ageMin) {
+    reasons.push(`Minimum age requirement: ${restrictions.ageMin} years`);
+  }
+  
+  if (restrictions.ageMax !== undefined && age > restrictions.ageMax) {
+    reasons.push(`Maximum age requirement: ${restrictions.ageMax} years`);
+  }
+  
+  return {
+    valid: reasons.length === 0,
+    reasons
+  };
+}
+
+// Validate gender restrictions
+function validateGender(
+  profile: UserProfile | null,
+  restrictions: NonNullable<Tournament['eligibilityRestrictions']>
+): { valid: boolean; reasons: string[] } {
+  if (!profile || !profile.gender) {
+    return { valid: false, reasons: ['Gender not set in profile'] };
+  }
+  
+  if (!restrictions.allowedGenders || restrictions.allowedGenders.length === 0) {
+    return { valid: true, reasons: [] };
+  }
+  
+  const valid = restrictions.allowedGenders.includes(profile.gender);
+  
+  return {
+    valid,
+    reasons: valid ? [] : [`This tournament is restricted to: ${restrictions.allowedGenders.join(', ')}`]
+  };
+}
+
+// Validate parish restrictions
+function validateParish(
+  profile: UserProfile | null,
+  restrictions: NonNullable<Tournament['eligibilityRestrictions']>
+): { valid: boolean; reasons: string[] } {
+  if (!profile || !profile.parishId) {
+    return { valid: false, reasons: ['Parish/Organization not set in profile'] };
+  }
+  
+  if (!restrictions.allowedParishes || restrictions.allowedParishes.length === 0) {
+    return { valid: true, reasons: [] };
+  }
+  
+  const valid = restrictions.allowedParishes.includes(profile.parishId);
+  
+  if (!valid) {
+    const allowedParishNames = restrictions.allowedParishes
+      .map(id => getParishById(id)?.name || 'Unknown')
+      .join(', ');
+    return {
+      valid: false,
+      reasons: [`This tournament is restricted to members of: ${allowedParishNames}`]
+    };
+  }
+  
+  return { valid: true, reasons: [] };
+}
+
+// Validate profile completion requirement
+function validateProfileCompletion(
+  user: User,
+  profile: UserProfile | null,
+  restrictions: NonNullable<Tournament['eligibilityRestrictions']>
+): { valid: boolean; reasons: string[] } {
+  if (restrictions.requiredProfileCompletion === undefined) {
+    return { valid: true, reasons: [] };
+  }
+  
+  const completionPercentage = user.profileCompletionPercentage || 0;
+  const required = restrictions.requiredProfileCompletion;
+  
+  if (completionPercentage < required) {
+    return {
+      valid: false,
+      reasons: [`Profile completion required: ${required}% (current: ${completionPercentage}%)`]
+    };
+  }
+  
+  return { valid: true, reasons: [] };
+}
+
+// Validate custom rules (Enterprise feature)
+function validateCustomRules(
+  profile: UserProfile | null,
+  customRules: Array<{
+    field: string;
+    operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'between';
+    value: any;
+    message?: string;
+  }>
+): { valid: boolean; reasons: string[] } {
+  if (!profile) {
+    return { valid: false, reasons: ['Profile not found'] };
+  }
+  
+  const reasons: string[] = [];
+  
+  for (const rule of customRules) {
+    const fieldValue = (profile as any)[rule.field];
+    let ruleValid = true;
+    
+    switch (rule.operator) {
+      case 'equals':
+        ruleValid = fieldValue === rule.value;
+        break;
+      case 'contains':
+        ruleValid = typeof fieldValue === 'string' && fieldValue.includes(rule.value);
+        break;
+      case 'greaterThan':
+        ruleValid = Number(fieldValue) > Number(rule.value);
+        break;
+      case 'lessThan':
+        ruleValid = Number(fieldValue) < Number(rule.value);
+        break;
+      case 'between':
+        const num = Number(fieldValue);
+        ruleValid = num >= rule.value[0] && num <= rule.value[1];
+        break;
+    }
+    
+    if (!ruleValid) {
+      reasons.push(rule.message || `Eligibility requirement not met: ${rule.field}`);
+    }
+  }
+  
+  return {
+    valid: reasons.length === 0,
+    reasons
+  };
+}
+
+// Check if parish can accept more participants
+export function canParishAcceptParticipants(
+  tournamentId: string,
+  parishId: string
+): { canAccept: boolean; reason?: string; currentCount: number; maxAllowed?: number } {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  
+  if (!tournament) {
+    return { canAccept: false, reason: 'Tournament not found', currentCount: 0 };
+  }
+  
+  // If no max set, unlimited
+  if (!tournament.participationConfig?.maxParticipantsPerParish) {
+    return { canAccept: true, currentCount: 0 };
+  }
+  
+  const maxAllowed = tournament.participationConfig.maxParticipantsPerParish;
+  const applications = getAllApplicationsForTournament(tournamentId)
+    .filter(app => app.parishId === parishId && app.participationType === 'parish');
+  
+  const currentCount = applications.length;
+  const canAccept = currentCount < maxAllowed;
+  
+  return {
+    canAccept,
+    reason: canAccept ? undefined : `Parish has reached maximum participants (${maxAllowed})`,
+    currentCount,
+    maxAllowed
+  };
+}
