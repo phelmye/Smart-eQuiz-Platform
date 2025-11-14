@@ -25,7 +25,7 @@ interface RegisterData {
   password: string;
   name: string;
   tenantId: string;
-  role: 'org_admin' | 'participant';
+  role: 'org_admin' | 'inspector';
 }
 
 interface AuthSystemProps {
@@ -172,13 +172,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `user_${Date.now()}`,
       email: userData.email,
       name: userData.name,
-      role: userData.role,
+      role: 'inspector', // Always start as inspector
       tenantId: userData.tenantId,
       xp: 0,
       level: 1,
       badges: [],
       walletBalance: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      practiceAccessStatus: 'none', // No practice access yet
+      qualificationStatus: 'not_qualified' // Not qualified for tournaments
     };
 
     users.push(newUser);
@@ -529,18 +531,13 @@ Check browser console (F12) for detailed debug info.`;
                   </Select>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select name="role" required>
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participant">Participant</SelectItem>
-                      <SelectItem value="org_admin">Organization Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertDescription className="text-sm text-blue-800">
+                    <strong>New users start as Inspectors.</strong><br/>
+                    After registration, you can apply for Practice Mode access to train for tournaments.
+                    Once qualified, you'll be approved to participate in championships.
+                  </AlertDescription>
+                </Alert>
                 
                 {error && (
                   <Alert variant="destructive">

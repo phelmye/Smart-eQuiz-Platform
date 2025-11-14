@@ -38,6 +38,15 @@ export interface User {
   isActive?: boolean;
   lastLoginAt?: string;
   createdAt: string;
+  // Practice mode application
+  practiceAccessStatus?: 'none' | 'pending' | 'approved' | 'rejected';
+  practiceAccessAppliedAt?: string;
+  practiceAccessApprovedAt?: string;
+  practiceAccessApprovedBy?: string;
+  // Tournament qualification
+  qualificationStatus?: 'not_qualified' | 'in_training' | 'qualified' | 'approved_participant';
+  qualificationApprovedAt?: string;
+  qualificationApprovedBy?: string;
 }
 
 // Type guard for runtime checks when dealing with unknown values
@@ -1604,3 +1613,152 @@ export const initializeMockData = () => {
     storage.set(STORAGE_KEYS.TENANT_ROLES, mockTenantRoles);
   }
 };
+
+// Practice Access Application Functions
+export function applyForPracticeAccess(userId: string): boolean {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user) return false;
+  if (user.practiceAccessStatus === 'pending' || user.practiceAccessStatus === 'approved') {
+    return false; // Already applied or approved
+  }
+  
+  user.practiceAccessStatus = 'pending';
+  user.practiceAccessAppliedAt = new Date().toISOString();
+  
+  storage.set(STORAGE_KEYS.USERS, users);
+  storage.set(STORAGE_KEYS.CURRENT_USER, user);
+  
+  logAuditEvent({
+    userId: user.id,
+    action: 'apply_practice_access',
+    entityType: 'user',
+    entityId: user.id,
+    details: { status: 'pending' }
+  });
+  
+  return true;
+}
+
+export function approvePracticeAccess(userId: string, approverId: string): boolean {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user || user.practiceAccessStatus !== 'pending') return false;
+  
+  user.practiceAccessStatus = 'approved';
+  user.practiceAccessApprovedAt = new Date().toISOString();
+  user.practiceAccessApprovedBy = approverId;
+  user.qualificationStatus = 'in_training'; // User can now train
+  
+  storage.set(STORAGE_KEYS.USERS, users);
+  
+  const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+  if (currentUser?.id === userId) {
+    storage.set(STORAGE_KEYS.CURRENT_USER, user);
+  }
+  
+  logAuditEvent({
+    userId: approverId,
+    action: 'approve_practice_access',
+    entityType: 'user',
+    entityId: userId,
+    details: { status: 'approved' }
+  });
+  
+  return true;
+}
+
+export function rejectPracticeAccess(userId: string, approverId: string, reason?: string): boolean {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user || user.practiceAccessStatus !== 'pending') return false;
+  
+  user.practiceAccessStatus = 'rejected';
+  
+  storage.set(STORAGE_KEYS.USERS, users);
+  
+  logAuditEvent({
+    userId: approverId,
+    action: 'reject_practice_access',
+    entityType: 'user',
+    entityId: userId,
+    details: { status: 'rejected', reason }
+  });
+  
+  return true;
+}
+
+export function qualifyUserForTournaments(userId: string, approverId: string): boolean {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user) return false;
+  if (user.qualificationStatus !== 'in_training') {
+    return false; // Must be in training first
+  }
+  
+  user.qualificationStatus = 'qualified';
+  
+  storage.set(STORAGE_KEYS.USERS, users);
+  
+  const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+  if (currentUser?.id === userId) {
+    storage.set(STORAGE_KEYS.CURRENT_USER, user);
+  }
+  
+  logAuditEvent({
+    userId: approverId,
+    action: 'qualify_user',
+    entityType: 'user',
+    entityId: userId,
+    details: { status: 'qualified' }
+  });
+  
+  return true;
+}
+
+export function approveAsParticipant(userId: string, approverId: string): boolean {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user) return false;
+  if (user.qualificationStatus !== 'qualified') {
+    return false; // Must be qualified first
+  }
+  
+  user.role = 'participant'; // Upgrade role to participant
+  user.qualificationStatus = 'approved_participant';
+  user.qualificationApprovedAt = new Date().toISOString();
+  user.qualificationApprovedBy = approverId;
+  
+  storage.set(STORAGE_KEYS.USERS, users);
+  
+  const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+  if (currentUser?.id === userId) {
+    storage.set(STORAGE_KEYS.CURRENT_USER, user);
+  }
+  
+  logAuditEvent({
+    userId: approverId,
+    action: 'approve_participant',
+    entityType: 'user',
+    entityId: userId,
+    details: { oldRole: 'inspector', newRole: 'participant' }
+  });
+  
+  return true;
+}
+
+export function canAccessPracticeMode(user: User): boolean {
+  return user.practiceAccessStatus === 'approved';
+}
+
+export function canParticipateInTournaments(user: User): boolean {
+  const normalizedRole = user.role?.toLowerCase();
+  return normalizedRole === 'participant' || 
+         normalizedRole === 'org_admin' || 
+         normalizedRole === 'super_admin';
+}
