@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tournament, Question, BIBLE_CATEGORIES } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tournament, Question, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 
 interface TournamentBuilderProps {
   onBack: () => void;

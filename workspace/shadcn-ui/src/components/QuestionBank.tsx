@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 
 interface QuestionBankProps {
   onBack: () => void;
