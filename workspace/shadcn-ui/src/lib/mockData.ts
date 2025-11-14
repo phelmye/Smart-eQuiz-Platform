@@ -19,7 +19,10 @@ export const STORAGE_KEYS = {
   USER_PROFILES: 'equiz_user_profiles',
   PARISH_TOURNAMENT_STATS: 'equiz_parish_tournament_stats',
   TOURNAMENT_PRIZES: 'equiz_tournament_prizes',
-  PRIZE_AWARDS: 'equiz_prize_awards'
+  PRIZE_AWARDS: 'equiz_prize_awards',
+  PAYMENT_GATEWAYS: 'equiz_payment_gateways',
+  TOURNAMENT_PAYMENTS: 'equiz_tournament_payments',
+  TOURNAMENT_DONATIONS: 'equiz_tournament_donations'
 };
 
 // User roles
@@ -328,6 +331,8 @@ export const TOURNAMENT_FEATURES = {
   DUAL_LEADERBOARDS: 'tournaments.dual_leaderboards',     // Separate individual & parish boards
   PRIZE_MANAGEMENT: 'tournaments.prize_management',       // Prize configuration and distribution
   CERTIFICATE_GENERATION: 'tournaments.certificates',     // Auto-generate certificates
+  ENTRY_FEES: 'tournaments.entry_fees',                   // Charge entry fees
+  PAYMENT_INTEGRATION: 'tournaments.payment_integration', // Payment gateway setup
   
   // Professional Features (Enterprise Plan)
   PARISH_CAPTAIN_ROLES: 'tournaments.parish_captains',    // Designated parish leaders
@@ -336,7 +341,11 @@ export const TOURNAMENT_FEATURES = {
   AUTOMATED_BRACKETS: 'tournaments.brackets',             // Tournament bracket generation
   TEAM_MANAGEMENT_DASHBOARD: 'tournaments.team_dashboard', // Parish admin dashboard
   ADVANCED_PRIZE_FEATURES: 'tournaments.advanced_prizes', // Multiple prize categories, sponsors
-  AUTO_PRIZE_DISTRIBUTION: 'tournaments.auto_distribution' // Automatic prize awards
+  AUTO_PRIZE_DISTRIBUTION: 'tournaments.auto_distribution', // Automatic prize awards
+  PUBLIC_DONATIONS: 'tournaments.donations',              // Public donation campaigns
+  PARISH_ENTRY_FEES: 'tournaments.parish_fees',           // Parish/group fee collection
+  CUSTOM_PAYMENT_GATEWAYS: 'tournaments.custom_gateways', // Multiple payment providers
+  PAYMENT_ANALYTICS: 'tournaments.payment_analytics'      // Revenue tracking and reports
 };
 
 // Feature to Plan Mapping
@@ -356,6 +365,8 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
   [TOURNAMENT_FEATURES.DUAL_LEADERBOARDS]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.PRIZE_MANAGEMENT]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.CERTIFICATE_GENERATION]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.ENTRY_FEES]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.PAYMENT_INTEGRATION]: ['professional', 'enterprise'],
   
   // Professional features for Enterprise only
   [TOURNAMENT_FEATURES.PARISH_CAPTAIN_ROLES]: ['enterprise'],
@@ -364,7 +375,11 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
   [TOURNAMENT_FEATURES.AUTOMATED_BRACKETS]: ['enterprise'],
   [TOURNAMENT_FEATURES.TEAM_MANAGEMENT_DASHBOARD]: ['enterprise'],
   [TOURNAMENT_FEATURES.ADVANCED_PRIZE_FEATURES]: ['enterprise'],
-  [TOURNAMENT_FEATURES.AUTO_PRIZE_DISTRIBUTION]: ['enterprise']
+  [TOURNAMENT_FEATURES.AUTO_PRIZE_DISTRIBUTION]: ['enterprise'],
+  [TOURNAMENT_FEATURES.PUBLIC_DONATIONS]: ['enterprise'],
+  [TOURNAMENT_FEATURES.PARISH_ENTRY_FEES]: ['enterprise'],
+  [TOURNAMENT_FEATURES.CUSTOM_PAYMENT_GATEWAYS]: ['enterprise'],
+  [TOURNAMENT_FEATURES.PAYMENT_ANALYTICS]: ['enterprise']
 };
 
 // Role with component features
@@ -831,6 +846,188 @@ export interface PracticePoints {
     timestamp: string;
   }[];
   lastUpdated: string;
+}
+
+// Payment & Monetization System Interfaces
+
+// Payment gateway configuration
+export interface PaymentGatewayConfig {
+  id: string;
+  tenantId: string;
+  provider: 'stripe' | 'paystack' | 'paypal' | 'flutterwave' | 'manual';
+  isEnabled: boolean;
+  
+  // API Credentials (in production, secretKey would be server-side only)
+  credentials: {
+    publicKey?: string;
+    secretKey?: string;
+    webhookSecret?: string;
+  };
+  
+  // Configuration
+  settings: {
+    currency: string; // USD, NGN, GHS, etc.
+    acceptedMethods: Array<'card' | 'bank_transfer' | 'mobile_money' | 'ussd'>;
+    minimumAmount?: number;
+    maximumAmount?: number;
+    processingFeeMode: 'absorb' | 'pass_to_user'; // Who pays processing fees
+    autoVerifyPayments: boolean;
+  };
+  
+  // For manual payments
+  manualPaymentInstructions?: {
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+    instructions?: string;
+  };
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Tournament fee configuration
+export interface TournamentFeeConfig {
+  enabled: boolean;
+  feeType: 'individual' | 'parish' | 'both'; // Admin chooses
+  
+  // Pricing
+  individualFee?: number;
+  parishFee?: number;
+  currency: string;
+  
+  // Payment deadline
+  paymentDeadline?: string;
+  allowLatePayment: boolean;
+  latePaymentPenalty?: number; // Additional fee %
+  
+  // Parish-specific settings
+  parishPaymentMode?: {
+    allowAnyMember: boolean; // Any member can pay for parish
+    requireCaptainOnly: boolean; // Only captain can pay
+    splitPayment: boolean; // Allow multiple members to contribute
+  };
+  
+  // Pre-test options for paid parishes
+  preTestMode?: {
+    type: 'representative' | 'all_highest_score' | 'all_individual';
+    nominationRequired: boolean; // Parish must nominate rep
+    nominationDeadline?: string;
+  };
+  
+  // Refund policy
+  refundPolicy?: {
+    allowRefunds: boolean;
+    refundDeadline?: string;
+    refundPercentage: number; // 100 = full refund
+  };
+}
+
+// Tournament payment tracking
+export interface TournamentPayment {
+  id: string;
+  tournamentId: string;
+  tenantId: string;
+  
+  // Payer info
+  payerId: string; // User who made payment
+  payerEmail: string;
+  payerName: string;
+  
+  // Payment details
+  paymentType: 'individual' | 'parish';
+  beneficiaryId: string; // User ID or Parish ID
+  beneficiaryName: string;
+  
+  amount: number;
+  currency: string;
+  processingFee: number;
+  totalAmount: number;
+  
+  // Payment gateway
+  provider: 'stripe' | 'paystack' | 'paypal' | 'flutterwave' | 'manual' | 'donation';
+  transactionReference: string;
+  gatewayResponse?: any;
+  
+  // Status tracking
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
+  paymentMethod?: string; // card, bank_transfer, etc.
+  paidAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string; // User ID of admin who verified
+  
+  // For manual payments
+  manualPaymentProof?: {
+    receiptUrl?: string;
+    referenceNumber?: string;
+    notes?: string;
+  };
+  
+  // Refunds
+  refundedAt?: string;
+  refundAmount?: number;
+  refundReason?: string;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Tournament donation configuration
+export interface TournamentDonationConfig {
+  enabled: boolean;
+  allowAnonymous: boolean; // Allow non-logged-in users
+  allowRecurring: boolean; // Monthly donations
+  
+  // Suggested amounts
+  suggestedAmounts: number[];
+  minimumAmount?: number;
+  maximumAmount?: number;
+  
+  // Campaign details
+  goalAmount?: number;
+  showProgress: boolean; // Show progress bar
+  
+  // Donor recognition
+  showDonorList: boolean;
+  donorTiers?: Array<{
+    name: string; // Bronze, Silver, Gold
+    minAmount: number;
+    badge: string;
+    benefits: string[];
+  }>;
+  
+  // Thank you message
+  thankYouMessage?: string;
+  sendEmailReceipt: boolean;
+}
+
+// Tournament donation tracking
+export interface TournamentDonation {
+  id: string;
+  tournamentId: string;
+  tenantId: string;
+  
+  // Donor info
+  donorId?: string; // null if anonymous
+  donorEmail?: string;
+  donorName: string;
+  isAnonymous: boolean;
+  
+  // Donation details
+  amount: number;
+  currency: string;
+  message?: string;
+  
+  // Payment
+  provider: 'stripe' | 'paystack' | 'paypal' | 'flutterwave' | 'manual';
+  transactionReference: string;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  
+  // Recognition
+  displayPublicly: boolean;
+  donorTier?: string;
+  
+  createdAt: string;
 }
 
 // Live tournament view data
@@ -3806,4 +4003,168 @@ export function getTournamentWinners(tournamentId: string, topN: number = 3): Pr
   return getTournamentPrizeAwards(tournamentId)
     .filter(a => a.position <= topN)
     .sort((a, b) => a.position - b.position);
+}
+
+// ==================== PAYMENT & MONETIZATION MANAGEMENT ====================
+
+// Get all payment gateways
+export function getAllPaymentGateways(): PaymentGatewayConfig[] {
+  return storage.get(STORAGE_KEYS.PAYMENT_GATEWAYS) || [];
+}
+
+// Get payment gateway by tenant
+export function getPaymentGateway(tenantId: string): PaymentGatewayConfig | null {
+  const gateways = getAllPaymentGateways();
+  return gateways.find(g => g.tenantId === tenantId && g.isEnabled) || null;
+}
+
+// Save payment gateway configuration
+export function savePaymentGateway(config: Omit<PaymentGatewayConfig, 'id' | 'createdAt' | 'updatedAt'> | PaymentGatewayConfig): { success: boolean; gatewayId?: string; message?: string } {
+  const gateways = getAllPaymentGateways();
+  
+  if ('id' in config && config.id) {
+    // Update existing
+    const index = gateways.findIndex(g => g.id === config.id);
+    if (index === -1) {
+      return { success: false, message: 'Payment gateway not found' };
+    }
+    
+    gateways[index] = {
+      ...config,
+      updatedAt: new Date().toISOString()
+    };
+    
+    storage.set(STORAGE_KEYS.PAYMENT_GATEWAYS, gateways);
+    return { success: true, gatewayId: config.id, message: 'Payment gateway updated successfully' };
+  } else {
+    // Create new
+    const newGateway: PaymentGatewayConfig = {
+      ...(config as Omit<PaymentGatewayConfig, 'id' | 'createdAt' | 'updatedAt'>),
+      id: `gateway_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    gateways.push(newGateway);
+    storage.set(STORAGE_KEYS.PAYMENT_GATEWAYS, gateways);
+    return { success: true, gatewayId: newGateway.id, message: 'Payment gateway created successfully' };
+  }
+}
+
+// Get all tournament payments
+export function getAllTournamentPayments(): TournamentPayment[] {
+  return storage.get(STORAGE_KEYS.TOURNAMENT_PAYMENTS) || [];
+}
+
+// Get payments for a tournament
+export function getTournamentPayments(tournamentId: string): TournamentPayment[] {
+  const payments = getAllTournamentPayments();
+  return payments.filter(p => p.tournamentId === tournamentId);
+}
+
+// Get payment by ID
+export function getPaymentById(paymentId: string): TournamentPayment | null {
+  const payments = getAllTournamentPayments();
+  return payments.find(p => p.id === paymentId) || null;
+}
+
+// Create tournament payment
+export function createTournamentPayment(paymentData: Omit<TournamentPayment, 'id' | 'createdAt' | 'updatedAt'>): { success: boolean; paymentId?: string; message?: string } {
+  const payments = getAllTournamentPayments();
+  
+  const newPayment: TournamentPayment = {
+    ...paymentData,
+    id: `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  payments.push(newPayment);
+  storage.set(STORAGE_KEYS.TOURNAMENT_PAYMENTS, payments);
+  
+  return { success: true, paymentId: newPayment.id, message: 'Payment created successfully' };
+}
+
+// Update payment status
+export function updatePaymentStatus(paymentId: string, status: TournamentPayment['status'], additionalData?: Partial<TournamentPayment>): { success: boolean; message?: string } {
+  const payments = getAllTournamentPayments();
+  const index = payments.findIndex(p => p.id === paymentId);
+  
+  if (index === -1) {
+    return { success: false, message: 'Payment not found' };
+  }
+  
+  const now = new Date().toISOString();
+  payments[index] = {
+    ...payments[index],
+    status,
+    updatedAt: now,
+    ...(status === 'completed' && { paidAt: now }),
+    ...additionalData
+  };
+  
+  storage.set(STORAGE_KEYS.TOURNAMENT_PAYMENTS, payments);
+  return { success: true, message: 'Payment status updated successfully' };
+}
+
+// Check if user/parish has paid for tournament
+export function hasUserPaid(tournamentId: string, userId: string): boolean {
+  const payments = getTournamentPayments(tournamentId);
+  return payments.some(p => 
+    p.beneficiaryId === userId && 
+    p.status === 'completed'
+  );
+}
+
+// Check if parish has paid
+export function hasParishPaid(tournamentId: string, parishId: string): boolean {
+  const payments = getTournamentPayments(tournamentId);
+  return payments.some(p => 
+    p.beneficiaryId === parishId && 
+    p.paymentType === 'parish' &&
+    p.status === 'completed'
+  );
+}
+
+// Get all tournament donations
+export function getAllTournamentDonations(): TournamentDonation[] {
+  return storage.get(STORAGE_KEYS.TOURNAMENT_DONATIONS) || [];
+}
+
+// Get donations for a tournament
+export function getTournamentDonations(tournamentId: string): TournamentDonation[] {
+  const donations = getAllTournamentDonations();
+  return donations.filter(d => d.tournamentId === tournamentId && d.status === 'completed');
+}
+
+// Create tournament donation
+export function createTournamentDonation(donationData: Omit<TournamentDonation, 'id' | 'createdAt'>): { success: boolean; donationId?: string; message?: string } {
+  const donations = getAllTournamentDonations();
+  
+  const newDonation: TournamentDonation = {
+    ...donationData,
+    id: `donation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: new Date().toISOString()
+  };
+  
+  donations.push(newDonation);
+  storage.set(STORAGE_KEYS.TOURNAMENT_DONATIONS, donations);
+  
+  return { success: true, donationId: newDonation.id, message: 'Donation created successfully' };
+}
+
+// Get total donations for tournament
+export function getTournamentDonationTotal(tournamentId: string): number {
+  const donations = getTournamentDonations(tournamentId);
+  return donations.reduce((sum, d) => sum + d.amount, 0);
+}
+
+// Get top donors for tournament
+export function getTopDonors(tournamentId: string, limit: number = 10): TournamentDonation[] {
+  const donations = getTournamentDonations(tournamentId)
+    .filter(d => d.displayPublicly && !d.isAnonymous);
+  
+  return donations
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, limit);
 }
