@@ -48,6 +48,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const isAdmin = user?.role === 'org_admin' || user?.role === 'super_admin';
 
+  // Debug log
+  useEffect(() => {
+    console.log('Dashboard user:', user);
+    console.log('User role:', user?.role);
+    console.log('isAdmin:', isAdmin);
+  }, [user, isAdmin]);
+
   useEffect(() => {
     // Load tournaments
     const savedTournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
