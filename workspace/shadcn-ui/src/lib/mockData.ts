@@ -16,7 +16,8 @@ export const STORAGE_KEYS = {
   QUIZ_ATTEMPTS: 'equiz_quiz_attempts',
   PRACTICE_POINTS: 'equiz_practice_points',
   PARISHES: 'equiz_parishes',
-  USER_PROFILES: 'equiz_user_profiles'
+  USER_PROFILES: 'equiz_user_profiles',
+  PARISH_TOURNAMENT_STATS: 'equiz_parish_tournament_stats'
 };
 
 // User roles
@@ -308,6 +309,54 @@ export const COMPONENT_FEATURES: ComponentFeatureSet[] = [
   }
 ];
 
+// Advanced Tournament Feature Definitions
+export const TOURNAMENT_FEATURES = {
+  // Basic Features (All Plans)
+  BASIC_TOURNAMENTS: 'tournaments.basic',
+  INDIVIDUAL_PARTICIPATION: 'tournaments.individual',
+  BASIC_SCORING: 'tournaments.basic_scoring',
+  
+  // Advanced Features (Professional Plan and above)
+  PARISH_GROUP_MODE: 'tournaments.parish_mode',           // Allow parish/group participation
+  MIXED_MODE: 'tournaments.mixed_mode',                   // Both individual + parish in same tournament
+  PARISH_SCORING: 'tournaments.parish_scoring',           // Average/Total scoring for parishes
+  MAX_PARTICIPANTS_PER_PARISH: 'tournaments.max_per_parish', // Limit members per parish
+  ELIGIBILITY_RESTRICTIONS: 'tournaments.eligibility',    // Age, location, gender filters
+  ADVANCED_SCORING_METHODS: 'tournaments.advanced_scoring', // Highest/Latest scoring (already implemented)
+  DUAL_LEADERBOARDS: 'tournaments.dual_leaderboards',     // Separate individual & parish boards
+  
+  // Professional Features (Enterprise Plan)
+  PARISH_CAPTAIN_ROLES: 'tournaments.parish_captains',    // Designated parish leaders
+  MULTI_PARISH_TEAMS: 'tournaments.multi_parish',         // Cross-parish team formation
+  CUSTOM_ELIGIBILITY_RULES: 'tournaments.custom_eligibility', // Advanced rule builder
+  AUTOMATED_BRACKETS: 'tournaments.brackets',             // Tournament bracket generation
+  TEAM_MANAGEMENT_DASHBOARD: 'tournaments.team_dashboard' // Parish admin dashboard
+};
+
+// Feature to Plan Mapping
+export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
+  // Basic features available to all plans
+  [TOURNAMENT_FEATURES.BASIC_TOURNAMENTS]: ['starter', 'pro', 'professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.INDIVIDUAL_PARTICIPATION]: ['starter', 'pro', 'professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.BASIC_SCORING]: ['starter', 'pro', 'professional', 'enterprise'],
+  
+  // Advanced features for Professional and Enterprise
+  [TOURNAMENT_FEATURES.PARISH_GROUP_MODE]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.MIXED_MODE]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.PARISH_SCORING]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.MAX_PARTICIPANTS_PER_PARISH]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.ELIGIBILITY_RESTRICTIONS]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.ADVANCED_SCORING_METHODS]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.DUAL_LEADERBOARDS]: ['professional', 'enterprise'],
+  
+  // Professional features for Enterprise only
+  [TOURNAMENT_FEATURES.PARISH_CAPTAIN_ROLES]: ['enterprise'],
+  [TOURNAMENT_FEATURES.MULTI_PARISH_TEAMS]: ['enterprise'],
+  [TOURNAMENT_FEATURES.CUSTOM_ELIGIBILITY_RULES]: ['enterprise'],
+  [TOURNAMENT_FEATURES.AUTOMATED_BRACKETS]: ['enterprise'],
+  [TOURNAMENT_FEATURES.TEAM_MANAGEMENT_DASHBOARD]: ['enterprise']
+};
+
 // Role with component features
 export interface RoleWithFeatures extends User {
   componentFeatures: string[]; // Array of feature IDs
@@ -421,6 +470,7 @@ export interface Tournament {
   createdBy: string;
   tenantId: string;
   createdAt: string;
+  
   // Qualification settings
   qualificationConfig?: {
     enabled: boolean;
@@ -428,6 +478,39 @@ export interface Tournament {
     quizSettings?: PreTournamentQuizConfig;
     practicePointsThreshold?: number;
     allowDirectInvitation: boolean;
+  };
+  
+  // Participation Mode Configuration (Advanced Feature)
+  participationConfig?: {
+    mode: 'individual' | 'parish' | 'both'; // Individual only, Parish only, or Mixed
+    maxParticipantsPerParish?: number; // Maximum members from one parish (e.g., 10)
+    minParticipantsPerParish?: number; // Minimum members required (e.g., 3)
+    allowParishCaptains?: boolean; // Enable parish captain roles (Enterprise feature)
+    allowMultiParishTeams?: boolean; // Allow cross-parish teams (Enterprise feature)
+  };
+  
+  // Parish Scoring Configuration (Advanced Feature)
+  parishScoringConfig?: {
+    enabled: boolean;
+    scoringMethod: 'average' | 'total' | 'topN' | 'weighted'; // How to calculate parish score
+    topNCount?: number; // If using topN, how many top scores to count
+    displayMode: 'parish_only' | 'individual_only' | 'dual'; // Which leaderboards to show
+  };
+  
+  // Eligibility Restrictions (Advanced Feature)
+  eligibilityRestrictions?: {
+    enabled: boolean;
+    ageMin?: number; // Minimum age requirement
+    ageMax?: number; // Maximum age requirement
+    allowedGenders?: Array<'male' | 'female' | 'other' | 'prefer_not_to_say'>;
+    allowedParishes?: string[]; // Restrict to specific parishes (IDs)
+    requiredProfileCompletion?: number; // Percentage (0-100)
+    customRules?: Array<{
+      field: string;
+      operator: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'between';
+      value: any;
+      message?: string; // Error message to show user
+    }>;
   };
 }
 
@@ -488,6 +571,11 @@ export interface TournamentApplication {
   status: 'pending' | 'quiz_available' | 'quiz_in_progress' | 'qualified' | 'auto_qualified' | 'disqualified' | 'invited';
   qualificationPathway: 'quiz' | 'practice_points' | 'direct_invitation';
   
+  // Participation type (NEW)
+  participationType: 'individual' | 'parish'; // How user is participating
+  parishId?: string; // If participating as parish member
+  parishDisplayName?: string; // Cached for performance
+  
   // Application tracking
   appliedAt: string;
   reviewedAt?: string;
@@ -518,6 +606,36 @@ export interface TournamentApplication {
   // Metadata
   lastStatusChange: string;
   notificationsSent: string[]; // Event types
+}
+
+// Parish Tournament Statistics (Advanced Feature)
+export interface ParishTournamentStats {
+  id: string;
+  tournamentId: string;
+  parishId: string;
+  parishName: string;
+  parishDisplayName?: string; // Custom display name
+  
+  // Member tracking
+  registeredMembers: string[]; // User IDs who applied as parish members
+  qualifiedMembers: string[]; // User IDs who qualified
+  activeMembers: string[]; // User IDs who actually participated
+  
+  // Scoring
+  memberScores: Record<string, number>; // userId -> individual score
+  totalScore: number; // Sum of all member scores
+  averageScore: number; // Total / active members
+  topNScore?: number; // If using topN scoring
+  weightedScore?: number; // If using weighted scoring
+  finalScore: number; // Based on scoring method configured
+  
+  // Rankings
+  parishRank?: number; // Overall rank among parishes
+  individualRanks: Record<string, number>; // userId -> their individual rank
+  
+  // Metadata
+  lastUpdated: string;
+  completedAt?: string;
 }
 
 // Practice points tracking
@@ -666,12 +784,45 @@ export const defaultPlans: Plan[] = [
     createdAt: '2024-01-01T00:00:00Z'
   },
   {
+    id: 'plan-professional',
+    name: 'professional',
+    displayName: 'Professional Plan',
+    description: 'Advanced features for organizations running competitive tournaments with team/parish participation',
+    monthlyPrice: 59,
+    yearlyDiscountPercent: 10, // 10% discount for yearly billing
+    billingOptions: ['monthly', 'yearly'],
+    maxUsers: 100,
+    maxTournaments: 20,
+    maxQuestionsPerTournament: 500,
+    maxQuestionCategories: 10,
+    features: [
+      'Up to 100 users',
+      '20 tournaments per year',
+      '500 questions per tournament',
+      'Advanced analytics & reporting',
+      'Full custom branding',
+      'Priority support',
+      'Parish/Group tournament mode',
+      'Mixed participation (Individual + Parish)',
+      'Parish scoring & leaderboards',
+      'Eligibility restrictions (Age, Location)',
+      'Advanced scoring methods',
+      'Max participants per parish control',
+      'Dual leaderboards',
+      'Live match streaming',
+      'API access'
+    ],
+    isDefault: true,
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z'
+  },
+  {
     id: 'plan-enterprise',
     name: 'enterprise',
     displayName: 'Enterprise Plan',
-    description: 'For large organizations with extensive tournament programs - unlimited features',
+    description: 'For large organizations with extensive tournament programs - unlimited features + parish captains',
     monthlyPrice: 99,
-    yearlyDiscountPercent: 5, // 5% discount for yearly billing
+    yearlyDiscountPercent: 15, // 15% discount for yearly billing
     billingOptions: ['monthly', 'yearly'],
     maxUsers: -1, // -1 represents unlimited
     maxTournaments: -1, // -1 represents unlimited
@@ -684,11 +835,16 @@ export const defaultPlans: Plan[] = [
       'Advanced analytics & reporting',
       'Full custom branding',
       'Dedicated support manager',
-      'API access',
-      'Multi-tenant management',
+      'All Professional features',
+      'Parish captain roles',
+      'Multi-parish team alliances',
+      'Custom eligibility rule builder',
+      'Automated tournament brackets',
+      'Team management dashboard',
       'White-label options',
       'Priority feature requests',
-      'Custom integrations'
+      'Custom integrations',
+      'On-premise deployment option'
     ],
     isDefault: true,
     isActive: true,
@@ -1551,6 +1707,36 @@ export function hasFeatureAccess(user: User, feature: string): boolean {
     default:
       return true; // Default access for basic features
   }
+}
+
+// Check if tenant has access to specific tournament feature
+export function hasTournamentFeatureAccess(tenantId: string, feature: string): boolean {
+  const plan = getTenantPlan(tenantId);
+  if (!plan) return false;
+  
+  // Check if feature is in the requirements map
+  const requiredPlans = FEATURE_PLAN_REQUIREMENTS[feature];
+  if (!requiredPlans) return false; // Unknown feature
+  
+  // Check if current plan is in the allowed plans list
+  return requiredPlans.includes(plan.name);
+}
+
+// Get required plan for a feature (for upgrade prompts)
+export function getRequiredPlanForFeature(feature: string): string | null {
+  const requiredPlans = FEATURE_PLAN_REQUIREMENTS[feature];
+  if (!requiredPlans || requiredPlans.length === 0) return null;
+  
+  // Return the lowest tier plan that has this feature
+  const planOrder = ['starter', 'pro', 'professional', 'enterprise'];
+  for (const planName of planOrder) {
+    if (requiredPlans.includes(planName)) {
+      const plan = defaultPlans.find(p => p.name === planName);
+      return plan?.displayName || null;
+    }
+  }
+  
+  return null;
 }
 
 export function canCreateMoreUsers(tenantId: string): boolean {
