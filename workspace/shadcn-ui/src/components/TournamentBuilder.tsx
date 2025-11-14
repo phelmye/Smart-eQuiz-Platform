@@ -173,9 +173,10 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     { id: 1, title: 'Basic Info', icon: Settings },
     { id: 2, title: 'Participants', icon: Users },
     { id: 3, title: 'Advanced', icon: Shield },
-    { id: 4, title: 'Questions', icon: Trophy },
-    { id: 5, title: 'Schedule', icon: Calendar },
-    { id: 6, title: 'Review', icon: Play }
+    { id: 4, title: 'Prizes', icon: Trophy },
+    { id: 5, title: 'Questions', icon: Target },
+    { id: 6, title: 'Schedule', icon: Calendar },
+    { id: 7, title: 'Review', icon: Play }
   ];
 
   if (!user || !hasPermission(user, 'tournaments.create')) {
@@ -768,6 +769,245 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
             {currentStep === 4 && (
               <div className="space-y-6">
                 <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Trophy className="h-5 w-5" />
+                    Prizes & Rewards
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Configure prizes and rewards for tournament winners. This builds credibility and encourages participation.
+                  </p>
+
+                  {/* Prize Management Feature Check */}
+                  {!hasTournamentFeatureAccess(user?.tenantId, TOURNAMENT_FEATURES.PRIZE_MANAGEMENT) ? (
+                    <UpgradePrompt
+                      feature="Prize Management"
+                      requiredPlan={getRequiredPlanForFeature(TOURNAMENT_FEATURES.PRIZE_MANAGEMENT) || 'Professional'}
+                      description="Configure prizes, awards, and rewards to recognize tournament winners and build credibility."
+                      benefits={[
+                        'Position-based prizes (1st, 2nd, 3rd, etc.)',
+                        'Cash prizes and physical awards',
+                        'Digital certificates and badges',
+                        'Participation rewards',
+                        'Public prize showcase',
+                        'Winners hall of fame'
+                      ]}
+                      size="medium"
+                    />
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Enable Prizes */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Enable Prize System</CardTitle>
+                          <CardDescription>Activate prizes and rewards for this tournament</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="enable-prizes"
+                              checked={tournament.prizesEnabled || false}
+                              onCheckedChange={(checked) => 
+                                setTournament(prev => ({ ...prev, prizesEnabled: !!checked }))
+                              }
+                            />
+                            <Label htmlFor="enable-prizes" className="cursor-pointer">
+                              Enable prizes and rewards for this tournament
+                            </Label>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {tournament.prizesEnabled && (
+                        <>
+                          {/* Quick Setup */}
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-base">Quick Prize Setup</CardTitle>
+                              <CardDescription>Configure basic prize structure</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {/* Total Prize Pool */}
+                              <div>
+                                <Label>Total Prize Pool (Display Text)</Label>
+                                <Input
+                                  placeholder="e.g., $10,000+ in prizes"
+                                  value={tournament.prizePoolDisplay || ''}
+                                  onChange={(e) => 
+                                    setTournament(prev => ({ ...prev, prizePoolDisplay: e.target.value }))
+                                  }
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  This will be displayed publicly to attract participants
+                                </p>
+                              </div>
+
+                              {/* Prize Structure */}
+                              <div>
+                                <Label>Prize Structure</Label>
+                                <Select
+                                  value={tournament.prizeStructure || 'top_n'}
+                                  onValueChange={(value) =>
+                                    setTournament(prev => ({ ...prev, prizeStructure: value }))
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="top_n">Top N positions (1st, 2nd, 3rd, etc.)</SelectItem>
+                                    <SelectItem value="top_percentage">Top percentage of participants</SelectItem>
+                                    <SelectItem value="threshold_based">Score threshold (e.g., 90%+)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Number of Winning Positions */}
+                              {tournament.prizeStructure === 'top_n' && (
+                                <div>
+                                  <Label>Number of Winning Positions</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={tournament.numberOfWinners || 3}
+                                    onChange={(e) =>
+                                      setTournament(prev => ({ 
+                                        ...prev, 
+                                        numberOfWinners: parseInt(e.target.value) || 3 
+                                      }))
+                                    }
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    How many top positions will receive prizes (e.g., 3 for top 3)
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Top Percentage */}
+                              {tournament.prizeStructure === 'top_percentage' && (
+                                <div>
+                                  <Label>Top Percentage</Label>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={tournament.topPercentage || 10}
+                                    onChange={(e) =>
+                                      setTournament(prev => ({ 
+                                        ...prev, 
+                                        topPercentage: parseInt(e.target.value) || 10 
+                                      }))
+                                    }
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Percentage of top performers who will receive prizes (e.g., top 10%)
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Score Threshold */}
+                              {tournament.prizeStructure === 'threshold_based' && (
+                                <div>
+                                  <Label>Minimum Score (%)</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={tournament.minScoreForPrize || 90}
+                                    onChange={(e) =>
+                                      setTournament(prev => ({ 
+                                        ...prev, 
+                                        minScoreForPrize: parseInt(e.target.value) || 90 
+                                      }))
+                                    }
+                                  />
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Anyone scoring at or above this percentage wins a prize
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+
+                          {/* Prize Display Settings */}
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-base">Display Settings</CardTitle>
+                              <CardDescription>Control how prizes are shown publicly</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="show-prizes-publicly"
+                                  checked={tournament.showPrizesPublicly !== false}
+                                  onCheckedChange={(checked) =>
+                                    setTournament(prev => ({ ...prev, showPrizesPublicly: !!checked }))
+                                  }
+                                />
+                                <Label htmlFor="show-prizes-publicly" className="cursor-pointer">
+                                  Show prizes to non-logged-in visitors
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="show-prize-amounts"
+                                  checked={tournament.showPrizeAmounts !== false}
+                                  onCheckedChange={(checked) =>
+                                    setTournament(prev => ({ ...prev, showPrizeAmounts: !!checked }))
+                                  }
+                                />
+                                <Label htmlFor="show-prize-amounts" className="cursor-pointer">
+                                  Show actual cash amounts (uncheck to just say "Cash Prize")
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id="enable-participation-reward"
+                                  checked={tournament.participationRewardEnabled || false}
+                                  onCheckedChange={(checked) =>
+                                    setTournament(prev => ({ ...prev, participationRewardEnabled: !!checked }))
+                                  }
+                                />
+                                <Label htmlFor="enable-participation-reward" className="cursor-pointer">
+                                  All participants receive a certificate/badge
+                                </Label>
+                              </div>
+                            </CardContent>
+                          </Card>
+
+                          {/* Advanced Prize Configuration Note */}
+                          {hasTournamentFeatureAccess(user?.tenantId, TOURNAMENT_FEATURES.ADVANCED_PRIZE_FEATURES) && (
+                            <Card className="border-purple-200 bg-purple-50">
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-3">
+                                  <Trophy className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-semibold text-purple-900">
+                                      Advanced Prize Configuration Available
+                                    </p>
+                                    <p className="text-xs text-purple-700 mt-1">
+                                      After creating the tournament, you can configure detailed prize information including:
+                                      specific cash amounts, physical prizes, sponsors, category awards, and more from the
+                                      tournament management page.
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentStep === 5 && (
+              <div className="space-y-6">`
+                <div>
                   <h3 className="text-lg font-semibold mb-4">Question Selection</h3>
                   
                   <div className="space-y-4">
@@ -841,10 +1081,10 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
               </div>
             )}
 
-            {currentStep === 5 && (
+            {currentStep === 6 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Schedule Tournament</h3>
+                  <h3 className="text-lg font-semibold mb-4">Schedule Settings</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -882,10 +1122,10 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
               </div>
             )}
 
-            {currentStep === 6 && (
+            {currentStep === 7 && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Review Tournament</h3>
+                  <h3 className="text-lg font-semibold mb-4">Review & Create Tournament</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>

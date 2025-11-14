@@ -17,7 +17,9 @@ export const STORAGE_KEYS = {
   PRACTICE_POINTS: 'equiz_practice_points',
   PARISHES: 'equiz_parishes',
   USER_PROFILES: 'equiz_user_profiles',
-  PARISH_TOURNAMENT_STATS: 'equiz_parish_tournament_stats'
+  PARISH_TOURNAMENT_STATS: 'equiz_parish_tournament_stats',
+  TOURNAMENT_PRIZES: 'equiz_tournament_prizes',
+  PRIZE_AWARDS: 'equiz_prize_awards'
 };
 
 // User roles
@@ -324,13 +326,17 @@ export const TOURNAMENT_FEATURES = {
   ELIGIBILITY_RESTRICTIONS: 'tournaments.eligibility',    // Age, location, gender filters
   ADVANCED_SCORING_METHODS: 'tournaments.advanced_scoring', // Highest/Latest scoring (already implemented)
   DUAL_LEADERBOARDS: 'tournaments.dual_leaderboards',     // Separate individual & parish boards
+  PRIZE_MANAGEMENT: 'tournaments.prize_management',       // Prize configuration and distribution
+  CERTIFICATE_GENERATION: 'tournaments.certificates',     // Auto-generate certificates
   
   // Professional Features (Enterprise Plan)
   PARISH_CAPTAIN_ROLES: 'tournaments.parish_captains',    // Designated parish leaders
   MULTI_PARISH_TEAMS: 'tournaments.multi_parish',         // Cross-parish team formation
   CUSTOM_ELIGIBILITY_RULES: 'tournaments.custom_eligibility', // Advanced rule builder
   AUTOMATED_BRACKETS: 'tournaments.brackets',             // Tournament bracket generation
-  TEAM_MANAGEMENT_DASHBOARD: 'tournaments.team_dashboard' // Parish admin dashboard
+  TEAM_MANAGEMENT_DASHBOARD: 'tournaments.team_dashboard', // Parish admin dashboard
+  ADVANCED_PRIZE_FEATURES: 'tournaments.advanced_prizes', // Multiple prize categories, sponsors
+  AUTO_PRIZE_DISTRIBUTION: 'tournaments.auto_distribution' // Automatic prize awards
 };
 
 // Feature to Plan Mapping
@@ -348,13 +354,17 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
   [TOURNAMENT_FEATURES.ELIGIBILITY_RESTRICTIONS]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.ADVANCED_SCORING_METHODS]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.DUAL_LEADERBOARDS]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.PRIZE_MANAGEMENT]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.CERTIFICATE_GENERATION]: ['professional', 'enterprise'],
   
   // Professional features for Enterprise only
   [TOURNAMENT_FEATURES.PARISH_CAPTAIN_ROLES]: ['enterprise'],
   [TOURNAMENT_FEATURES.MULTI_PARISH_TEAMS]: ['enterprise'],
   [TOURNAMENT_FEATURES.CUSTOM_ELIGIBILITY_RULES]: ['enterprise'],
   [TOURNAMENT_FEATURES.AUTOMATED_BRACKETS]: ['enterprise'],
-  [TOURNAMENT_FEATURES.TEAM_MANAGEMENT_DASHBOARD]: ['enterprise']
+  [TOURNAMENT_FEATURES.TEAM_MANAGEMENT_DASHBOARD]: ['enterprise'],
+  [TOURNAMENT_FEATURES.ADVANCED_PRIZE_FEATURES]: ['enterprise'],
+  [TOURNAMENT_FEATURES.AUTO_PRIZE_DISTRIBUTION]: ['enterprise']
 };
 
 // Role with component features
@@ -636,6 +646,178 @@ export interface ParishTournamentStats {
   // Metadata
   lastUpdated: string;
   completedAt?: string;
+}
+
+// Prize & Reward System Interfaces
+
+// Physical prize details
+export interface PhysicalPrize {
+  name: string;
+  description: string;
+  imageUrl?: string;
+  estimatedValue?: number;
+}
+
+// Digital reward details
+export interface DigitalReward {
+  type: 'certificate' | 'badge' | 'points' | 'scholarship' | 'course_access' | 'discount_code';
+  value: string | number;
+  description: string;
+  validUntil?: string;
+}
+
+// Prize sponsor information
+export interface PrizeSponsor {
+  sponsorName: string;
+  sponsorLogo?: string;
+  sponsorMessage?: string;
+  sponsorWebsite?: string;
+}
+
+// Individual position prize
+export interface PositionPrize {
+  position: number; // 1st, 2nd, 3rd, etc.
+  positionRange?: { from: number; to: number }; // e.g., 4th-10th place
+  label: string; // "Champion", "Runner-up", "Third Place", "Top 10"
+  
+  // Prize details
+  prizeType: 'cash' | 'certificate' | 'trophy' | 'scholarship' | 'product' | 'points' | 'badge' | 'multiple';
+  
+  // Cash prize
+  cashAmount?: number;
+  currency?: string;
+  
+  // Physical prizes
+  physicalPrize?: PhysicalPrize;
+  
+  // Digital rewards
+  digitalRewards?: DigitalReward[];
+  
+  // Sponsorship
+  sponsoredBy?: PrizeSponsor;
+}
+
+// Category-specific prize (e.g., youngest winner, fastest time)
+export interface CategoryPrize {
+  category: 'parish_winner' | 'youngest_winner' | 'oldest_winner' | 'fastest_time' | 'most_improved' | 'people_choice' | 'perfect_score' | 'custom';
+  categoryName: string;
+  categoryDescription?: string;
+  prizes: PositionPrize[];
+  eligibilityCriteria?: string;
+}
+
+// Participation reward for all participants
+export interface ParticipationReward {
+  enabled: boolean;
+  type: 'certificate' | 'badge' | 'points' | 'multiple';
+  description: string;
+  digitalRewards?: DigitalReward[];
+}
+
+// Tournament prize configuration
+export interface TournamentPrize {
+  id: string;
+  tournamentId: string;
+  tenantId: string;
+  
+  // Prize structure
+  prizeStructure: 'top_n' | 'top_percentage' | 'threshold_based' | 'all_qualified';
+  
+  // Position-based prizes (most common)
+  positionPrizes?: PositionPrize[];
+  
+  // Percentage-based (e.g., top 10% get prizes)
+  percentagePrizes?: Array<{
+    topPercentage: number; // e.g., 10 for top 10%
+    prizes: PositionPrize[];
+  }>;
+  
+  // Score threshold (e.g., anyone scoring 90%+ wins)
+  thresholdPrizes?: Array<{
+    minimumScore: number; // e.g., 90
+    prizes: PositionPrize[];
+  }>;
+  
+  // Category-specific prizes
+  categoryPrizes?: CategoryPrize[];
+  
+  // Participation rewards
+  participationReward?: ParticipationReward;
+  
+  // Display settings
+  displaySettings: {
+    showPrizesPublicly: boolean; // Show to non-logged-in users
+    showCashAmounts: boolean; // Hide actual cash amounts if false
+    showSponsors: boolean;
+    highlightTopPrizes: boolean;
+    prizePoolTotal?: string; // e.g., "$25,000+" for display
+  };
+  
+  // Prize distribution
+  distributionMethod: 'manual' | 'automatic' | 'hybrid';
+  distributionDeadline?: string;
+  distributionNotes?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string; // User ID
+}
+
+// Prize award tracking
+export interface PrizeAward {
+  id: string;
+  tournamentId: string;
+  tenantId: string;
+  prizeConfigId: string; // Reference to TournamentPrize
+  
+  // Winner info
+  winnerId: string; // User ID or Parish ID
+  winnerType: 'individual' | 'parish';
+  winnerName: string;
+  winnerEmail?: string;
+  
+  // Prize details
+  position: number;
+  positionLabel: string; // "Champion", "1st Runner-up", "4th-10th Place"
+  prizeCategory?: string; // "Overall", "Parish Category", "Youngest Winner", etc.
+  
+  // Awarded prizes
+  prizes: Array<{
+    type: string;
+    description: string;
+    cashAmount?: number;
+    currency?: string;
+    physicalItem?: string;
+    digitalReward?: DigitalReward;
+  }>;
+  
+  // Sponsor information (if applicable)
+  sponsor?: PrizeSponsor;
+  
+  // Distribution status
+  status: 'pending' | 'notified' | 'claimed' | 'distributed' | 'declined';
+  notifiedAt?: string;
+  claimedAt?: string;
+  distributedAt?: string;
+  distributedBy?: string; // User ID of admin who distributed
+  
+  // Proof of distribution
+  distributionProof?: {
+    method: 'bank_transfer' | 'cash' | 'cheque' | 'digital' | 'pickup' | 'mail';
+    referenceNumber?: string;
+    receiptUrl?: string;
+    notes?: string;
+  };
+  
+  // Winner acknowledgment
+  winnerAcknowledged: boolean;
+  acknowledgmentDate?: string;
+  testimonial?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Practice points tracking
@@ -3310,4 +3492,318 @@ export function canParishAcceptParticipants(
     currentCount,
     maxAllowed
   };
+}
+
+// ==================== PRIZE & REWARD MANAGEMENT ====================
+
+// Get all tournament prizes
+export function getAllTournamentPrizes(): TournamentPrize[] {
+  return storage.get(STORAGE_KEYS.TOURNAMENT_PRIZES) || [];
+}
+
+// Get prize configuration for a tournament
+export function getTournamentPrize(tournamentId: string): TournamentPrize | null {
+  const prizes = getAllTournamentPrizes();
+  return prizes.find(p => p.tournamentId === tournamentId) || null;
+}
+
+// Save or update tournament prize configuration
+export function saveTournamentPrize(prizeData: Omit<TournamentPrize, 'id' | 'createdAt' | 'updatedAt'> | TournamentPrize): { success: boolean; prizeId?: string; message?: string } {
+  const prizes = getAllTournamentPrizes();
+  
+  if ('id' in prizeData && prizeData.id) {
+    // Update existing
+    const index = prizes.findIndex(p => p.id === prizeData.id);
+    if (index === -1) {
+      return { success: false, message: 'Prize configuration not found' };
+    }
+    
+    prizes[index] = {
+      ...prizeData,
+      updatedAt: new Date().toISOString()
+    };
+    
+    storage.set(STORAGE_KEYS.TOURNAMENT_PRIZES, prizes);
+    return { success: true, prizeId: prizeData.id, message: 'Prize configuration updated successfully' };
+  } else {
+    // Create new
+    const newPrize: TournamentPrize = {
+      ...(prizeData as Omit<TournamentPrize, 'id' | 'createdAt' | 'updatedAt'>),
+      id: `prize_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    prizes.push(newPrize);
+    storage.set(STORAGE_KEYS.TOURNAMENT_PRIZES, prizes);
+    return { success: true, prizeId: newPrize.id, message: 'Prize configuration created successfully' };
+  }
+}
+
+// Delete tournament prize configuration
+export function deleteTournamentPrize(prizeId: string): { success: boolean; message?: string } {
+  const prizes = getAllTournamentPrizes();
+  const index = prizes.findIndex(p => p.id === prizeId);
+  
+  if (index === -1) {
+    return { success: false, message: 'Prize configuration not found' };
+  }
+  
+  prizes.splice(index, 1);
+  storage.set(STORAGE_KEYS.TOURNAMENT_PRIZES, prizes);
+  return { success: true, message: 'Prize configuration deleted successfully' };
+}
+
+// Get all prize awards
+export function getAllPrizeAwards(): PrizeAward[] {
+  return storage.get(STORAGE_KEYS.PRIZE_AWARDS) || [];
+}
+
+// Get prize awards for a tournament
+export function getTournamentPrizeAwards(tournamentId: string): PrizeAward[] {
+  const awards = getAllPrizeAwards();
+  return awards.filter(a => a.tournamentId === tournamentId);
+}
+
+// Get prize awards for a specific winner
+export function getWinnerPrizeAwards(winnerId: string): PrizeAward[] {
+  const awards = getAllPrizeAwards();
+  return awards.filter(a => a.winnerId === winnerId);
+}
+
+// Calculate and create prize awards for tournament winners
+export function generatePrizeAwards(tournamentId: string): { success: boolean; awards?: PrizeAward[]; message?: string } {
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  if (!tournament) {
+    return { success: false, message: 'Tournament not found' };
+  }
+  
+  const prizeConfig = getTournamentPrize(tournamentId);
+  if (!prizeConfig) {
+    return { success: false, message: 'No prize configuration found for this tournament' };
+  }
+  
+  // Get qualified applications sorted by score
+  const applications = getAllApplicationsForTournament(tournamentId)
+    .filter(app => app.status === 'qualified' || app.status === 'auto_qualified')
+    .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
+  
+  if (applications.length === 0) {
+    return { success: false, message: 'No qualified participants found' };
+  }
+  
+  const newAwards: PrizeAward[] = [];
+  const existingAwards = getTournamentPrizeAwards(tournamentId);
+  
+  // Generate awards based on prize structure
+  if (prizeConfig.prizeStructure === 'top_n' && prizeConfig.positionPrizes) {
+    for (const positionPrize of prizeConfig.positionPrizes) {
+      if (positionPrize.positionRange) {
+        // Range of positions (e.g., 4th-10th)
+        for (let pos = positionPrize.positionRange.from; pos <= positionPrize.positionRange.to && pos <= applications.length; pos++) {
+          const application = applications[pos - 1];
+          
+          // Check if award already exists
+          if (existingAwards.some(a => a.winnerId === application.userId && a.position === pos)) {
+            continue;
+          }
+          
+          newAwards.push(createPrizeAward(tournament, prizeConfig, application, pos, positionPrize));
+        }
+      } else {
+        // Single position
+        const pos = positionPrize.position;
+        if (pos <= applications.length) {
+          const application = applications[pos - 1];
+          
+          // Check if award already exists
+          if (!existingAwards.some(a => a.winnerId === application.userId && a.position === pos)) {
+            newAwards.push(createPrizeAward(tournament, prizeConfig, application, pos, positionPrize));
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle percentage-based prizes
+  if (prizeConfig.prizeStructure === 'top_percentage' && prizeConfig.percentagePrizes) {
+    for (const percentagePrize of prizeConfig.percentagePrizes) {
+      const topCount = Math.ceil(applications.length * (percentagePrize.topPercentage / 100));
+      for (let i = 0; i < topCount && i < applications.length; i++) {
+        const application = applications[i];
+        const pos = i + 1;
+        
+        if (!existingAwards.some(a => a.winnerId === application.userId && a.position === pos)) {
+          // Use the first prize definition from the percentage config
+          if (percentagePrize.prizes.length > 0) {
+            newAwards.push(createPrizeAward(tournament, prizeConfig, application, pos, percentagePrize.prizes[0]));
+          }
+        }
+      }
+    }
+  }
+  
+  // Handle threshold-based prizes
+  if (prizeConfig.prizeStructure === 'threshold_based' && prizeConfig.thresholdPrizes) {
+    let position = 1;
+    for (const application of applications) {
+      for (const thresholdPrize of prizeConfig.thresholdPrizes) {
+        if ((application.finalScore || 0) >= thresholdPrize.minimumScore) {
+          if (!existingAwards.some(a => a.winnerId === application.userId && a.prizeCategory === 'threshold')) {
+            if (thresholdPrize.prizes.length > 0) {
+              const award = createPrizeAward(tournament, prizeConfig, application, position, thresholdPrize.prizes[0]);
+              award.prizeCategory = 'threshold';
+              newAwards.push(award);
+            }
+          }
+          break;
+        }
+      }
+      position++;
+    }
+  }
+  
+  // Save all new awards
+  if (newAwards.length > 0) {
+    const allAwards = [...existingAwards, ...newAwards];
+    storage.set(STORAGE_KEYS.PRIZE_AWARDS, allAwards);
+  }
+  
+  return { success: true, awards: newAwards, message: `Generated ${newAwards.length} prize award(s)` };
+}
+
+// Helper function to create a prize award object
+function createPrizeAward(
+  tournament: Tournament,
+  prizeConfig: TournamentPrize,
+  application: TournamentApplication,
+  position: number,
+  positionPrize: PositionPrize
+): PrizeAward {
+  const user = getUsers().find(u => u.id === application.userId);
+  
+  const prizes: PrizeAward['prizes'] = [];
+  
+  // Add cash prize if present
+  if (positionPrize.cashAmount && positionPrize.currency) {
+    prizes.push({
+      type: 'cash',
+      description: `${positionPrize.currency} ${positionPrize.cashAmount.toLocaleString()}`,
+      cashAmount: positionPrize.cashAmount,
+      currency: positionPrize.currency
+    });
+  }
+  
+  // Add physical prize if present
+  if (positionPrize.physicalPrize) {
+    prizes.push({
+      type: 'physical',
+      description: positionPrize.physicalPrize.name,
+      physicalItem: positionPrize.physicalPrize.name
+    });
+  }
+  
+  // Add digital rewards if present
+  if (positionPrize.digitalRewards) {
+    for (const reward of positionPrize.digitalRewards) {
+      prizes.push({
+        type: 'digital',
+        description: reward.description,
+        digitalReward: reward
+      });
+    }
+  }
+  
+  return {
+    id: `award_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    tournamentId: tournament.id,
+    tenantId: tournament.tenantId,
+    prizeConfigId: prizeConfig.id,
+    winnerId: application.userId,
+    winnerType: application.participationType || 'individual',
+    winnerName: user?.name || 'Unknown',
+    winnerEmail: user?.email,
+    position,
+    positionLabel: positionPrize.label,
+    prizeCategory: 'Overall',
+    prizes,
+    sponsor: positionPrize.sponsoredBy,
+    status: 'pending',
+    winnerAcknowledged: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+// Update prize award status
+export function updatePrizeAwardStatus(
+  awardId: string,
+  status: PrizeAward['status'],
+  additionalData?: Partial<Pick<PrizeAward, 'distributionProof' | 'distributedBy'>>
+): { success: boolean; message?: string } {
+  const awards = getAllPrizeAwards();
+  const index = awards.findIndex(a => a.id === awardId);
+  
+  if (index === -1) {
+    return { success: false, message: 'Prize award not found' };
+  }
+  
+  const now = new Date().toISOString();
+  awards[index] = {
+    ...awards[index],
+    status,
+    updatedAt: now,
+    ...(status === 'notified' && { notifiedAt: now }),
+    ...(status === 'claimed' && { claimedAt: now }),
+    ...(status === 'distributed' && { distributedAt: now }),
+    ...additionalData
+  };
+  
+  storage.set(STORAGE_KEYS.PRIZE_AWARDS, awards);
+  return { success: true, message: 'Prize award status updated successfully' };
+}
+
+// Winner acknowledges prize
+export function acknowledgePrize(awardId: string, testimonial?: string): { success: boolean; message?: string } {
+  const awards = getAllPrizeAwards();
+  const index = awards.findIndex(a => a.id === awardId);
+  
+  if (index === -1) {
+    return { success: false, message: 'Prize award not found' };
+  }
+  
+  awards[index] = {
+    ...awards[index],
+    winnerAcknowledged: true,
+    acknowledgmentDate: new Date().toISOString(),
+    testimonial,
+    updatedAt: new Date().toISOString()
+  };
+  
+  storage.set(STORAGE_KEYS.PRIZE_AWARDS, awards);
+  return { success: true, message: 'Prize acknowledged successfully' };
+}
+
+// Get past winners (for hall of fame)
+export function getPastWinners(tenantId?: string, limit?: number): PrizeAward[] {
+  let awards = getAllPrizeAwards()
+    .filter(a => a.status === 'distributed' || a.status === 'claimed')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  
+  if (tenantId) {
+    awards = awards.filter(a => a.tenantId === tenantId);
+  }
+  
+  if (limit) {
+    awards = awards.slice(0, limit);
+  }
+  
+  return awards;
+}
+
+// Get tournament winners for display
+export function getTournamentWinners(tournamentId: string, topN: number = 3): PrizeAward[] {
+  return getTournamentPrizeAwards(tournamentId)
+    .filter(a => a.position <= topN)
+    .sort((a, b) => a.position - b.position);
 }
