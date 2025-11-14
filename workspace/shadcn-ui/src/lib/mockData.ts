@@ -1271,25 +1271,6 @@ export function hasFeatureAccess(user: User, feature: string): boolean {
       return true; // Default access for basic features
   }
 }
-  
-  // Check if plan includes the feature
-  switch (feature) {
-    case 'branding':
-      return plan.features.some(f => f.includes('Custom branding') || f.includes('Full custom branding'));
-    case 'analytics':
-      return plan.features.some(f => f.includes('analytics') || f.includes('Analytics'));
-    case 'ai-generator':
-      return plan.maxQuestionsPerTournament > 50; // AI available for Pro+ plans
-    case 'payment-integration':
-      return plan.monthlyPrice > 0; // Paid plans only
-    case 'unlimited-users':
-      return plan.maxUsers === -1;
-    case 'unlimited-tournaments':
-      return plan.maxTournaments === -1;
-    default:
-      return true; // Default access for basic features
-  }
-}
 
 export function canCreateMoreUsers(tenantId: string): boolean {
   const plan = getTenantPlan(tenantId);
