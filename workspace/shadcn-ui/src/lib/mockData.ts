@@ -1216,8 +1216,11 @@ export function getTenantPlan(tenantId: string): Plan | null {
 export function hasFeatureAccess(user: User, feature: string): boolean {
   if (!user || !user.tenantId) return false;
   
-  // Super admin always has access
-  if (user.role === 'super_admin') return true;
+  // Normalize role to lowercase for comparison
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin and org admin always have access
+  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
   
   const plan = getTenantPlan(user.tenantId);
   if (!plan) return false;
@@ -1265,8 +1268,11 @@ export function canCreateMoreTournaments(tenantId: string): boolean {
 export function hasPermission(user: User, permission: string): boolean {
   if (!user) return false;
   
-  // Super admin has all permissions
-  if (user.role === 'super_admin') return true;
+  // Normalize role to lowercase for comparison
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin and org admin have all permissions
+  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
   
   const rolePermission = defaultRolePermissions.find(rp => rp.roleId === user.role);
   if (!rolePermission) return false;
@@ -1281,8 +1287,11 @@ export function hasPermission(user: User, permission: string): boolean {
 export function canAccessPage(user: User, page: string): boolean {
   if (!user) return false;
   
-  // Super admin can access all pages
-  if (user.role === 'super_admin') return true;
+  // Normalize role to lowercase for comparison
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin and org admin can access all pages
+  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
   
   const rolePermission = defaultRolePermissions.find(rp => rp.roleId === user.role);
   if (!rolePermission) return false;
