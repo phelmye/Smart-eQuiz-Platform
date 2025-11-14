@@ -7,7 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target, Layers } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { 
   storage, 
@@ -22,6 +29,7 @@ import {
   getAllParishes
 } from '@/lib/mockData';
 import { UpgradePrompt } from './UpgradePrompt';
+import RoundQuestionConfigBuilder from './RoundQuestionConfigBuilder';
 
 interface TournamentBuilderProps {
   onBack: () => void;
@@ -33,6 +41,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   const [currentStep, setCurrentStep] = useState(1);
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
   const [parishes, setParishes] = useState<any[]>([]);
+  const [roundConfigDialogOpen, setRoundConfigDialogOpen] = useState(false);
   const [tournament, setTournament] = useState({
     name: '',
     description: '',
@@ -72,7 +81,8 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     questionsPerMatch: 10,
     matchTimeLimit: 15,
     thirdPlacePlayoff: false,
-    autoScheduleMatches: true
+    autoScheduleMatches: true,
+    roundQuestionConfigs: [] as any[] // Will be populated when configuring rounds
   });
 
   useEffect(() => {
@@ -558,6 +568,36 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                                   <li>Automatic winner advancement to next round</li>
                                   <li>Bye assignment for non-power-of-2 participants</li>
                                 </ul>
+                              </div>
+
+                              {/* Round Question Configuration Button */}
+                              <div className="border-t pt-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div>
+                                    <Label className="text-base flex items-center gap-2">
+                                      <Layers className="w-4 h-4" />
+                                      Round-Specific Questions
+                                    </Label>
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      Configure unique question categories and delivery modes for each round
+                                    </p>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => setRoundConfigDialogOpen(true)}
+                                  >
+                                    <Settings className="w-4 h-4 mr-2" />
+                                    Configure Rounds
+                                  </Button>
+                                </div>
+                                
+                                {tournament.roundQuestionConfigs && tournament.roundQuestionConfigs.length > 0 && (
+                                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-sm text-green-800 font-medium">
+                                      ✓ {tournament.roundQuestionConfigs.length} rounds configured with custom question settings
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -1391,6 +1431,45 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
           </CardContent>
         </Card>
       </div>
+
+      {/* Round Question Configuration Dialog */}
+      <Dialog open={roundConfigDialogOpen} onOpenChange={setRoundConfigDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configure Round Questions</DialogTitle>
+            <DialogDescription>
+              Set up unique question categories and delivery modes for each tournament round.
+              Each round can have mixed or staged category presentation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <RoundQuestionConfigBuilder
+            totalRounds={
+              tournament.tournamentFormat === 'single_elimination' 
+                ? Math.ceil(Math.log2(tournament.maxParticipants)) 
+                : tournament.tournamentFormat === 'double_elimination'
+                  ? Math.ceil(Math.log2(tournament.maxParticipants)) * 2
+                  : 5 // Default for Swiss
+            }
+            initialConfigs={tournament.roundQuestionConfigs}
+            onConfigsChange={(configs) => {
+              setTournament(prev => ({ 
+                ...prev, 
+                roundQuestionConfigs: configs 
+              }));
+            }}
+          />
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setRoundConfigDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

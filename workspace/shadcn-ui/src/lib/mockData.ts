@@ -1056,6 +1056,52 @@ export interface TournamentDonation {
 // Tournament format types
 export type TournamentFormat = 'standard' | 'single_elimination' | 'double_elimination' | 'swiss_system';
 
+// Question category for tournaments
+export type QuestionCategoryType = 
+  | 'general_bible' 
+  | 'ccc_hymns' 
+  | 'specific_study' 
+  | 'doctrine' 
+  | 'tenets' 
+  | 'custom';
+
+// Category distribution for a round
+export interface RoundCategoryDistribution {
+  category: QuestionCategoryType;
+  questionCount: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  customCategoryName?: string; // For 'custom' type
+}
+
+// Round-specific question configuration
+export interface RoundQuestionConfig {
+  roundNumber: number;
+  roundName: string;
+  
+  // Total questions for this round
+  totalQuestions: number;
+  timeLimitMinutes: number;
+  
+  // Category distribution
+  categoryDistribution: RoundCategoryDistribution[];
+  
+  // Question delivery mode
+  questionDeliveryMode: 'mixed' | 'staged_by_category';
+  // mixed: All questions shuffled together
+  // staged_by_category: Present all Category A questions first, then Category B, then Category C
+  
+  // Staging order (only used when questionDeliveryMode = 'staged_by_category')
+  categoryPresentationOrder?: QuestionCategoryType[];
+  
+  // Question uniqueness
+  excludePreviousRoundQuestions: boolean;
+  allowQuestionReuse: boolean; // Within same round for different matches
+  
+  // Randomization
+  randomizeQuestionOrder: boolean;
+  randomizeOptionOrder: boolean;
+}
+
 // Knockout tournament configuration
 export interface KnockoutTournamentConfig {
   format: TournamentFormat;
@@ -1069,6 +1115,9 @@ export interface KnockoutTournamentConfig {
   matchType: 'head_to_head' | 'simultaneous_quiz';
   questionsPerMatch: number;
   matchTimeLimitMinutes: number;
+  
+  // Round-specific question configuration (NEW)
+  roundQuestionConfigs?: RoundQuestionConfig[];
   
   // Advancement rules
   advancementRule: 'winner_only' | 'points_based' | 'best_of_series';
@@ -1159,6 +1208,14 @@ export interface KnockoutMatch {
   
   // Match details
   questionIds: string[];
+  questionCategories?: Record<string, QuestionCategoryType>; // questionId -> category
+  questionDeliveryMode?: 'mixed' | 'staged_by_category';
+  categoryStages?: Array<{
+    category: QuestionCategoryType;
+    questionIds: string[];
+    startIndex: number;
+    endIndex: number;
+  }>; // For staged delivery tracking
   participant1Answers?: Record<string, number>;
   participant2Answers?: Record<string, number>;
   
