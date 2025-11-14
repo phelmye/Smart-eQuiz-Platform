@@ -68,7 +68,7 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
 
   const getTenantAdmins = (tenantId: string) => {
     const tenantUsers = getUsersByTenant(tenantId);
-    return tenantUsers.filter(user => user.role === 'org_admin');
+    return tenantUsers.filter(user => user.role?.toLowerCase() === 'org_admin');
   };
 
   const handleLoginAs = (tenant: Tenant) => {

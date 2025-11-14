@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, RefreshCw, Shield, Globe, Bell, Database, Zap } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 
 interface SystemSettingsProps {
   onBack: () => void;
@@ -147,7 +147,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onBack }) => {
     }));
   };
 
-  if (!user || user.role !== 'super_admin') {
+  if (!user || !hasPermission(user, 'system.settings')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

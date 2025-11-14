@@ -86,13 +86,13 @@ export default function UserManagementWithLoginAs({
 
   const canLoginAs = (targetUser: User): boolean => {
     // Only org_admin can login as others
-    if (user.role !== 'org_admin') return false;
+    if (user.role?.toLowerCase() !== 'org_admin') return false;
     
     // Cannot login as other org_admins
-    if (targetUser.role === 'org_admin') return false;
+    if (targetUser.role?.toLowerCase() === 'org_admin') return false;
     
     // Cannot login as super_admin
-    if (targetUser.role === 'super_admin') return false;
+    if (targetUser.role?.toLowerCase() === 'super_admin') return false;
     
     // Must be same tenant
     return targetUser.tenantId === user.tenantId;
@@ -269,7 +269,7 @@ export default function UserManagementWithLoginAs({
 
   const getLoginAsTooltip = (targetUser: User): string => {
     if (!canLoginAs(targetUser)) {
-      if (targetUser.role === 'org_admin') {
+      if (targetUser.role?.toLowerCase() === 'org_admin') {
         return 'Cannot login as another organization admin';
       }
       return 'You do not have permission to login as this user';

@@ -404,7 +404,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
                   <SelectItem value="account_officer">Account Officer</SelectItem>
                   <SelectItem value="inspector">Quiz Inspector</SelectItem>
                   <SelectItem value="org_admin">Organization Admin</SelectItem>
-                  {currentUser.role === 'super_admin' && (
+                  {currentUser.role?.toLowerCase() === 'super_admin' && (
                     <SelectItem value="super_admin">Super Admin</SelectItem>
                   )}
                 </SelectContent>

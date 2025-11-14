@@ -183,7 +183,7 @@ export default function RoleComponentManagement({ user, onBack }: RoleComponentM
   };
 
   // Only super admin can access this component
-  if (user.role !== 'super_admin') {
+  if (!hasPermission(user, 'roles.manage')) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">

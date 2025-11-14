@@ -42,7 +42,7 @@ export default function ComponentAccessControl({
   showAccessDenied = true
 }: ComponentAccessControlProps) {
   // Super admin has access to everything
-  if (user.role === 'super_admin') {
+  if (user.role?.toLowerCase() === 'super_admin') {
     return <>{children}</>;
   }
 
@@ -77,7 +77,7 @@ export function FeatureAccessControl({
   fallback
 }: FeatureAccessControlProps) {
   // Super admin has access to everything
-  if (user.role === 'super_admin') {
+  if (user.role?.toLowerCase() === 'super_admin') {
     return <>{children}</>;
   }
 

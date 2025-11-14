@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, CreditCard, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from './AuthSystem';
+import { hasPermission } from '@/lib/mockData';
 import { isPaymentIntegrationEnabled } from '@/lib/mockData';
 
 interface PaymentManagementProps {
@@ -14,7 +15,7 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
   const { user } = useAuth();
 
   // Check if user is admin
-  if (!user || (user.role !== 'org_admin' && user.role !== 'super_admin')) {
+  if (!user || !hasPermission(user, 'payments.read')) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <Card className="max-w-md mx-auto">

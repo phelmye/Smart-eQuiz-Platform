@@ -117,7 +117,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     { id: 5, title: 'Review', icon: Play }
   ];
 
-  if (!user || !['org_admin', 'super_admin'].includes(user.role)) {
+  if (!user || !hasPermission(user, 'tournaments.create')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

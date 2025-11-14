@@ -41,7 +41,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
         title: 'Payment Integration Disabled',
         description: 'Payment features are currently disabled for your organization. Please contact your administrator to enable payment integration.',
         icon: <Shield className="h-8 w-8 text-gray-400" />,
-        showConfigButton: user.role === 'org_admin' || user.role === 'super_admin'
+        showConfigButton: user.role?.toLowerCase() === 'org_admin' || user.role?.toLowerCase() === 'super_admin'
       };
     }
 
@@ -50,7 +50,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
         title: 'Payment Integration Not Configured',
         description: 'Payment processing is not set up for your organization. Configure a payment provider to enable monetary features.',
         icon: <CreditCard className="h-8 w-8 text-orange-400" />,
-        showConfigButton: user.role === 'org_admin' || user.role === 'super_admin'
+        showConfigButton: user.role?.toLowerCase() === 'org_admin' || user.role?.toLowerCase() === 'super_admin'
       };
     }
 
@@ -59,7 +59,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
         title: 'Payment Integration Disabled',
         description: 'Payment processing is configured but currently disabled. Please enable it in the payment integration settings.',
         icon: <AlertTriangle className="h-8 w-8 text-yellow-400" />,
-        showConfigButton: user.role === 'org_admin' || user.role === 'super_admin'
+        showConfigButton: user.role?.toLowerCase() === 'org_admin' || user.role?.toLowerCase() === 'super_admin'
       };
     }
 
@@ -67,7 +67,7 @@ export const PaymentGate: React.FC<PaymentGateProps> = ({
       title: 'Feature Not Available',
       description: `The ${feature} feature is not enabled for your payment integration. Please check your payment integration settings.`,
       icon: <Settings className="h-8 w-8 text-gray-400" />,
-      showConfigButton: user.role === 'org_admin' || user.role === 'super_admin'
+      showConfigButton: user.role?.toLowerCase() === 'org_admin' || user.role?.toLowerCase() === 'super_admin'
     };
   };
 

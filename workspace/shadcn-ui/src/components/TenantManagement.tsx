@@ -137,7 +137,7 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
     }
   };
 
-  if (!user || user.role !== 'super_admin') {
+  if (!user || !hasPermission(user, 'tenants.manage')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
