@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -19,8 +19,24 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Edit,
-  Menu
+  Menu,
+  UserPlus,
+  UserCog,
+  Lock,
+  Eye,
+  Plus,
+  List,
+  Sparkles,
+  FolderTree,
+  DollarSign,
+  Wallet,
+  Layers,
+  Paintbrush,
+  Server,
+  BellRing,
+  FileText
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
@@ -45,6 +61,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   onLogoutFromUser,
   user
 }) => {
+  // State for expanded menu groups
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['dashboard']);
+
+  // Toggle group expansion
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
   // Check login-as modes
   const originalSuperAdmin = storage.get('original_super_admin');
   const originalUser = storage.get('original_user');
@@ -52,182 +80,280 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const isSuperAdminLoginMode = originalSuperAdmin && user?.role === 'org_admin';
   const isUserLoginMode = originalUser && originalUser.id !== user?.id;
 
-  const allMenuItems = [
+  // Hierarchical menu structure with groups and sub-items
+  const menuGroups = [
     {
       id: 'dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      badge: null,
+      type: 'single',
+      page: 'dashboard',
       requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'participant', 'inspector', 'practice_user'],
       requiredPermission: null,
       planFeature: null
     },
     {
-      id: 'user-management',
-      label: 'User Management',
+      id: 'users',
+      label: 'Users',
       icon: Users,
-      badge: null,
+      type: 'group',
       requiredRoles: ['super_admin', 'org_admin'],
       requiredPermission: 'users.read',
-      planFeature: null
-    },
-    {
-      id: 'role-management',
-      label: 'Role Management',
-      icon: Shield,
-      badge: null,
-      requiredRoles: ['super_admin'], // Only super_admin can manage roles
-      requiredPermission: 'roles.manage',
-      planFeature: null
-    },
-    {
-      id: 'role-component-management',
-      label: 'Role Component Features',
-      icon: Settings,
-      badge: 'Advanced',
-      requiredRoles: ['super_admin'], // Only super_admin can configure component features
-      requiredPermission: 'system.configure',
-      planFeature: null
-    },
-    {
-      id: 'tenant-management',
-      label: 'Tenant Management',
-      icon: Building,
-      badge: null,
-      requiredRoles: ['super_admin'],
-      requiredPermission: 'tenant.manage',
-      planFeature: null
+      planFeature: null,
+      children: [
+        {
+          id: 'user-management',
+          label: 'All Users',
+          icon: List,
+          page: 'user-management',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'users.read'
+        },
+        {
+          id: 'user-add',
+          label: 'Add User',
+          icon: UserPlus,
+          page: 'user-management',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'users.create'
+        },
+        {
+          id: 'role-management',
+          label: 'Roles & Permissions',
+          icon: Shield,
+          page: 'role-management',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'roles.manage'
+        },
+        {
+          id: 'role-component-management',
+          label: 'Component Features',
+          icon: Layers,
+          page: 'role-component-management',
+          badge: 'Advanced',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'system.configure'
+        },
+        {
+          id: 'access-control',
+          label: 'Access Control',
+          icon: Lock,
+          page: 'access-control',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'users.read'
+        }
+      ]
     },
     {
       id: 'tournaments',
       label: 'Tournaments',
       icon: Trophy,
-      badge: null,
+      type: 'group',
       requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
       requiredPermission: 'tournaments.read',
-      planFeature: null
+      planFeature: null,
+      children: [
+        {
+          id: 'tournaments-list',
+          label: 'All Tournaments',
+          icon: List,
+          page: 'tournaments',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
+          requiredPermission: 'tournaments.read'
+        },
+        {
+          id: 'tournaments-create',
+          label: 'Create Tournament',
+          icon: Plus,
+          page: 'tournaments',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'tournaments.create'
+        },
+        {
+          id: 'tournaments-settings',
+          label: 'Settings',
+          icon: Settings,
+          page: 'tournaments',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'tournaments.update'
+        }
+      ]
     },
     {
-      id: 'question-bank',
+      id: 'questions',
       label: 'Questions',
       icon: BookOpen,
-      badge: null,
+      type: 'group',
       requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
       requiredPermission: 'questions.read',
-      planFeature: null
+      planFeature: null,
+      children: [
+        {
+          id: 'question-bank',
+          label: 'Question Bank',
+          icon: BookOpen,
+          page: 'question-bank',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.read'
+        },
+        {
+          id: 'question-add',
+          label: 'Add Questions',
+          icon: Plus,
+          page: 'question-bank',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.create'
+        },
+        {
+          id: 'question-categories',
+          label: 'Categories',
+          icon: FolderTree,
+          page: 'question-categories',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.read'
+        },
+        {
+          id: 'ai-generator',
+          label: 'AI Generator',
+          icon: Sparkles,
+          page: 'ai-generator',
+          badge: 'AI',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.create',
+          planFeature: 'ai-generator'
+        }
+      ]
     },
     {
-      id: 'ai-generator',
-      label: 'AI Generator',
-      icon: Zap,
-      badge: 'AI',
-      requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
-      requiredPermission: 'questions.create',
-      planFeature: 'ai-generator'
+      id: 'finance',
+      label: 'Finance',
+      icon: DollarSign,
+      type: 'group',
+      requiredRoles: ['super_admin', 'org_admin', 'account_officer'],
+      requiredPermission: 'payments.read',
+      planFeature: null,
+      children: [
+        {
+          id: 'payments',
+          label: 'Payments',
+          icon: Wallet,
+          page: 'payments',
+          requiredRoles: ['super_admin', 'org_admin', 'account_officer'],
+          requiredPermission: 'payments.read'
+        },
+        {
+          id: 'billing',
+          label: 'Billing & Plans',
+          icon: Receipt,
+          page: 'billing',
+          requiredRoles: ['super_admin', 'org_admin', 'account_officer'],
+          requiredPermission: 'billing.read'
+        },
+        {
+          id: 'payment-integration',
+          label: 'Payment Integration',
+          icon: CreditCard,
+          page: 'payment-integration',
+          badge: 'Config',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'billing.read',
+          planFeature: 'payment-integration'
+        }
+      ]
     },
     {
       id: 'analytics',
       label: 'Analytics',
       icon: BarChart3,
-      badge: null,
+      type: 'single',
+      page: 'analytics',
       requiredRoles: ['super_admin', 'org_admin', 'account_officer', 'inspector'],
       requiredPermission: 'analytics.view',
       planFeature: 'analytics'
     },
     {
-      id: 'payments',
-      label: 'Payments',
-      icon: CreditCard,
-      badge: null,
-      requiredRoles: ['super_admin', 'org_admin', 'account_officer'],
-      requiredPermission: 'payments.read',
-      planFeature: null
-    },
-    {
-      id: 'billing',
-      label: 'Billing & Plans',
-      icon: Receipt,
-      badge: null,
-      requiredRoles: ['super_admin', 'org_admin', 'account_officer'],
-      requiredPermission: 'billing.read',
-      planFeature: null
-    },
-    {
-      id: 'payment-integration',
-      label: 'Payment Integration',
-      icon: Settings,
-      badge: 'Config',
-      requiredRoles: ['super_admin', 'org_admin'],
-      requiredPermission: 'billing.read',
-      planFeature: 'payment-integration'
-    },
-    {
-      id: 'branding',
-      label: 'Branding',
-      icon: Palette,
-      badge: 'New',
-      requiredRoles: ['super_admin', 'org_admin'],
-      requiredPermission: 'branding.manage',
-      planFeature: 'branding'
-    },
-    {
-      id: 'plan-management',
-      label: 'Plans',
-      icon: CreditCard,
-      badge: 'New',
-      requiredRoles: ['super_admin'], // Only super_admin can manage plans
-      requiredPermission: 'tenant.manage',
-      planFeature: null
-    },
-    {
-      id: 'system-settings',
+      id: 'system',
       label: 'System',
       icon: Settings,
-      badge: null,
-      requiredRoles: ['super_admin'], // Keep global system settings for super_admin only
-      requiredPermission: 'tenant.manage',
-      planFeature: null
-    },
-    {
-      id: 'security',
-      label: 'Security',
-      icon: Shield,
-      badge: null,
-      requiredRoles: ['super_admin'], // Only super_admin can access security settings
-      requiredPermission: 'tenant.manage',
-      planFeature: null
-    },
-    {
-      id: 'notifications',
-      label: 'Notifications',
-      icon: Bell,
-      badge: null,
+      type: 'group',
       requiredRoles: ['super_admin', 'org_admin'],
       requiredPermission: null,
-      planFeature: null
-    },
-    {
-      id: 'audit-logs',
-      label: 'Audit Logs',
-      icon: Shield,
-      badge: null,
-      requiredRoles: ['super_admin', 'org_admin'],
-      requiredPermission: null,
-      planFeature: null
+      planFeature: null,
+      children: [
+        {
+          id: 'tenant-management',
+          label: 'Tenants',
+          icon: Building,
+          page: 'tenant-management',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'plan-management',
+          label: 'Plans',
+          icon: Layers,
+          page: 'plan-management',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'branding',
+          label: 'Branding',
+          icon: Paintbrush,
+          page: 'branding',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'branding.manage',
+          planFeature: 'branding'
+        },
+        {
+          id: 'system-settings',
+          label: 'System Settings',
+          icon: Server,
+          page: 'system-settings',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'security',
+          label: 'Security',
+          icon: Shield,
+          page: 'security',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'notifications',
+          label: 'Notifications',
+          icon: BellRing,
+          page: 'notifications',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
+          id: 'audit-logs',
+          label: 'Audit Logs',
+          icon: FileText,
+          page: 'audit-logs',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        }
+      ]
     },
     {
       id: 'help',
       label: 'Help & Support',
       icon: HelpCircle,
-      badge: null,
+      type: 'single',
+      page: 'help',
       requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector'],
       requiredPermission: null,
       planFeature: null
     }
   ];
 
-  // Filter menu items based on user role, permissions, and plan features
-  const visibleMenuItems = allMenuItems.filter((item: any) => {
+  // Helper function to check if menu item/group should be visible
+  const isItemVisible = (item: any) => {
     // Check if user role is allowed
     if (!item.requiredRoles.includes(userRole)) {
       return false;
@@ -244,10 +370,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     }
     
     return true;
-  });
+  };
 
-  // Use the filtered menu items
-  const menuItems = visibleMenuItems;
+  // Filter menu groups and their children
+  const visibleMenuGroups = menuGroups.map(group => {
+    if (group.type === 'single') {
+      // Single items - check if visible
+      return isItemVisible(group) ? group : null;
+    } else {
+      // Group items - filter children
+      const visibleChildren = group.children?.filter(child => isItemVisible(child)) || [];
+      
+      // Only show group if it has visible children and user has access to the group
+      if (visibleChildren.length > 0 && isItemVisible(group)) {
+        return { ...group, children: visibleChildren };
+      }
+      return null;
+    }
+  }).filter(Boolean);
 
   return (
     <div className={cn(
@@ -358,36 +498,96 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.id;
+        {visibleMenuGroups.map((group: any) => {
+          const GroupIcon = group.icon;
+          
+          // Single menu item (no sub-items)
+          if (group.type === 'single') {
+            const isActive = currentPage === group.page;
+            
+            return (
+              <Button
+                key={group.id}
+                variant={isActive ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start h-10",
+                  isActive && "bg-blue-50 text-blue-700 border-blue-200",
+                  collapsed && "justify-center px-2"
+                )}
+                onClick={() => onNavigate(group.page)}
+              >
+                <GroupIcon className={cn("h-4 w-4", !collapsed && "mr-3")} />
+                {!collapsed && (
+                  <span className="flex-1 text-left">{group.label}</span>
+                )}
+              </Button>
+            );
+          }
+          
+          // Group menu item (with sub-items)
+          const isExpanded = expandedGroups.includes(group.id);
+          const hasActiveChild = group.children?.some((child: any) => currentPage === child.page);
           
           return (
-            <Button
-              key={item.id}
-              variant={isActive ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start h-10",
-                isActive && "bg-blue-50 text-blue-700 border-blue-200",
-                collapsed && "justify-center px-2"
+            <div key={group.id} className="space-y-1">
+              {/* Group Header */}
+              <Button
+                variant={hasActiveChild ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start h-10",
+                  hasActiveChild && "bg-blue-50 text-blue-700",
+                  collapsed && "justify-center px-2"
+                )}
+                onClick={() => !collapsed && toggleGroup(group.id)}
+              >
+                <GroupIcon className={cn("h-4 w-4", !collapsed && "mr-3")} />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1 text-left">{group.label}</span>
+                    <ChevronDown 
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        isExpanded && "transform rotate-180"
+                      )}
+                    />
+                  </>
+                )}
+              </Button>
+              
+              {/* Sub-items */}
+              {!collapsed && isExpanded && group.children && (
+                <div className="ml-4 space-y-1 border-l-2 border-gray-200 pl-2">
+                  {group.children.map((child: any) => {
+                    const ChildIcon = child.icon;
+                    const isActive = currentPage === child.page;
+                    
+                    return (
+                      <Button
+                        key={child.id}
+                        variant={isActive ? "secondary" : "ghost"}
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start h-9 text-sm",
+                          isActive && "bg-blue-50 text-blue-700 border-blue-200"
+                        )}
+                        onClick={() => onNavigate(child.page)}
+                      >
+                        <ChildIcon className="h-3.5 w-3.5 mr-2" />
+                        <span className="flex-1 text-left">{child.label}</span>
+                        {child.badge && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-auto text-xs px-1.5 py-0"
+                          >
+                            {child.badge}
+                          </Badge>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
               )}
-              onClick={() => onNavigate(item.id)}
-            >
-              <Icon className={cn("h-4 w-4", !collapsed && "mr-3")} />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {item.badge && (
-                    <Badge 
-                      variant={item.badge === 'New' ? 'default' : 'secondary'} 
-                      className="text-xs"
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </>
-              )}
-            </Button>
+            </div>
           );
         })}
       </nav>
