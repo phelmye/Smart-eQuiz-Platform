@@ -363,16 +363,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       return false;
     }
     
-    // For org_admin and super_admin, bypass permission checks (they have full access)
-    const isSuperUser = normalizedUserRole === 'super_admin' || normalizedUserRole === 'org_admin';
-    
-    // Check permission if required and user is available (skip for super users)
-    if (!isSuperUser && item.requiredPermission && user && !hasPermission(user, item.requiredPermission)) {
+    // Check permission if required and user is available
+    if (item.requiredPermission && user && !hasPermission(user, item.requiredPermission)) {
       return false;
     }
     
-    // Check plan feature access for org_admin (super_admin bypasses plan restrictions)
-    if (item.planFeature && user && user.role?.toLowerCase() === 'org_admin' && !hasFeatureAccess(user, item.planFeature)) {
+    // Check plan feature access
+    if (item.planFeature && user && !hasFeatureAccess(user, item.planFeature)) {
       return false;
     }
     

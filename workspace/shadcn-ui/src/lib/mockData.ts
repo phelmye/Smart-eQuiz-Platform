@@ -620,6 +620,30 @@ export const defaultRolePermissions: RolePermission[] = [
     ],
     canAccessPages: ['dashboard', 'practice', 'profile'],
     isSystemRole: true
+  },
+  {
+    roleId: 'spectator',
+    roleName: 'Spectator',
+    description: 'View ongoing quizzes and tournament results (read-only)',
+    permissions: [
+      'tournaments.view',
+      'matches.view',
+      'leaderboard.view',
+      'profile.view'
+    ],
+    canAccessPages: ['dashboard', 'tournaments', 'leaderboard'],
+    isSystemRole: true
+  },
+  {
+    roleId: 'public',
+    roleName: 'Public User',
+    description: 'Limited access to public information only',
+    permissions: [
+      'tournaments.view.public',
+      'leaderboard.view.public'
+    ],
+    canAccessPages: ['dashboard'],
+    isSystemRole: true
   }
 ];
 
@@ -1214,16 +1238,39 @@ export function getTenantPlan(tenantId: string): Plan | null {
 }
 
 export function hasFeatureAccess(user: User, feature: string): boolean {
-  if (!user || !user.tenantId) return false;
+  if (!user) return false;
   
   // Normalize role to lowercase for comparison
   const normalizedRole = user.role?.toLowerCase();
   
-  // Super admin and org admin always have access
-  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
+  // Super admin always has access to all features
+  if (normalizedRole === 'super_admin') return true;
   
-  const plan = getTenantPlan(user.tenantId);
-  if (!plan) return false;
+  // For org_admin and other roles, check tenant plan features
+  const plan = user.tenantId ? getTenantPlan(user.tenantId) : null;
+  if (!plan) {
+    // If no plan found, only super_admin has access
+    return false;
+  }
+  
+  // Check if plan includes the feature
+  switch (feature) {
+    case 'branding':
+      return plan.features.some(f => f.includes('Custom branding') || f.includes('Full custom branding'));
+    case 'analytics':
+      return plan.features.some(f => f.includes('analytics') || f.includes('Analytics'));
+    case 'ai-generator':
+      return plan.maxQuestionsPerTournament > 50; // AI available for Pro+ plans
+    case 'payment-integration':
+      return plan.monthlyPrice > 0; // Paid plans only
+    case 'unlimited-users':
+      return plan.maxUsers === -1;
+    case 'unlimited-tournaments':
+      return plan.maxTournaments === -1;
+    default:
+      return true; // Default access for basic features
+  }
+}
   
   // Check if plan includes the feature
   switch (feature) {
@@ -1271,17 +1318,36 @@ export function hasPermission(user: User, permission: string): boolean {
   // Normalize role to lowercase for comparison
   const normalizedRole = user.role?.toLowerCase();
   
-  // Super admin and org admin have all permissions
-  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
+  // Super admin has all permissions
+  if (normalizedRole === 'super_admin') return true;
   
-  const rolePermission = defaultRolePermissions.find(rp => rp.roleId === user.role);
+  // Get role permissions
+  const rolePermission = defaultRolePermissions.find(rp => rp.roleId.toLowerCase() === normalizedRole);
   if (!rolePermission) return false;
   
   // Check wildcard permission
   if (rolePermission.permissions.includes('*')) return true;
   
   // Check specific permission
-  return rolePermission.permissions.includes(permission);
+  const hasBasicPermission = rolePermission.permissions.includes(permission);
+  
+  // For org_admin and other roles, also check if feature is allowed by plan
+  if (normalizedRole === 'org_admin' && hasBasicPermission) {
+    // Check if the permission requires a plan feature
+    const featureMap: Record<string, string> = {
+      'branding.manage': 'branding',
+      'analytics.view': 'analytics',
+      'questions.ai-generate': 'ai-generator',
+      'payments.configure': 'payment-integration'
+    };
+    
+    const requiredFeature = featureMap[permission];
+    if (requiredFeature) {
+      return hasFeatureAccess(user, requiredFeature);
+    }
+  }
+  
+  return hasBasicPermission;
 }
 
 export function canAccessPage(user: User, page: string): boolean {
@@ -1290,17 +1356,35 @@ export function canAccessPage(user: User, page: string): boolean {
   // Normalize role to lowercase for comparison
   const normalizedRole = user.role?.toLowerCase();
   
-  // Super admin and org admin can access all pages
-  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') return true;
+  // Super admin can access all pages
+  if (normalizedRole === 'super_admin') return true;
   
-  const rolePermission = defaultRolePermissions.find(rp => rp.roleId === user.role);
+  // Get role permissions
+  const rolePermission = defaultRolePermissions.find(rp => rp.roleId.toLowerCase() === normalizedRole);
   if (!rolePermission) return false;
   
   // Check wildcard access
   if (rolePermission.canAccessPages.includes('*')) return true;
   
   // Check specific page access
-  return rolePermission.canAccessPages.includes(page);
+  const hasPageAccess = rolePermission.canAccessPages.includes(page);
+  
+  // For pages that require plan features, check plan access
+  if (hasPageAccess) {
+    const pageFeatureMap: Record<string, string> = {
+      'branding': 'branding',
+      'analytics': 'analytics',
+      'ai-generator': 'ai-generator',
+      'payment-integration': 'payment-integration'
+    };
+    
+    const requiredFeature = pageFeatureMap[page];
+    if (requiredFeature && normalizedRole !== 'super_admin') {
+      return hasFeatureAccess(user, requiredFeature);
+    }
+  }
+  
+  return hasPageAccess;
 }
 
 export function getUsersByTenant(tenantId: string): User[] {
@@ -1310,6 +1394,91 @@ export function getUsersByTenant(tenantId: string): User[] {
 
 export function getRolePermission(roleId: string): RolePermission | undefined {
   return defaultRolePermissions.find(rp => rp.roleId === roleId);
+}
+
+// Resource-level permission checking
+export function canEditResource(user: User, resourceType: 'tournament' | 'question' | 'user', resourceOwnerId?: string): boolean {
+  if (!user) return false;
+  
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin can edit anything
+  if (normalizedRole === 'super_admin') return true;
+  
+  // Org admin can edit resources within their tenant
+  if (normalizedRole === 'org_admin') {
+    return true; // Within tenant scope (already filtered at query level)
+  }
+  
+  // Resource-specific rules
+  switch (resourceType) {
+    case 'tournament':
+      // Question managers can edit tournaments they created
+      if (normalizedRole === 'question_manager' && resourceOwnerId === user.id) {
+        return true;
+      }
+      return false;
+      
+    case 'question':
+      // Question managers can edit questions
+      if (normalizedRole === 'question_manager') {
+        return true;
+      }
+      return false;
+      
+    case 'user':
+      // Only admins can edit users
+      return normalizedRole === 'org_admin';
+      
+    default:
+      return false;
+  }
+}
+
+export function canDeleteResource(user: User, resourceType: 'tournament' | 'question' | 'user', resourceOwnerId?: string): boolean {
+  if (!user) return false;
+  
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin can delete anything
+  if (normalizedRole === 'super_admin') return true;
+  
+  // Org admin can delete resources within their tenant
+  if (normalizedRole === 'org_admin') {
+    return true;
+  }
+  
+  // Most other roles cannot delete
+  return false;
+}
+
+export function canViewResource(user: User, resourceType: 'tournament' | 'question' | 'payment', isPublic: boolean = false): boolean {
+  if (!user) return isPublic;
+  
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin and org admin can view everything
+  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') {
+    return true;
+  }
+  
+  // Public resources can be viewed by anyone
+  if (isPublic) return true;
+  
+  // Resource-specific view permissions
+  switch (resourceType) {
+    case 'tournament':
+      return ['participant', 'spectator', 'inspector', 'question_manager'].includes(normalizedRole || '');
+      
+    case 'question':
+      return ['question_manager', 'participant', 'practice_user'].includes(normalizedRole || '');
+      
+    case 'payment':
+      return ['account_officer'].includes(normalizedRole || '');
+      
+    default:
+      return false;
+  }
 }
 
 export function getAvailableRolesForTenant(tenantId: string): RolePermission[] {
