@@ -14,7 +14,9 @@ export const STORAGE_KEYS = {
   BRANDING: 'equiz_branding',
   TOURNAMENT_APPLICATIONS: 'equiz_tournament_applications',
   QUIZ_ATTEMPTS: 'equiz_quiz_attempts',
-  PRACTICE_POINTS: 'equiz_practice_points'
+  PRACTICE_POINTS: 'equiz_practice_points',
+  PARISHES: 'equiz_parishes',
+  USER_PROFILES: 'equiz_user_profiles'
 };
 
 // User roles
@@ -26,6 +28,122 @@ export type UserRole =
   | 'participant' 
   | 'inspector' 
   | 'practice_user';
+
+// Parish/Organization Contact Person
+export interface ParishContactPerson {
+  name: string;
+  phoneNumber: string;
+  emailAddress: string;
+}
+
+// Parish/Organization Authority
+export interface ParishAuthority {
+  name: string;
+  phoneNumber: string;
+  emailAddress: string;
+  address: string;
+}
+
+// Parish/Organization Location
+export interface ParishLocation {
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  mapUrl?: string;
+}
+
+// Parish/Organization interface
+export interface Parish {
+  id: string;
+  name: string;
+  tenantId: string;
+  
+  // Authority (Person in charge)
+  authority: ParishAuthority;
+  
+  // Contact Person
+  contactPerson: ParishContactPerson;
+  
+  // Parish Contact Details
+  parishPhoneNumber: string;
+  parishEmailAddress: string;
+  
+  // Location
+  location: ParishLocation;
+  
+  // Images
+  parishImage?: string; // Landscape 16:9 ratio
+  
+  // Status
+  isActive: boolean;
+  isVerified: boolean;
+  
+  // Metadata
+  createdBy: string; // User ID who added this parish
+  createdAt: string;
+  updatedAt?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+}
+
+// Next of Kin information
+export interface NextOfKin {
+  name: string;
+  relationship: string;
+  phoneNumber: string;
+  address: string;
+}
+
+// Bank Account information
+export interface BankAccount {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  bankCode?: string;
+}
+
+// Social Media Accounts
+export interface SocialAccounts {
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  linkedin?: string;
+  whatsapp?: string;
+  telegram?: string;
+}
+
+// User Profile (Extended Information)
+export interface UserProfile {
+  userId: string;
+  
+  // Personal Information
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+  phoneNumber?: string;
+  alternatePhoneNumber?: string;
+  homeAddress?: string;
+  profilePicture?: string; // Square or portrait format
+  
+  // Parish/Organization
+  parishId?: string; // Reference to Parish ID
+  
+  // Next of Kin
+  nextOfKin?: NextOfKin;
+  
+  // Bank Account for Cashout
+  bankAccount?: BankAccount;
+  
+  // Social Media
+  socialAccounts?: SocialAccounts;
+  
+  // Profile Completion
+  profileCompletionPercentage: number;
+  isProfileComplete: boolean;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
 
 // User interface
 export interface User {
@@ -50,6 +168,9 @@ export interface User {
   qualificationStatus?: 'not_qualified' | 'in_training' | 'qualified' | 'approved_participant';
   qualificationApprovedAt?: string;
   qualificationApprovedBy?: string;
+  // Extended profile reference
+  hasExtendedProfile?: boolean;
+  profileCompletionPercentage?: number;
 }
 
 // Type guard for runtime checks when dealing with unknown values
@@ -1770,6 +1891,16 @@ export const initializeMockData = () => {
   if (!storage.get(STORAGE_KEYS.PRACTICE_POINTS)) {
     storage.set(STORAGE_KEYS.PRACTICE_POINTS, []);
   }
+  
+  // Initialize parishes
+  if (!storage.get(STORAGE_KEYS.PARISHES)) {
+    storage.set(STORAGE_KEYS.PARISHES, []);
+  }
+  
+  // Initialize user profiles
+  if (!storage.get(STORAGE_KEYS.USER_PROFILES)) {
+    storage.set(STORAGE_KEYS.USER_PROFILES, []);
+  }
 };
 
 // Practice Access Application Functions
@@ -2231,4 +2362,254 @@ export function calculateFinalScore(
     default:
       return attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length;
   }
+}
+
+// ==================== PARISH/ORGANIZATION MANAGEMENT ====================
+
+// Get all parishes
+export function getAllParishes(): Parish[] {
+  return storage.get(STORAGE_KEYS.PARISHES) || [];
+}
+
+// Get parishes by tenant
+export function getParishesByTenant(tenantId: string): Parish[] {
+  const parishes = getAllParishes();
+  return parishes.filter(p => p.tenantId === tenantId);
+}
+
+// Search parishes by name
+export function searchParishes(query: string, tenantId?: string): Parish[] {
+  let parishes = getAllParishes();
+  
+  if (tenantId) {
+    parishes = parishes.filter(p => p.tenantId === tenantId);
+  }
+  
+  if (!query) return parishes;
+  
+  const lowerQuery = query.toLowerCase();
+  return parishes.filter(p => 
+    p.name.toLowerCase().includes(lowerQuery) ||
+    p.location.address.toLowerCase().includes(lowerQuery)
+  );
+}
+
+// Get parish by ID
+export function getParishById(parishId: string): Parish | null {
+  const parishes = getAllParishes();
+  return parishes.find(p => p.id === parishId) || null;
+}
+
+// Add new parish
+export function addParish(parishData: Omit<Parish, 'id' | 'createdAt' | 'isVerified' | 'verifiedBy' | 'verifiedAt'>): { success: boolean; parishId?: string; message?: string } {
+  const parishes = getAllParishes();
+  
+  // Check for duplicate name in same tenant
+  const duplicate = parishes.find(p => 
+    p.name.toLowerCase() === parishData.name.toLowerCase() && 
+    p.tenantId === parishData.tenantId
+  );
+  
+  if (duplicate) {
+    return { success: false, message: 'A parish with this name already exists' };
+  }
+  
+  const newParish: Parish = {
+    ...parishData,
+    id: `parish_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: new Date().toISOString(),
+    isVerified: false // Admin must verify new parishes
+  };
+  
+  parishes.push(newParish);
+  storage.set(STORAGE_KEYS.PARISHES, parishes);
+  
+  logAuditEvent({
+    userId: parishData.createdBy,
+    action: 'create_parish',
+    entityType: 'parish',
+    entityId: newParish.id,
+    details: { parishName: parishData.name }
+  });
+  
+  return { success: true, parishId: newParish.id };
+}
+
+// Update parish
+export function updateParish(parishId: string, updates: Partial<Parish>): boolean {
+  const parishes = getAllParishes();
+  const parishIndex = parishes.findIndex(p => p.id === parishId);
+  
+  if (parishIndex === -1) return false;
+  
+  parishes[parishIndex] = {
+    ...parishes[parishIndex],
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+  
+  storage.set(STORAGE_KEYS.PARISHES, parishes);
+  return true;
+}
+
+// Verify parish (admin action)
+export function verifyParish(parishId: string, adminId: string): boolean {
+  const parishes = getAllParishes();
+  const parishIndex = parishes.findIndex(p => p.id === parishId);
+  
+  if (parishIndex === -1) return false;
+  
+  parishes[parishIndex].isVerified = true;
+  parishes[parishIndex].verifiedBy = adminId;
+  parishes[parishIndex].verifiedAt = new Date().toISOString();
+  parishes[parishIndex].updatedAt = new Date().toISOString();
+  
+  storage.set(STORAGE_KEYS.PARISHES, parishes);
+  
+  logAuditEvent({
+    userId: adminId,
+    action: 'verify_parish',
+    entityType: 'parish',
+    entityId: parishId,
+    details: { status: 'verified' }
+  });
+  
+  return true;
+}
+
+// ==================== USER PROFILE MANAGEMENT ====================
+
+// Get user profile
+export function getUserProfile(userId: string): UserProfile | null {
+  const profiles = storage.get(STORAGE_KEYS.USER_PROFILES) || [];
+  return profiles.find((p: UserProfile) => p.userId === userId) || null;
+}
+
+// Create or update user profile
+export function saveUserProfile(profileData: Partial<UserProfile> & { userId: string }): boolean {
+  const profiles = storage.get(STORAGE_KEYS.USER_PROFILES) || [];
+  const existingIndex = profiles.findIndex((p: UserProfile) => p.userId === profileData.userId);
+  
+  // Calculate profile completion
+  const completionScore = calculateProfileCompletion(profileData);
+  
+  const updatedProfile: UserProfile = existingIndex >= 0 
+    ? {
+        ...profiles[existingIndex],
+        ...profileData,
+        profileCompletionPercentage: completionScore,
+        isProfileComplete: completionScore === 100,
+        updatedAt: new Date().toISOString()
+      }
+    : {
+        userId: profileData.userId,
+        profileCompletionPercentage: completionScore,
+        isProfileComplete: completionScore === 100,
+        createdAt: new Date().toISOString(),
+        ...profileData
+      };
+  
+  if (existingIndex >= 0) {
+    profiles[existingIndex] = updatedProfile;
+  } else {
+    profiles.push(updatedProfile);
+  }
+  
+  storage.set(STORAGE_KEYS.USER_PROFILES, profiles);
+  
+  // Update user's profile completion percentage
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const userIndex = users.findIndex((u: User) => u.id === profileData.userId);
+  if (userIndex >= 0) {
+    users[userIndex].hasExtendedProfile = true;
+    users[userIndex].profileCompletionPercentage = completionScore;
+    storage.set(STORAGE_KEYS.USERS, users);
+    
+    // Update current user if it's the same
+    const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+    if (currentUser?.id === profileData.userId) {
+      currentUser.hasExtendedProfile = true;
+      currentUser.profileCompletionPercentage = completionScore;
+      storage.set(STORAGE_KEYS.CURRENT_USER, currentUser);
+    }
+  }
+  
+  return true;
+}
+
+// Calculate profile completion percentage
+function calculateProfileCompletion(profile: Partial<UserProfile>): number {
+  let score = 0;
+  const weights = {
+    dateOfBirth: 5,
+    gender: 5,
+    phoneNumber: 10,
+    homeAddress: 10,
+    profilePicture: 10,
+    parishId: 15,
+    nextOfKin: 15,
+    bankAccount: 15,
+    socialAccounts: 15
+  };
+  
+  if (profile.dateOfBirth) score += weights.dateOfBirth;
+  if (profile.gender) score += weights.gender;
+  if (profile.phoneNumber) score += weights.phoneNumber;
+  if (profile.homeAddress) score += weights.homeAddress;
+  if (profile.profilePicture) score += weights.profilePicture;
+  if (profile.parishId) score += weights.parishId;
+  
+  // Next of Kin (check if all required fields are filled)
+  if (profile.nextOfKin?.name && profile.nextOfKin?.phoneNumber && profile.nextOfKin?.relationship) {
+    score += weights.nextOfKin;
+  }
+  
+  // Bank Account (check if all required fields are filled)
+  if (profile.bankAccount?.bankName && profile.bankAccount?.accountNumber && profile.bankAccount?.accountName) {
+    score += weights.bankAccount;
+  }
+  
+  // Social Accounts (check if at least one is filled)
+  if (profile.socialAccounts && Object.values(profile.socialAccounts).some(v => v)) {
+    score += weights.socialAccounts;
+  }
+  
+  return score;
+}
+
+// Get profile completion status
+export function getProfileCompletionStatus(userId: string): {
+  percentage: number;
+  missingFields: string[];
+  isComplete: boolean;
+} {
+  const profile = getUserProfile(userId);
+  
+  if (!profile) {
+    return {
+      percentage: 0,
+      missingFields: ['All profile fields'],
+      isComplete: false
+    };
+  }
+  
+  const missingFields: string[] = [];
+  
+  if (!profile.dateOfBirth) missingFields.push('Date of Birth');
+  if (!profile.gender) missingFields.push('Gender');
+  if (!profile.phoneNumber) missingFields.push('Phone Number');
+  if (!profile.homeAddress) missingFields.push('Home Address');
+  if (!profile.profilePicture) missingFields.push('Profile Picture');
+  if (!profile.parishId) missingFields.push('Parish/Organization');
+  if (!profile.nextOfKin?.name) missingFields.push('Next of Kin Information');
+  if (!profile.bankAccount?.accountNumber) missingFields.push('Bank Account Details');
+  if (!profile.socialAccounts || !Object.values(profile.socialAccounts).some(v => v)) {
+    missingFields.push('Social Media Accounts');
+  }
+  
+  return {
+    percentage: profile.profileCompletionPercentage,
+    missingFields,
+    isComplete: profile.isProfileComplete
+  };
 }
