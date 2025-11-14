@@ -11,7 +11,10 @@ export const STORAGE_KEYS = {
   TENANT_ROLES: 'equiz_tenant_roles',
   AUDIT_LOGS: 'equiz_audit_logs',
   CURRENT_USER: 'equiz_current_user',
-  BRANDING: 'equiz_branding'
+  BRANDING: 'equiz_branding',
+  TOURNAMENT_APPLICATIONS: 'equiz_tournament_applications',
+  QUIZ_ATTEMPTS: 'equiz_quiz_attempts',
+  PRACTICE_POINTS: 'equiz_practice_points'
 };
 
 // User roles
@@ -289,6 +292,146 @@ export interface Tournament {
   createdBy: string;
   tenantId: string;
   createdAt: string;
+  // Qualification settings
+  qualificationConfig?: {
+    enabled: boolean;
+    quizEnabled: boolean;
+    quizSettings?: PreTournamentQuizConfig;
+    practicePointsThreshold?: number;
+    allowDirectInvitation: boolean;
+  };
+}
+
+// Pre-tournament quiz configuration
+export interface PreTournamentQuizConfig {
+  enabled: boolean;
+  questionsCount: number; // 10-50 questions per attempt
+  passPercentage: number; // 50-90%
+  timeLimitMinutes: number; // 15-60 minutes
+  
+  // Retake settings
+  allowRetakes: boolean;
+  maxRetakes: number; // Total attempts (1-5)
+  retakeWaitTimeMinutes?: number; // Optional cooldown
+  
+  // Question pool requirement
+  questionPoolSize: number; // Required: questionsCount × maxRetakes
+  questionPoolRequirementMet: boolean;
+  
+  // Question settings
+  categoryMatch: boolean;
+  difficultyLevel: 'easy' | 'medium' | 'hard';
+  preventQuestionReuse: boolean; // Default: true
+  randomizeQuestionOrder: boolean; // Default: true
+  randomizeAnswerOptions: boolean; // Default: true
+  
+  // Scoring method
+  scoringMethod: 'average' | 'highest' | 'latest'; // Default: average
+}
+
+// Quiz attempt record
+export interface QuizAttempt {
+  id: string;
+  userId: string;
+  tournamentId: string;
+  applicationId: string;
+  attemptNumber: number; // 1, 2, 3, etc.
+  questionsShown: string[]; // Question IDs used in this attempt
+  answerShuffles: {
+    questionId: string;
+    originalOrder: number[];
+    shuffledOrder: number[];
+  }[];
+  answers: Record<string, number>; // questionId -> selected option index
+  score: number; // Percentage
+  passed: boolean;
+  timeTaken: number; // Seconds
+  startedAt: string;
+  completedAt: string;
+  randomizationSeed: string; // For audit
+}
+
+// Tournament application
+export interface TournamentApplication {
+  id: string;
+  userId: string;
+  tournamentId: string;
+  status: 'pending' | 'quiz_available' | 'quiz_in_progress' | 'qualified' | 'auto_qualified' | 'disqualified' | 'invited';
+  qualificationPathway: 'quiz' | 'practice_points' | 'direct_invitation';
+  
+  // Application tracking
+  appliedAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  
+  // Quiz pathway
+  quizAttempts?: QuizAttempt[];
+  attemptsRemaining?: number;
+  nextAttemptAvailableAt?: string; // For cooldown
+  finalScore?: number; // Calculated based on scoring method
+  scoringMethodUsed?: 'average' | 'highest' | 'latest';
+  
+  // Practice points pathway
+  practicePointsUsed?: number;
+  autoQualified?: boolean;
+  
+  // Direct invitation pathway
+  invitedBy?: string;
+  invitedAt?: string;
+  invitationMessage?: string;
+  
+  // Disqualification
+  disqualified?: boolean;
+  disqualificationReason?: string;
+  disqualifiedAt?: string;
+  disqualifiedBy?: string;
+  
+  // Metadata
+  lastStatusChange: string;
+  notificationsSent: string[]; // Event types
+}
+
+// Practice points tracking
+export interface PracticePoints {
+  userId: string;
+  totalPoints: number;
+  pointsHistory: {
+    id: string;
+    points: number;
+    reason: string;
+    timestamp: string;
+  }[];
+  lastUpdated: string;
+}
+
+// Live tournament view data
+export interface LiveTournamentView {
+  tournamentId: string;
+  status: 'upcoming' | 'in_progress' | 'completed';
+  participants: {
+    userId: string;
+    displayName: string;
+    currentScore: number;
+    correctAnswers: number;
+    averageTime: number;
+    status: 'active' | 'finished' | 'disconnected';
+    rank: number;
+  }[];
+  metrics: {
+    totalParticipants: number;
+    activeParticipants: number;
+    finishedParticipants: number;
+    droppedParticipants: number;
+    averageScore: number;
+    averageTimePerQuestion: number;
+  };
+  questionProgress: {
+    currentQuestion: number;
+    totalQuestions: number;
+    answeredBy: number;
+    averageTime: number;
+  };
+  lastUpdated: string;
 }
 
 // Question interface
@@ -1612,6 +1755,21 @@ export const initializeMockData = () => {
   if (!storage.get(STORAGE_KEYS.TENANT_ROLES)) {
     storage.set(STORAGE_KEYS.TENANT_ROLES, mockTenantRoles);
   }
+  
+  // Initialize tournament applications
+  if (!storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS)) {
+    storage.set(STORAGE_KEYS.TOURNAMENT_APPLICATIONS, []);
+  }
+  
+  // Initialize quiz attempts
+  if (!storage.get(STORAGE_KEYS.QUIZ_ATTEMPTS)) {
+    storage.set(STORAGE_KEYS.QUIZ_ATTEMPTS, []);
+  }
+  
+  // Initialize practice points
+  if (!storage.get(STORAGE_KEYS.PRACTICE_POINTS)) {
+    storage.set(STORAGE_KEYS.PRACTICE_POINTS, []);
+  }
 };
 
 // Practice Access Application Functions
@@ -1761,4 +1919,316 @@ export function canParticipateInTournaments(user: User): boolean {
   return normalizedRole === 'participant' || 
          normalizedRole === 'org_admin' || 
          normalizedRole === 'super_admin';
+}
+
+// ==================== TOURNAMENT APPLICATION FUNCTIONS ====================
+
+// Get all tournament applications
+export function getAllTournamentApplications(): TournamentApplication[] {
+  return storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+}
+
+// Get applications for a specific user
+export function getUserTournamentApplications(userId: string): TournamentApplication[] {
+  const applications = getAllTournamentApplications();
+  return applications.filter(app => app.userId === userId);
+}
+
+// Get applications for a specific tournament
+export function getTournamentApplications(tournamentId: string): TournamentApplication[] {
+  const applications = getAllTournamentApplications();
+  return applications.filter(app => app.tournamentId === tournamentId);
+}
+
+// Get a specific application
+export function getApplicationById(applicationId: string): TournamentApplication | null {
+  const applications = getAllTournamentApplications();
+  return applications.find(app => app.id === applicationId) || null;
+}
+
+// Check if user can apply to tournament
+export function canApplyToTournament(user: User, tournamentId: string): { allowed: boolean; reason?: string } {
+  // Check if user exists
+  if (!user) {
+    return { allowed: false, reason: 'User not authenticated' };
+  }
+
+  // Check if tournament exists
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
+  if (!tournament) {
+    return { allowed: false, reason: 'Tournament not found' };
+  }
+
+  // Check tournament status
+  if (tournament.status === 'completed' || tournament.status === 'cancelled') {
+    return { allowed: false, reason: 'Tournament is no longer accepting applications' };
+  }
+
+  if (tournament.status === 'active') {
+    return { allowed: false, reason: 'Tournament has already started' };
+  }
+
+  // Check if max participants reached
+  if (tournament.currentParticipants >= tournament.maxParticipants) {
+    return { allowed: false, reason: 'Tournament is full' };
+  }
+
+  // Check if user already applied
+  const existingApplications = getUserTournamentApplications(user.id);
+  const existingApp = existingApplications.find(app => app.tournamentId === tournamentId);
+  
+  if (existingApp) {
+    if (existingApp.status === 'qualified' || existingApp.status === 'auto_qualified') {
+      return { allowed: false, reason: 'You are already qualified for this tournament' };
+    }
+    if (existingApp.status === 'disqualified') {
+      return { allowed: false, reason: 'You have been disqualified from this tournament' };
+    }
+    if (existingApp.status === 'pending' || existingApp.status === 'quiz_available' || existingApp.status === 'quiz_in_progress') {
+      return { allowed: false, reason: 'You already have an active application for this tournament' };
+    }
+  }
+
+  return { allowed: true };
+}
+
+// Apply to tournament
+export function applyToTournament(userId: string, tournamentId: string): { success: boolean; message?: string; applicationId?: string } {
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
+  
+  if (!user) {
+    return { success: false, message: 'User not found' };
+  }
+
+  const canApply = canApplyToTournament(user, tournamentId);
+  if (!canApply.allowed) {
+    return { success: false, message: canApply.reason };
+  }
+
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
+  
+  if (!tournament?.qualificationConfig?.enabled) {
+    return { success: false, message: 'Tournament qualification is not configured' };
+  }
+
+  const applications = getAllTournamentApplications();
+  const practicePoints = getPracticePoints(userId);
+
+  // Determine qualification pathway
+  let status: TournamentApplication['status'] = 'pending';
+  let qualificationPathway: TournamentApplication['qualificationPathway'] = 'quiz';
+  let autoQualified = false;
+
+  // Check practice points auto-qualification
+  if (tournament.qualificationConfig.practicePointsThreshold && 
+      practicePoints.totalPoints >= tournament.qualificationConfig.practicePointsThreshold) {
+    status = 'auto_qualified';
+    qualificationPathway = 'practice_points';
+    autoQualified = true;
+  } else if (tournament.qualificationConfig.quizEnabled) {
+    status = 'quiz_available';
+    qualificationPathway = 'quiz';
+  }
+
+  const application: TournamentApplication = {
+    id: `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    userId,
+    tournamentId,
+    status,
+    qualificationPathway,
+    appliedAt: new Date().toISOString(),
+    lastStatusChange: new Date().toISOString(),
+    notificationsSent: ['application_received'],
+    ...(autoQualified && {
+      practicePointsUsed: practicePoints.totalPoints,
+      autoQualified: true
+    }),
+    ...(qualificationPathway === 'quiz' && tournament.qualificationConfig.quizSettings && {
+      attemptsRemaining: tournament.qualificationConfig.quizSettings.maxRetakes,
+      quizAttempts: []
+    })
+  };
+
+  applications.push(application);
+  storage.set(STORAGE_KEYS.TOURNAMENT_APPLICATIONS, applications);
+
+  logAuditEvent({
+    userId,
+    action: 'apply_tournament',
+    entityType: 'tournament',
+    entityId: tournamentId,
+    details: { applicationId: application.id, pathway: qualificationPathway, autoQualified }
+  });
+
+  return { 
+    success: true, 
+    message: autoQualified 
+      ? 'Congratulations! You are auto-qualified via practice points!' 
+      : 'Application submitted successfully. Check your email for next steps.',
+    applicationId: application.id
+  };
+}
+
+// ==================== PRACTICE POINTS FUNCTIONS ====================
+
+// Get practice points for user
+export function getPracticePoints(userId: string): PracticePoints {
+  const allPoints = storage.get(STORAGE_KEYS.PRACTICE_POINTS) || [];
+  const userPoints = allPoints.find((p: PracticePoints) => p.userId === userId);
+  
+  if (!userPoints) {
+    return {
+      userId,
+      totalPoints: 0,
+      pointsHistory: [],
+      lastUpdated: new Date().toISOString()
+    };
+  }
+  
+  return userPoints;
+}
+
+// Add practice points
+export function addPracticePoints(userId: string, points: number, reason: string): boolean {
+  const allPoints = storage.get(STORAGE_KEYS.PRACTICE_POINTS) || [];
+  let userPoints = allPoints.find((p: PracticePoints) => p.userId === userId);
+  
+  if (!userPoints) {
+    userPoints = {
+      userId,
+      totalPoints: 0,
+      pointsHistory: [],
+      lastUpdated: new Date().toISOString()
+    };
+    allPoints.push(userPoints);
+  }
+  
+  userPoints.totalPoints += points;
+  userPoints.pointsHistory.push({
+    id: `pts_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    points,
+    reason,
+    timestamp: new Date().toISOString()
+  });
+  userPoints.lastUpdated = new Date().toISOString();
+  
+  storage.set(STORAGE_KEYS.PRACTICE_POINTS, allPoints);
+  
+  return true;
+}
+
+// ==================== QUESTION RANDOMIZATION FUNCTIONS ====================
+
+// Shuffle array using Fisher-Yates algorithm
+function shuffleArray<T>(array: T[], seed?: string): T[] {
+  const arr = [...array];
+  const random = seed ? seededRandom(seed) : Math.random;
+  
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  
+  return arr;
+}
+
+// Seeded random number generator
+function seededRandom(seed: string): () => number {
+  let value = 0;
+  for (let i = 0; i < seed.length; i++) {
+    value = ((value << 5) - value) + seed.charCodeAt(i);
+    value = value & value;
+  }
+  
+  return function() {
+    value = (value * 9301 + 49297) % 233280;
+    return value / 233280;
+  };
+}
+
+// Get questions for quiz attempt (with randomization and no repeats)
+export function getQuestionsForAttempt(
+  userId: string, 
+  tournamentId: string, 
+  attemptNumber: number
+): { success: boolean; questions?: Question[]; message?: string } {
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
+  
+  if (!tournament?.qualificationConfig?.quizSettings) {
+    return { success: false, message: 'Quiz configuration not found' };
+  }
+  
+  const config = tournament.qualificationConfig.quizSettings;
+  const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || mockQuestions;
+  
+  // Filter questions by category and difficulty
+  let availableQuestions = allQuestions.filter((q: Question) => {
+    if (config.categoryMatch && q.category !== tournament.category) {
+      return false;
+    }
+    if (q.difficulty !== config.difficultyLevel) {
+      return false;
+    }
+    return true;
+  });
+  
+  // Get previous attempts to exclude used questions
+  const applications = getUserTournamentApplications(userId);
+  const application = applications.find(app => app.tournamentId === tournamentId);
+  
+  if (application?.quizAttempts) {
+    const usedQuestionIds = application.quizAttempts.flatMap(attempt => attempt.questionsShown);
+    availableQuestions = availableQuestions.filter((q: Question) => !usedQuestionIds.includes(q.id));
+  }
+  
+  // Validate sufficient questions
+  if (availableQuestions.length < config.questionsCount) {
+    return { 
+      success: false, 
+      message: `Insufficient unique questions available. Need ${config.questionsCount}, have ${availableQuestions.length}` 
+    };
+  }
+  
+  // Randomly select questions with seed
+  const seed = `${userId}_${tournamentId}_${attemptNumber}_${Date.now()}`;
+  const selectedQuestions = shuffleArray(availableQuestions, seed).slice(0, config.questionsCount);
+  
+  // Shuffle answer options if configured
+  if (config.randomizeAnswerOptions) {
+    return {
+      success: true,
+      questions: selectedQuestions.map((q: Question) => ({
+        ...q,
+        options: shuffleArray(q.options, `${seed}_${q.id}`)
+      }))
+    };
+  }
+  
+  return { success: true, questions: selectedQuestions };
+}
+
+// Calculate final score based on scoring method
+export function calculateFinalScore(
+  attempts: QuizAttempt[], 
+  scoringMethod: 'average' | 'highest' | 'latest'
+): number {
+  if (attempts.length === 0) return 0;
+  
+  switch (scoringMethod) {
+    case 'average':
+      return attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length;
+      
+    case 'highest':
+      return Math.max(...attempts.map(a => a.score));
+      
+    case 'latest':
+      return attempts[attempts.length - 1].score;
+      
+    default:
+      return attempts.reduce((sum, a) => sum + a.score, 0) / attempts.length;
+  }
 }
