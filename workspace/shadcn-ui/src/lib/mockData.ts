@@ -22,7 +22,10 @@ export const STORAGE_KEYS = {
   PRIZE_AWARDS: 'equiz_prize_awards',
   PAYMENT_GATEWAYS: 'equiz_payment_gateways',
   TOURNAMENT_PAYMENTS: 'equiz_tournament_payments',
-  TOURNAMENT_DONATIONS: 'equiz_tournament_donations'
+  TOURNAMENT_DONATIONS: 'equiz_tournament_donations',
+  KNOCKOUT_BRACKETS: 'equiz_knockout_brackets',
+  KNOCKOUT_MATCHES: 'equiz_knockout_matches',
+  PARTICIPANT_JOURNEYS: 'equiz_participant_journeys'
 };
 
 // User roles
@@ -345,7 +348,13 @@ export const TOURNAMENT_FEATURES = {
   PUBLIC_DONATIONS: 'tournaments.donations',              // Public donation campaigns
   PARISH_ENTRY_FEES: 'tournaments.parish_fees',           // Parish/group fee collection
   CUSTOM_PAYMENT_GATEWAYS: 'tournaments.custom_gateways', // Multiple payment providers
-  PAYMENT_ANALYTICS: 'tournaments.payment_analytics'      // Revenue tracking and reports
+  PAYMENT_ANALYTICS: 'tournaments.payment_analytics',      // Revenue tracking and reports
+  
+  // Knockout Tournament Features (Professional+)
+  KNOCKOUT_TOURNAMENTS: 'tournaments.knockout',           // Bracket-style elimination
+  BRACKET_VISUALIZATION: 'tournaments.bracket_view',      // Visual bracket display
+  DOUBLE_ELIMINATION: 'tournaments.double_elimination',   // Double elimination brackets
+  SWISS_SYSTEM: 'tournaments.swiss_system'                // Swiss-system tournaments
 };
 
 // Feature to Plan Mapping
@@ -379,7 +388,13 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
   [TOURNAMENT_FEATURES.PUBLIC_DONATIONS]: ['enterprise'],
   [TOURNAMENT_FEATURES.PARISH_ENTRY_FEES]: ['enterprise'],
   [TOURNAMENT_FEATURES.CUSTOM_PAYMENT_GATEWAYS]: ['enterprise'],
-  [TOURNAMENT_FEATURES.PAYMENT_ANALYTICS]: ['enterprise']
+  [TOURNAMENT_FEATURES.PAYMENT_ANALYTICS]: ['enterprise'],
+  
+  // Knockout Tournament Features (Professional+)
+  [TOURNAMENT_FEATURES.KNOCKOUT_TOURNAMENTS]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.BRACKET_VISUALIZATION]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.DOUBLE_ELIMINATION]: ['enterprise'],
+  [TOURNAMENT_FEATURES.SWISS_SYSTEM]: ['enterprise']
 };
 
 // Role with component features
@@ -537,6 +552,10 @@ export interface Tournament {
       message?: string; // Error message to show user
     }>;
   };
+  
+  // Tournament Format (Professional+ Feature)
+  tournamentFormat?: TournamentFormat; // 'standard' or knockout variants
+  knockoutConfig?: KnockoutTournamentConfig;
 }
 
 // Pre-tournament quiz configuration
@@ -1030,7 +1049,238 @@ export interface TournamentDonation {
   createdAt: string;
 }
 
-// Live tournament view data
+// ============================================
+// KNOCKOUT TOURNAMENT SYSTEM INTERFACES
+// ============================================
+
+// Tournament format types
+export type TournamentFormat = 'standard' | 'single_elimination' | 'double_elimination' | 'swiss_system';
+
+// Knockout tournament configuration
+export interface KnockoutTournamentConfig {
+  format: TournamentFormat;
+  enabled: boolean;
+  
+  // Seeding configuration
+  seedingMethod: 'random' | 'qualification_score' | 'practice_points' | 'manual' | 'registration_order';
+  allowReseedingBetweenRounds?: boolean;
+  
+  // Match configuration
+  matchType: 'head_to_head' | 'simultaneous_quiz';
+  questionsPerMatch: number;
+  matchTimeLimitMinutes: number;
+  
+  // Advancement rules
+  advancementRule: 'winner_only' | 'points_based' | 'best_of_series';
+  bestOfSeries?: number; // For best_of_3, best_of_5, etc.
+  tiebreaker: 'sudden_death' | 'time_taken' | 'coin_toss' | 'extra_questions';
+  
+  // Double elimination specific
+  doubleEliminationConfig?: {
+    winnersStartInUpperBracket: boolean;
+    grandFinalFormat: 'single_match' | 'bracket_reset'; // Winner from lower must win twice
+  };
+  
+  // Swiss system specific
+  swissConfig?: {
+    numberOfRounds: number;
+    pairingAlgorithm: 'dutch' | 'accelerated' | 'modified_median';
+    allowRepeatPairings: boolean;
+    pointsForWin: number;
+    pointsForDraw: number;
+    pointsForLoss: number;
+  };
+  
+  // Scheduling
+  autoScheduleMatches: boolean;
+  timeBetweenMatches?: number; // Minutes
+  allowParallelMatches: boolean;
+  maxParallelMatches?: number;
+  
+  // Third place playoff
+  thirdPlacePlayoff: boolean;
+  
+  // Notifications
+  notifyBeforeMatch: boolean;
+  notificationMinutes?: number;
+}
+
+// Match in a knockout tournament
+export interface KnockoutMatch {
+  id: string;
+  tournamentId: string;
+  bracketId: string;
+  
+  // Match identification
+  roundNumber: number;
+  roundName: string; // 'Round 1', 'Quarter Finals', 'Semi Finals', 'Finals', etc.
+  matchNumber: number; // Position within the round
+  bracket: 'main' | 'upper' | 'lower' | 'third_place'; // For double elimination
+  
+  // Participants
+  participant1Id?: string; // null if TBD (waiting for previous match)
+  participant2Id?: string; // null if TBD or BYE
+  participant1Type: 'individual' | 'parish';
+  participant2Type: 'individual' | 'parish';
+  participant1Seed?: number;
+  participant2Seed?: number;
+  
+  // Match source (for bracket tracking)
+  participant1Source?: {
+    type: 'seed' | 'winner' | 'loser';
+    matchId?: string;
+  };
+  participant2Source?: {
+    type: 'seed' | 'winner' | 'loser';
+    matchId?: string;
+  };
+  
+  // Match status
+  status: 'scheduled' | 'ready' | 'in_progress' | 'completed' | 'walkover' | 'cancelled';
+  scheduledStartTime?: string;
+  actualStartTime?: string;
+  completedAt?: string;
+  
+  // Match results
+  winnerId?: string;
+  participant1Score?: number;
+  participant2Score?: number;
+  participant1CorrectAnswers?: number;
+  participant2CorrectAnswers?: number;
+  participant1TimeTaken?: number; // Seconds
+  participant2TimeTaken?: number;
+  
+  // Series tracking (for best-of matches)
+  seriesNumber?: number; // 1, 2, 3 for best of 3
+  seriesWins?: {
+    participant1: number;
+    participant2: number;
+  };
+  
+  // Match details
+  questionIds: string[];
+  participant1Answers?: Record<string, number>;
+  participant2Answers?: Record<string, number>;
+  
+  // Progression
+  nextMatchId?: string; // Where winner advances
+  nextMatchPosition?: 'participant1' | 'participant2';
+  loserNextMatchId?: string; // For double elimination
+  loserNextMatchPosition?: 'participant1' | 'participant2';
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Tournament bracket structure
+export interface TournamentBracket {
+  id: string;
+  tournamentId: string;
+  format: TournamentFormat;
+  
+  // Participants
+  totalParticipants: number;
+  participantIds: string[];
+  participantTypes: Record<string, 'individual' | 'parish'>;
+  
+  // Seeding
+  seeds: Record<string, number>; // participantId -> seed number
+  seedingMethod: string;
+  seedingCompletedAt?: string;
+  
+  // Bracket structure
+  totalRounds: number;
+  matchesPerRound: number[];
+  
+  // Matches organized by round
+  rounds: {
+    roundNumber: number;
+    roundName: string;
+    matches: string[]; // Match IDs
+  }[];
+  
+  // Current state
+  currentRound: number;
+  completedRounds: number[];
+  activeMatches: string[];
+  completedMatches: string[];
+  
+  // Double elimination specific
+  upperBracket?: {
+    rounds: string[][]; // Match IDs per round
+  };
+  lowerBracket?: {
+    rounds: string[][]; // Match IDs per round
+  };
+  grandFinals?: {
+    matchId: string;
+    bracketResetMatchId?: string;
+  };
+  
+  // Swiss system specific
+  swissStandings?: {
+    participantId: string;
+    wins: number;
+    draws: number;
+    losses: number;
+    points: number;
+    buchholzScore?: number; // Tiebreaker
+    matchesPlayed: string[];
+  }[];
+  
+  // Winners tracking
+  winnerId?: string;
+  runnerUpId?: string;
+  thirdPlaceId?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
+// Participant's bracket journey
+export interface ParticipantBracketJourney {
+  participantId: string;
+  tournamentId: string;
+  bracketId: string;
+  participantType: 'individual' | 'parish';
+  
+  // Seeding
+  seed: number;
+  
+  // Matches played
+  matchesPlayed: {
+    matchId: string;
+    roundNumber: number;
+    roundName: string;
+    opponentId: string;
+    won: boolean;
+    score: number;
+    opponentScore: number;
+    bracket?: 'upper' | 'lower' | 'main';
+  }[];
+  
+  // Current status
+  isEliminated: boolean;
+  eliminatedInRound?: number;
+  currentBracket?: 'upper' | 'lower' | 'main'; // For double elimination
+  
+  // Performance stats
+  totalWins: number;
+  totalLosses: number;
+  totalScore: number;
+  averageScore: number;
+  
+  // Final placement
+  finalPlacement?: number; // 1st, 2nd, 3rd, etc.
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+
 export interface LiveTournamentView {
   tournamentId: string;
   status: 'upcoming' | 'in_progress' | 'completed';
@@ -4168,3 +4418,564 @@ export function getTopDonors(tournamentId: string, limit: number = 10): Tourname
     .sort((a, b) => b.amount - a.amount)
     .slice(0, limit);
 }
+
+// ============================================
+// KNOCKOUT TOURNAMENT FUNCTIONS
+// ============================================
+
+// Generate a tournament bracket
+export function generateTournamentBracket(
+  tournamentId: string,
+  config: KnockoutTournamentConfig,
+  participantIds: string[],
+  participantTypes: Record<string, 'individual' | 'parish'>,
+  seedingData?: Record<string, number>
+): TournamentBracket {
+  const bracketId = `bracket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const totalParticipants = participantIds.length;
+  
+  // Calculate bracket size (next power of 2)
+  const bracketSize = Math.pow(2, Math.ceil(Math.log2(totalParticipants)));
+  const byesNeeded = bracketSize - totalParticipants;
+  
+  // Generate seeding
+  let seeds: Record<string, number> = {};
+  if (seedingData) {
+    seeds = seedingData;
+  } else {
+    seeds = generateSeeding(participantIds, config.seedingMethod);
+  }
+  
+  const bracket: TournamentBracket = {
+    id: bracketId,
+    tournamentId,
+    format: config.format,
+    totalParticipants,
+    participantIds,
+    participantTypes,
+    seeds,
+    seedingMethod: config.seedingMethod,
+    seedingCompletedAt: new Date().toISOString(),
+    totalRounds: Math.log2(bracketSize),
+    matchesPerRound: [],
+    rounds: [],
+    currentRound: 1,
+    completedRounds: [],
+    activeMatches: [],
+    completedMatches: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  // Generate matches based on format
+  if (config.format === 'single_elimination') {
+    generateSingleEliminationMatches(bracket, participantIds, seeds, config, byesNeeded);
+  } else if (config.format === 'double_elimination') {
+    generateDoubleEliminationMatches(bracket, participantIds, seeds, config, byesNeeded);
+  } else if (config.format === 'swiss_system') {
+    generateSwissSystemMatches(bracket, participantIds, seeds, config);
+  }
+  
+  // Save bracket
+  const storage = new LocalStorage();
+  const brackets = storage.get<TournamentBracket[]>(STORAGE_KEYS.KNOCKOUT_BRACKETS) || [];
+  brackets.push(bracket);
+  storage.set(STORAGE_KEYS.KNOCKOUT_BRACKETS, brackets);
+  
+  return bracket;
+}
+
+// Generate seeding for participants
+function generateSeeding(participantIds: string[], method: string): Record<string, number> {
+  const seeds: Record<string, number> = {};
+  
+  if (method === 'random') {
+    const shuffled = [...participantIds].sort(() => Math.random() - 0.5);
+    shuffled.forEach((id, index) => {
+      seeds[id] = index + 1;
+    });
+  } else if (method === 'qualification_score') {
+    // Would use actual qualification scores
+    participantIds.forEach((id, index) => {
+      seeds[id] = index + 1;
+    });
+  } else if (method === 'registration_order') {
+    participantIds.forEach((id, index) => {
+      seeds[id] = index + 1;
+    });
+  } else {
+    // Default: registration order
+    participantIds.forEach((id, index) => {
+      seeds[id] = index + 1;
+    });
+  }
+  
+  return seeds;
+}
+
+// Generate single elimination matches
+function generateSingleEliminationMatches(
+  bracket: TournamentBracket,
+  participantIds: string[],
+  seeds: Record<string, number>,
+  config: KnockoutTournamentConfig,
+  byesNeeded: number
+): void {
+  const storage = new LocalStorage();
+  const matches: KnockoutMatch[] = [];
+  const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantIds.length)));
+  const totalRounds = Math.log2(bracketSize);
+  
+  // Get seeded participants
+  const seededParticipants = participantIds.sort((a, b) => seeds[a] - seeds[b]);
+  
+  // Generate first round matches with standard bracket pairing
+  const firstRoundMatches = bracketSize / 2;
+  const matchIds: string[] = [];
+  
+  for (let i = 0; i < firstRoundMatches; i++) {
+    const seed1 = i + 1;
+    const seed2 = bracketSize - i;
+    
+    const participant1 = seededParticipants.find(p => seeds[p] === seed1);
+    const participant2 = seed2 <= participantIds.length ? seededParticipants.find(p => seeds[p] === seed2) : undefined;
+    
+    const match = createMatch(
+      bracket,
+      1,
+      getRoundName(1, totalRounds),
+      i + 1,
+      'main',
+      participant1,
+      participant2,
+      seed1,
+      seed2 <= participantIds.length ? seed2 : undefined,
+      config
+    );
+    
+    matches.push(match);
+    matchIds.push(match.id);
+  }
+  
+  // Generate subsequent rounds (TBD matches)
+  for (let round = 2; round <= totalRounds; round++) {
+    const matchesInRound = Math.pow(2, totalRounds - round);
+    const roundMatchIds: string[] = [];
+    
+    for (let i = 0; i < matchesInRound; i++) {
+      const match = createMatch(
+        bracket,
+        round,
+        getRoundName(round, totalRounds),
+        i + 1,
+        'main',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        config
+      );
+      
+      // Link to previous round matches
+      const prevMatch1Index = i * 2;
+      const prevMatch2Index = i * 2 + 1;
+      
+      if (matchIds[prevMatch1Index] && matchIds[prevMatch2Index]) {
+        match.participant1Source = { type: 'winner', matchId: matchIds[prevMatch1Index] };
+        match.participant2Source = { type: 'winner', matchId: matchIds[prevMatch2Index] };
+      }
+      
+      matches.push(match);
+      roundMatchIds.push(match.id);
+    }
+    
+    matchIds.length = 0;
+    matchIds.push(...roundMatchIds);
+  }
+  
+  // Add third place playoff if enabled
+  if (config.thirdPlacePlayoff && totalRounds >= 2) {
+    const semiFinalMatches = matches.filter(m => m.roundNumber === totalRounds - 1);
+    if (semiFinalMatches.length === 2) {
+      const thirdPlaceMatch = createMatch(
+        bracket,
+        totalRounds,
+        'Third Place',
+        1,
+        'third_place',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        config
+      );
+      thirdPlaceMatch.participant1Source = { type: 'loser', matchId: semiFinalMatches[0].id };
+      thirdPlaceMatch.participant2Source = { type: 'loser', matchId: semiFinalMatches[1].id };
+      matches.push(thirdPlaceMatch);
+    }
+  }
+  
+  // Save all matches
+  const existingMatches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  storage.set(STORAGE_KEYS.KNOCKOUT_MATCHES, [...existingMatches, ...matches]);
+  
+  // Update bracket with match structure
+  bracket.rounds = [];
+  for (let round = 1; round <= totalRounds; round++) {
+    const roundMatches = matches.filter(m => m.roundNumber === round && m.bracket === 'main');
+    bracket.rounds.push({
+      roundNumber: round,
+      roundName: getRoundName(round, totalRounds),
+      matches: roundMatches.map(m => m.id)
+    });
+  }
+  
+  if (config.thirdPlacePlayoff) {
+    const thirdPlaceMatch = matches.find(m => m.bracket === 'third_place');
+    if (thirdPlaceMatch) {
+      bracket.rounds.push({
+        roundNumber: totalRounds,
+        roundName: 'Third Place',
+        matches: [thirdPlaceMatch.id]
+      });
+    }
+  }
+  
+  bracket.matchesPerRound = bracket.rounds.map(r => r.matches.length);
+}
+
+// Generate double elimination matches (simplified version)
+function generateDoubleEliminationMatches(
+  bracket: TournamentBracket,
+  participantIds: string[],
+  seeds: Record<string, number>,
+  config: KnockoutTournamentConfig,
+  byesNeeded: number
+): void {
+  // Similar to single elimination but with upper and lower brackets
+  // This is a simplified implementation - full double elimination is complex
+  bracket.upperBracket = { rounds: [] };
+  bracket.lowerBracket = { rounds: [] };
+  
+  // Generate upper bracket (same as single elimination)
+  generateSingleEliminationMatches(bracket, participantIds, seeds, config, byesNeeded);
+  
+  // Would need to add lower bracket logic here
+  // Lower bracket gets losers from upper bracket
+}
+
+// Generate Swiss system matches (simplified)
+function generateSwissSystemMatches(
+  bracket: TournamentBracket,
+  participantIds: string[],
+  seeds: Record<string, number>,
+  config: KnockoutTournamentConfig
+): void {
+  const rounds = config.swissConfig?.numberOfRounds || Math.ceil(Math.log2(participantIds.length));
+  
+  // Initialize Swiss standings
+  bracket.swissStandings = participantIds.map(id => ({
+    participantId: id,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    points: 0,
+    matchesPlayed: []
+  }));
+  
+  // Generate first round matches (use seeding)
+  // Subsequent rounds would be generated dynamically based on standings
+  bracket.rounds = [];
+  for (let round = 1; round <= rounds; round++) {
+    bracket.rounds.push({
+      roundNumber: round,
+      roundName: `Round ${round}`,
+      matches: []
+    });
+  }
+}
+
+// Create a single match
+function createMatch(
+  bracket: TournamentBracket,
+  roundNumber: number,
+  roundName: string,
+  matchNumber: number,
+  bracketType: 'main' | 'upper' | 'lower' | 'third_place',
+  participant1Id: string | undefined,
+  participant2Id: string | undefined,
+  seed1: number | undefined,
+  seed2: number | undefined,
+  config: KnockoutTournamentConfig
+): KnockoutMatch {
+  return {
+    id: `match_${bracket.tournamentId}_r${roundNumber}_m${matchNumber}_${Date.now()}`,
+    tournamentId: bracket.tournamentId,
+    bracketId: bracket.id,
+    roundNumber,
+    roundName,
+    matchNumber,
+    bracket: bracketType,
+    participant1Id,
+    participant2Id,
+    participant1Type: participant1Id ? bracket.participantTypes[participant1Id] : 'individual',
+    participant2Type: participant2Id ? bracket.participantTypes[participant2Id] : 'individual',
+    participant1Seed: seed1,
+    participant2Seed: seed2,
+    status: participant1Id && participant2Id ? 'scheduled' : 'scheduled',
+    questionIds: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+// Get round name based on position
+function getRoundName(roundNumber: number, totalRounds: number): string {
+  const remaining = totalRounds - roundNumber + 1;
+  
+  if (remaining === 1) return 'Finals';
+  if (remaining === 2) return 'Semi Finals';
+  if (remaining === 3) return 'Quarter Finals';
+  if (remaining === 4) return 'Round of 16';
+  if (remaining === 5) return 'Round of 32';
+  
+  return `Round ${roundNumber}`;
+}
+
+// Get tournament bracket
+export function getTournamentBracket(tournamentId: string): TournamentBracket | null {
+  const storage = new LocalStorage();
+  const brackets = storage.get<TournamentBracket[]>(STORAGE_KEYS.KNOCKOUT_BRACKETS) || [];
+  return brackets.find(b => b.tournamentId === tournamentId) || null;
+}
+
+// Get match by ID
+export function getMatch(matchId: string): KnockoutMatch | null {
+  const storage = new LocalStorage();
+  const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  return matches.find(m => m.id === matchId) || null;
+}
+
+// Get matches for a tournament
+export function getTournamentMatches(tournamentId: string): KnockoutMatch[] {
+  const storage = new LocalStorage();
+  const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  return matches.filter(m => m.tournamentId === tournamentId);
+}
+
+// Get matches for a specific round
+export function getRoundMatches(tournamentId: string, roundNumber: number): KnockoutMatch[] {
+  return getTournamentMatches(tournamentId).filter(m => m.roundNumber === roundNumber);
+}
+
+// Update match result
+export function updateMatchResult(
+  matchId: string,
+  winnerId: string,
+  participant1Score: number,
+  participant2Score: number,
+  participant1Details?: { correctAnswers: number; timeTaken: number; answers: Record<string, number> },
+  participant2Details?: { correctAnswers: number; timeTaken: number; answers: Record<string, number> }
+): boolean {
+  const storage = new LocalStorage();
+  const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  const matchIndex = matches.findIndex(m => m.id === matchId);
+  
+  if (matchIndex === -1) return false;
+  
+  const match = matches[matchIndex];
+  match.status = 'completed';
+  match.winnerId = winnerId;
+  match.participant1Score = participant1Score;
+  match.participant2Score = participant2Score;
+  match.completedAt = new Date().toISOString();
+  match.updatedAt = new Date().toISOString();
+  
+  if (participant1Details) {
+    match.participant1CorrectAnswers = participant1Details.correctAnswers;
+    match.participant1TimeTaken = participant1Details.timeTaken;
+    match.participant1Answers = participant1Details.answers;
+  }
+  
+  if (participant2Details) {
+    match.participant2CorrectAnswers = participant2Details.correctAnswers;
+    match.participant2TimeTaken = participant2Details.timeTaken;
+    match.participant2Answers = participant2Details.answers;
+  }
+  
+  storage.set(STORAGE_KEYS.KNOCKOUT_MATCHES, matches);
+  
+  // Update bracket progression
+  advanceWinnerToNextMatch(match);
+  
+  // Update participant journey
+  updateParticipantJourney(match);
+  
+  return true;
+}
+
+// Advance winner to next match
+function advanceWinnerToNextMatch(completedMatch: KnockoutMatch): void {
+  if (!completedMatch.winnerId || !completedMatch.nextMatchId) return;
+  
+  const storage = new LocalStorage();
+  const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  const nextMatch = matches.find(m => m.id === completedMatch.nextMatchId);
+  
+  if (!nextMatch) return;
+  
+  if (completedMatch.nextMatchPosition === 'participant1') {
+    nextMatch.participant1Id = completedMatch.winnerId;
+    nextMatch.participant1Type = completedMatch.winnerId === completedMatch.participant1Id 
+      ? completedMatch.participant1Type 
+      : completedMatch.participant2Type;
+  } else if (completedMatch.nextMatchPosition === 'participant2') {
+    nextMatch.participant2Id = completedMatch.winnerId;
+    nextMatch.participant2Type = completedMatch.winnerId === completedMatch.participant1Id 
+      ? completedMatch.participant1Type 
+      : completedMatch.participant2Type;
+  }
+  
+  // Check if next match is ready
+  if (nextMatch.participant1Id && nextMatch.participant2Id) {
+    nextMatch.status = 'ready';
+  }
+  
+  nextMatch.updatedAt = new Date().toISOString();
+  storage.set(STORAGE_KEYS.KNOCKOUT_MATCHES, matches);
+}
+
+// Update participant journey
+function updateParticipantJourney(match: KnockoutMatch): void {
+  if (!match.participant1Id || !match.participant2Id) return;
+  
+  const storage = new LocalStorage();
+  const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
+  
+  // Update both participants
+  [match.participant1Id, match.participant2Id].forEach((participantId, index) => {
+    const isParticipant1 = index === 0;
+    const won = match.winnerId === participantId;
+    const score = isParticipant1 ? match.participant1Score || 0 : match.participant2Score || 0;
+    const opponentScore = isParticipant1 ? match.participant2Score || 0 : match.participant1Score || 0;
+    const opponentId = isParticipant1 ? match.participant2Id! : match.participant1Id!;
+    
+    let journey = journeys.find(j => j.participantId === participantId && j.tournamentId === match.tournamentId);
+    
+    if (!journey) {
+      journey = {
+        participantId,
+        tournamentId: match.tournamentId,
+        bracketId: match.bracketId,
+        participantType: isParticipant1 ? match.participant1Type : match.participant2Type,
+        seed: isParticipant1 ? match.participant1Seed || 0 : match.participant2Seed || 0,
+        matchesPlayed: [],
+        isEliminated: false,
+        totalWins: 0,
+        totalLosses: 0,
+        totalScore: 0,
+        averageScore: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      journeys.push(journey);
+    }
+    
+    // Add match to history
+    journey.matchesPlayed.push({
+      matchId: match.id,
+      roundNumber: match.roundNumber,
+      roundName: match.roundName,
+      opponentId,
+      won,
+      score,
+      opponentScore,
+      bracket: match.bracket
+    });
+    
+    // Update stats
+    if (won) {
+      journey.totalWins++;
+    } else {
+      journey.totalLosses++;
+      journey.isEliminated = true;
+      journey.eliminatedInRound = match.roundNumber;
+    }
+    
+    journey.totalScore += score;
+    journey.averageScore = journey.totalScore / journey.matchesPlayed.length;
+    journey.updatedAt = new Date().toISOString();
+  });
+  
+  storage.set(STORAGE_KEYS.PARTICIPANT_JOURNEYS, journeys);
+}
+
+// Get participant journey
+export function getParticipantJourney(participantId: string, tournamentId: string): ParticipantBracketJourney | null {
+  const storage = new LocalStorage();
+  const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
+  return journeys.find(j => j.participantId === participantId && j.tournamentId === tournamentId) || null;
+}
+
+// Get all active matches (ready to play)
+export function getActiveMatches(tournamentId: string): KnockoutMatch[] {
+  return getTournamentMatches(tournamentId).filter(m => m.status === 'ready' || m.status === 'in_progress');
+}
+
+// Start a match
+export function startMatch(matchId: string): boolean {
+  const storage = new LocalStorage();
+  const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
+  const match = matches.find(m => m.id === matchId);
+  
+  if (!match || match.status !== 'ready') return false;
+  
+  match.status = 'in_progress';
+  match.actualStartTime = new Date().toISOString();
+  match.updatedAt = new Date().toISOString();
+  
+  storage.set(STORAGE_KEYS.KNOCKOUT_MATCHES, matches);
+  return true;
+}
+
+// Get bracket standings (for display)
+export function getBracketStandings(tournamentId: string): {
+  winner?: string;
+  runnerUp?: string;
+  thirdPlace?: string;
+  participants: Array<{
+    participantId: string;
+    placement?: number;
+    wins: number;
+    losses: number;
+    isEliminated: boolean;
+  }>;
+} {
+  const storage = new LocalStorage();
+  const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
+  const bracket = getTournamentBracket(tournamentId);
+  
+  const standings = {
+    winner: bracket?.winnerId,
+    runnerUp: bracket?.runnerUpId,
+    thirdPlace: bracket?.thirdPlaceId,
+    participants: journeys
+      .filter(j => j.tournamentId === tournamentId)
+      .map(j => ({
+        participantId: j.participantId,
+        placement: j.finalPlacement,
+        wins: j.totalWins,
+        losses: j.totalLosses,
+        isEliminated: j.isEliminated
+      }))
+      .sort((a, b) => {
+        if (a.placement && b.placement) return a.placement - b.placement;
+        if (a.placement) return -1;
+        if (b.placement) return 1;
+        return b.wins - a.wins;
+      })
+  };
+  
+  return standings;
+}
+

@@ -64,7 +64,15 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     ageMax: undefined as number | undefined,
     allowedGenders: [] as Array<'male' | 'female' | 'other' | 'prefer_not_to_say'>,
     allowedParishes: [] as string[],
-    requiredProfileCompletion: undefined as number | undefined
+    requiredProfileCompletion: undefined as number | undefined,
+    // Knockout tournament config
+    tournamentFormat: 'standard' as 'standard' | 'single_elimination' | 'double_elimination' | 'swiss_system',
+    seedingMethod: 'qualification_score' as 'random' | 'qualification_score' | 'practice_points' | 'manual' | 'registration_order',
+    matchType: 'head_to_head' as 'head_to_head' | 'simultaneous_quiz',
+    questionsPerMatch: 10,
+    matchTimeLimit: 15,
+    thirdPlacePlayoff: false,
+    autoScheduleMatches: true
   });
 
   useEffect(() => {
@@ -390,6 +398,187 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                   <p className="text-sm text-gray-600 mb-6">
                     Configure parish/group participation, scoring methods, and eligibility restrictions
                   </p>
+
+                  {/* Tournament Format Section */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Tournament Format
+                      </CardTitle>
+                      <CardDescription>
+                        Choose between standard or knockout tournament formats
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.KNOCKOUT_TOURNAMENTS) ? (
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Format Type</Label>
+                            <Select 
+                              value={tournament.tournamentFormat || 'standard'} 
+                              onValueChange={(value) => setTournament(prev => ({ 
+                                ...prev, 
+                                tournamentFormat: value as any
+                              }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="standard">Standard (All participants compete)</SelectItem>
+                                <SelectItem value="single_elimination">Single Elimination Bracket</SelectItem>
+                                <SelectItem value="double_elimination" disabled={!hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.DOUBLE_ELIMINATION)}>
+                                  Double Elimination Bracket {!hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.DOUBLE_ELIMINATION) && '(Enterprise)'}
+                                </SelectItem>
+                                <SelectItem value="swiss_system" disabled={!hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.SWISS_SYSTEM)}>
+                                  Swiss System {!hasTournamentFeatureAccess(user?.tenantId || '', TOURNAMENT_FEATURES.SWISS_SYSTEM) && '(Enterprise)'}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {(!tournament.tournamentFormat || tournament.tournamentFormat === 'standard') && 'Traditional format - all participants compete at the same time'}
+                              {tournament.tournamentFormat === 'single_elimination' && 'Bracket-style tournament - lose once and you\'re eliminated'}
+                              {tournament.tournamentFormat === 'double_elimination' && 'Two chances - participants must lose twice to be eliminated'}
+                              {tournament.tournamentFormat === 'swiss_system' && 'Round-based pairing - no elimination, best overall record wins'}
+                            </p>
+                          </div>
+
+                          {tournament.tournamentFormat && tournament.tournamentFormat !== 'standard' && (
+                            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <Label>Seeding Method</Label>
+                                  <Select 
+                                    value={tournament.seedingMethod || 'qualification_score'} 
+                                    onValueChange={(value) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      seedingMethod: value as any
+                                    }))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="qualification_score">By Qualification Score</SelectItem>
+                                      <SelectItem value="practice_points">By Practice Points</SelectItem>
+                                      <SelectItem value="registration_order">Registration Order</SelectItem>
+                                      <SelectItem value="random">Random</SelectItem>
+                                      <SelectItem value="manual">Manual (Admin assigns)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div>
+                                  <Label>Match Type</Label>
+                                  <Select 
+                                    value={tournament.matchType || 'head_to_head'} 
+                                    onValueChange={(value) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      matchType: value as any
+                                    }))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="head_to_head">Head-to-Head Quiz</SelectItem>
+                                      <SelectItem value="simultaneous_quiz">Simultaneous Quiz (Same questions)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div>
+                                  <Label>Questions per Match</Label>
+                                  <Input
+                                    type="number"
+                                    min="5"
+                                    max="50"
+                                    value={tournament.questionsPerMatch || 10}
+                                    onChange={(e) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      questionsPerMatch: parseInt(e.target.value) || 10 
+                                    }))}
+                                  />
+                                </div>
+
+                                <div>
+                                  <Label>Match Time Limit (minutes)</Label>
+                                  <Input
+                                    type="number"
+                                    min="5"
+                                    max="60"
+                                    value={tournament.matchTimeLimit || 15}
+                                    onChange={(e) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      matchTimeLimit: parseInt(e.target.value) || 15 
+                                    }))}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="third-place"
+                                    checked={tournament.thirdPlacePlayoff || false}
+                                    onCheckedChange={(checked) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      thirdPlacePlayoff: !!checked 
+                                    }))}
+                                  />
+                                  <Label htmlFor="third-place">
+                                    Third place playoff
+                                  </Label>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="auto-schedule"
+                                    checked={tournament.autoScheduleMatches !== false}
+                                    onCheckedChange={(checked) => setTournament(prev => ({ 
+                                      ...prev, 
+                                      autoScheduleMatches: !!checked 
+                                    }))}
+                                  />
+                                  <Label htmlFor="auto-schedule">
+                                    Auto-schedule matches
+                                  </Label>
+                                </div>
+                              </div>
+
+                              <div className="bg-white p-3 rounded border border-blue-300">
+                                <p className="text-xs text-blue-800 font-medium mb-1">
+                                  🏆 Knockout Tournament Features:
+                                </p>
+                                <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
+                                  <li>Automatic bracket generation based on participant count</li>
+                                  <li>Visual bracket display with match tracking</li>
+                                  <li>Match management and result recording</li>
+                                  <li>Automatic winner advancement to next round</li>
+                                  <li>Bye assignment for non-power-of-2 participants</li>
+                                </ul>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <UpgradePrompt
+                          feature="Knockout Tournament Format"
+                          requiredPlan={getRequiredPlanForFeature(TOURNAMENT_FEATURES.KNOCKOUT_TOURNAMENTS) || 'Professional'}
+                          description="Run bracket-style elimination tournaments with automatic bracket generation"
+                          benefits={[
+                            'Single & double elimination formats',
+                            'Swiss system tournaments (Enterprise)',
+                            'Visual bracket displays',
+                            'Automatic match pairing and advancement',
+                            'Third-place playoffs'
+                          ]}
+                          size="small"
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* Participation Mode Section */}
                   <Card className="mb-6">
