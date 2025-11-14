@@ -363,8 +363,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       return false;
     }
     
-    // Check permission if required and user is available
-    if (item.requiredPermission && user && !hasPermission(user, item.requiredPermission)) {
+    // For org_admin and super_admin, bypass permission checks (they have full access)
+    const isSuperUser = normalizedUserRole === 'super_admin' || normalizedUserRole === 'org_admin';
+    
+    // Check permission if required and user is available (skip for super users)
+    if (!isSuperUser && item.requiredPermission && user && !hasPermission(user, item.requiredPermission)) {
       return false;
     }
     
