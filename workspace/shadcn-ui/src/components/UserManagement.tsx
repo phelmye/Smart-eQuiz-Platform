@@ -13,14 +13,15 @@ import { storage, STORAGE_KEYS, User, Tenant, UserRole, mockUsers, getAvailableR
 
 interface UserManagementProps {
   onBack: () => void;
+  initialAction?: string;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }) => {
   const { user: currentUser, tenant } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'add');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');

@@ -43,17 +43,19 @@ interface UserManagementWithLoginAsProps {
   user: User;
   onLoginAs: (targetUser: User) => void;
   onLogoutFromUser?: () => void;
+  initialAction?: string;
 }
 
 export default function UserManagementWithLoginAs({ 
   user, 
   onLoginAs,
-  onLogoutFromUser 
+  onLogoutFromUser,
+  initialAction
 }: UserManagementWithLoginAsProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'add');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     name: '',

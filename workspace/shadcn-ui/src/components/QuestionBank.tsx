@@ -17,6 +17,7 @@ import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 interface QuestionBankProps {
   onBack: () => void;
   onNavigateToCategories?: () => void;
+  initialAction?: string;
 }
 
 interface Question {
@@ -62,11 +63,11 @@ const BIBLE_CATEGORIES = [
   'Revelation'
 ];
 
-export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories }) => {
+export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories, initialAction }) => {
   const { user } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(initialAction === 'add');
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [previewQuestion, setPreviewQuestion] = useState<Question | null>(null);

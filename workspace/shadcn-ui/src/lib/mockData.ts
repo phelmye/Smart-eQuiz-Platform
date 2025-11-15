@@ -1766,6 +1766,7 @@ export const defaultRolePermissions: RolePermission[] = [
       'tournaments.participate', 'tournaments.inspect',
       // Question Management - Limited to plan constraints
       'questions.create', 'questions.read', 'questions.update', 'questions.delete', 'questions.review', 'questions.answer',
+      'questions.manage-categories',
       // Payment & Billing - Read access only
       'payments.read', 'billing.read',
       // Analytics - Basic view access
@@ -1794,6 +1795,7 @@ export const defaultRolePermissions: RolePermission[] = [
     description: 'Manage questions and quiz content',
     permissions: [
       'questions.create', 'questions.read', 'questions.update', 'questions.delete',
+      'questions.manage-categories',
       'tournaments.read' // can view tournaments to understand context
     ],
     canAccessPages: ['dashboard', 'question-bank', 'question-categories', 'custom-categories', 'round-templates', 'ai-generator', 'tournaments', 'help'],

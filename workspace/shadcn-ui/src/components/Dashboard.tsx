@@ -41,6 +41,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user, tenant, logout } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentAction, setCurrentAction] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userStats, setUserStats] = useState({
     totalQuizzes: 0,
@@ -94,16 +95,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return AVAILABLE_BADGES.filter(badge => user.badges.includes(badge.name));
   };
 
-  const handleSidebarNavigate = (page: string) => {
+  const handleSidebarNavigate = (page: string, action?: string) => {
     if (['practice', 'tournament-builder', 'live-match'].includes(page)) {
       onNavigate(page);
     } else {
       setCurrentPage(page);
+      setCurrentAction(action);
     }
   };
 
   const handleBackToDashboard = () => {
     setCurrentPage('dashboard');
+    setCurrentAction(undefined);
   };
 
   const handleLoginAsTenant = (tenantId: string) => {
@@ -198,9 +201,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 user={user}
                 onLoginAs={handleLoginAsUser}
                 onLogoutFromUser={handleLogoutFromUser}
+                initialAction={currentAction}
               />
             ) : (
-              <UserManagement onBack={handleBackToDashboard} />
+              <UserManagement onBack={handleBackToDashboard} initialAction={currentAction} />
             )}
           </AccessControl>
         );
@@ -299,6 +303,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <QuestionBank 
               onBack={handleBackToDashboard} 
               onNavigateToCategories={() => setCurrentPage('question-categories')}
+              initialAction={currentAction}
             />
           </AccessControl>
         );

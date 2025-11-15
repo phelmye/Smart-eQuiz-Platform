@@ -44,7 +44,7 @@ import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } fro
 
 interface AdminSidebarProps {
   currentPage?: string;
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, action?: string) => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   userRole?: string;
@@ -116,6 +116,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'Add User',
           icon: UserPlus,
           page: 'user-management',
+          action: 'add',
           requiredRoles: ['super_admin', 'org_admin'],
           requiredPermission: 'users.create'
         },
@@ -212,6 +213,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'Add Questions',
           icon: Plus,
           page: 'question-bank',
+          action: 'add',
           requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
           requiredPermission: 'questions.create'
         },
@@ -221,7 +223,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: FolderTree,
           page: 'question-categories',
           requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
-          requiredPermission: 'questions.read'
+          requiredPermission: 'questions.manage-categories'
         },
         {
           id: 'custom-categories',
@@ -549,7 +551,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   isActive && "bg-blue-50 text-blue-700 border-blue-200",
                   collapsed && "justify-center px-2"
                 )}
-                onClick={() => onNavigate(group.page)}
+                onClick={() => onNavigate(group.page, (group as any).action)}
               >
                 <GroupIcon className={cn("h-4 w-4", !collapsed && "mr-3")} />
                 {!collapsed && (
@@ -605,7 +607,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           "w-full justify-start h-9 text-sm",
                           isActive && "bg-blue-50 text-blue-700 border-blue-200"
                         )}
-                        onClick={() => onNavigate(child.page)}
+                        onClick={() => onNavigate(child.page, (child as any).action)}
                       >
                         <ChildIcon className="h-3.5 w-3.5 mr-2" />
                         <span className="flex-1 text-left">{child.label}</span>
