@@ -36,9 +36,11 @@ import {
   CheckCircle2,
   XCircle
 } from 'lucide-react';
-import { 
+import type { 
   User, 
-  TenantRoleCustomization,
+  TenantRoleCustomization
+} from '@/lib/mockData';
+import { 
   defaultRolePermissions,
   getTenantRoleCustomizations,
   saveTenantRoleCustomization,
