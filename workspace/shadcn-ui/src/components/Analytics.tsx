@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, BarChart3, TrendingUp, Users, Trophy, DollarSign, Calendar, Download, RefreshCw } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES } from '@/lib/mockData';
+import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 
 interface AnalyticsProps {
   onBack: () => void;
