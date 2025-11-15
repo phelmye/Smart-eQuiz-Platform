@@ -2668,91 +2668,6 @@ export function getRolePermission(roleId: string): RolePermission | undefined {
   return defaultRolePermissions.find(rp => rp.roleId === roleId);
 }
 
-// Resource-level permission checking
-export function canEditResource(user: User, resourceType: 'tournament' | 'question' | 'user', resourceOwnerId?: string): boolean {
-  if (!user) return false;
-  
-  const normalizedRole = user.role?.toLowerCase();
-  
-  // Super admin can edit anything
-  if (normalizedRole === 'super_admin') return true;
-  
-  // Org admin can edit resources within their tenant
-  if (normalizedRole === 'org_admin') {
-    return true; // Within tenant scope (already filtered at query level)
-  }
-  
-  // Resource-specific rules
-  switch (resourceType) {
-    case 'tournament':
-      // Question managers can edit tournaments they created
-      if (normalizedRole === 'question_manager' && resourceOwnerId === user.id) {
-        return true;
-      }
-      return false;
-      
-    case 'question':
-      // Question managers can edit questions
-      if (normalizedRole === 'question_manager') {
-        return true;
-      }
-      return false;
-      
-    case 'user':
-      // Only admins can edit users
-      return normalizedRole === 'org_admin';
-      
-    default:
-      return false;
-  }
-}
-
-export function canDeleteResource(user: User, resourceType: 'tournament' | 'question' | 'user', resourceOwnerId?: string): boolean {
-  if (!user) return false;
-  
-  const normalizedRole = user.role?.toLowerCase();
-  
-  // Super admin can delete anything
-  if (normalizedRole === 'super_admin') return true;
-  
-  // Org admin can delete resources within their tenant
-  if (normalizedRole === 'org_admin') {
-    return true;
-  }
-  
-  // Most other roles cannot delete
-  return false;
-}
-
-export function canViewResource(user: User, resourceType: 'tournament' | 'question' | 'payment', isPublic: boolean = false): boolean {
-  if (!user) return isPublic;
-  
-  const normalizedRole = user.role?.toLowerCase();
-  
-  // Super admin and org admin can view everything
-  if (normalizedRole === 'super_admin' || normalizedRole === 'org_admin') {
-    return true;
-  }
-  
-  // Public resources can be viewed by anyone
-  if (isPublic) return true;
-  
-  // Resource-specific view permissions
-  switch (resourceType) {
-    case 'tournament':
-      return ['participant', 'spectator', 'inspector', 'question_manager'].includes(normalizedRole || '');
-      
-    case 'question':
-      return ['question_manager', 'participant', 'practice_user'].includes(normalizedRole || '');
-      
-    case 'payment':
-      return ['account_officer'].includes(normalizedRole || '');
-      
-    default:
-      return false;
-  }
-}
-
 export function getAvailableRolesForTenant(tenantId: string): RolePermission[] {
   // Return non-system roles that can be assigned by tenant admin
   return defaultRolePermissions.filter(rp => !rp.isSystemRole || rp.roleId === 'participant' || rp.roleId === 'practice_user');
@@ -2971,25 +2886,6 @@ export function getAuditLogsForTenant(tenantId: string, limit: number = 100): Au
     .filter((log: AuditLog) => log.tenantId === tenantId)
     .sort((a: AuditLog, b: AuditLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, limit);
-}
-
-// Test function for role assignment policy (for development/debugging)
-export function testRoleAssignmentPolicy(): void {
-  console.log('Testing Role Assignment Policy:');
-  
-  const superAdmin: User = { id: 'sa1', role: 'super_admin', tenantId: 'tenant1' } as User;
-  const orgAdmin: User = { id: 'oa1', role: 'org_admin', tenantId: 'tenant1' } as User;
-  const participant: User = { id: 'p1', role: 'participant', tenantId: 'tenant1' } as User;
-  
-  console.log('Super Admin can assign:', getAssignableRoles(superAdmin));
-  console.log('Org Admin can assign:', getAssignableRoles(orgAdmin));
-  console.log('Participant can assign:', getAssignableRoles(participant));
-  
-  console.log('\nRole Assignment Tests:');
-  console.log('Org Admin can assign question_manager:', canAssignRole(orgAdmin, 'question_manager'));
-  console.log('Org Admin can assign org_admin:', canAssignRole(orgAdmin, 'org_admin'));
-  console.log('Super Admin can assign org_admin:', canAssignRole(superAdmin, 'org_admin'));
-  console.log('Participant can assign anything:', canAssignRole(participant, 'participant'));
 }
 
 // Get plan by ID
