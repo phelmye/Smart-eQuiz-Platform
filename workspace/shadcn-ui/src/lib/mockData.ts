@@ -35,7 +35,8 @@ export const STORAGE_KEYS = {
   TOURNAMENT_QUESTION_CONFIGS: 'equiz_tournament_question_configs',
   QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs',
   BONUS_QUESTION_CONFIGS: 'equiz_bonus_question_configs',
-  BONUS_QUESTION_REQUESTS: 'equiz_bonus_question_requests'
+  BONUS_QUESTION_REQUESTS: 'equiz_bonus_question_requests',
+  NOTIFICATIONS: 'equiz_notifications'
 };
 
 // User roles
@@ -7727,6 +7728,120 @@ export function forceReinitializeRolePermissions() {
   
   return roleComponentFeatures;
 }
+
+// ========================================
+// NOTIFICATION HELPER FUNCTIONS
+// ========================================
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'system' | 'payment' | 'tournament' | 'user';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+  actionLabel?: string;
+}
+
+/**
+ * Get all notifications for a specific user
+ */
+export function getNotifications(userId: string): Notification[] {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  return allNotifications.filter((n: Notification) => n.userId === userId);
+}
+
+/**
+ * Create a new notification
+ */
+export function createNotification(
+  type: 'system' | 'payment' | 'tournament' | 'user',
+  title: string,
+  message: string,
+  userId: string,
+  actionUrl?: string,
+  actionLabel?: string
+): Notification {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  
+  const newNotification: Notification = {
+    id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    userId,
+    type,
+    title,
+    message,
+    read: false,
+    createdAt: new Date().toISOString(),
+    actionUrl,
+    actionLabel
+  };
+  
+  allNotifications.push(newNotification);
+  storage.set(STORAGE_KEYS.NOTIFICATIONS, allNotifications);
+  
+  return newNotification;
+}
+
+/**
+ * Mark a notification as read
+ */
+export function markNotificationRead(notificationId: string): void {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  const notification = allNotifications.find((n: Notification) => n.id === notificationId);
+  
+  if (notification) {
+    notification.read = true;
+    storage.set(STORAGE_KEYS.NOTIFICATIONS, allNotifications);
+  }
+}
+
+/**
+ * Mark all notifications as read for a user
+ */
+export function markAllNotificationsRead(userId: string): void {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  
+  allNotifications.forEach((n: Notification) => {
+    if (n.userId === userId) {
+      n.read = true;
+    }
+  });
+  
+  storage.set(STORAGE_KEYS.NOTIFICATIONS, allNotifications);
+}
+
+/**
+ * Delete a notification
+ */
+export function deleteNotification(notificationId: string): void {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  const filtered = allNotifications.filter((n: Notification) => n.id !== notificationId);
+  storage.set(STORAGE_KEYS.NOTIFICATIONS, filtered);
+}
+
+/**
+ * Clear all notifications for a user
+ */
+export function clearAllNotifications(userId: string): void {
+  const allNotifications = storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
+  const filtered = allNotifications.filter((n: Notification) => n.userId !== userId);
+  storage.set(STORAGE_KEYS.NOTIFICATIONS, filtered);
+}
+
+/**
+ * Get unread notification count for a user
+ */
+export function getUnreadNotificationCount(userId: string): number {
+  const notifications = getNotifications(userId);
+  return notifications.filter(n => !n.read).length;
+}
+
+
+
+
+
 
 
 

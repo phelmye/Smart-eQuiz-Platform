@@ -374,6 +374,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           requiredPermission: null
         },
         {
+          id: 'email-templates',
+          label: 'Email Templates',
+          icon: FileText,
+          page: 'email-templates',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'terms',
+          label: 'Terms of Service',
+          icon: FileText,
+          page: 'terms',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
+          id: 'privacy',
+          label: 'Privacy Policy',
+          icon: Shield,
+          page: 'privacy',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
           id: 'audit-logs',
           label: 'Audit Logs',
           icon: FileText,

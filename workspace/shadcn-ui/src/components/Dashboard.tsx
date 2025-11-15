@@ -33,7 +33,25 @@ import AccessControl from './AccessControl';
 import ComponentAccessControl from './ComponentAccessControl';
 import AuditLogViewer from './AuditLogViewer';
 import TenantRoleCustomization from './TenantRoleCustomization';
+import TermsOfService from './TermsOfService';
+import PrivacyPolicy from './PrivacyPolicy';
+import SubscriptionCheckout from './SubscriptionCheckout';
+import TournamentCheckout from './TournamentCheckout';
+import FeatureGateModal from './FeatureGateModal';
+import OnboardingWizard from './OnboardingWizard';
+import NotificationCenter from './NotificationCenter';
+import EmailTemplateManager from './EmailTemplateManager';
+import HelpCenter from './HelpCenter';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
+import TermsOfService from './TermsOfService';
+import PrivacyPolicy from './PrivacyPolicy';
+import SubscriptionCheckout from './SubscriptionCheckout';
+import TournamentCheckout from './TournamentCheckout';
+import FeatureGateModal from './FeatureGateModal';
+import OnboardingWizard from './OnboardingWizard';
+import NotificationCenter from './NotificationCenter';
+import EmailTemplateManager from './EmailTemplateManager';
+import HelpCenter from './HelpCenter';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -45,6 +63,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [currentAction, setCurrentAction] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkoutData, setCheckoutData] = useState<any>(null);
   const [userStats, setUserStats] = useState({
     totalQuizzes: 0,
     averageScore: 0,
@@ -583,13 +603,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </AccessControl>
         );
+      case 'onboarding':
+        return (
+          <div className="p-6">
+            <OnboardingWizard 
+              user={user}
+              tenant={tenant}
+              onComplete={() => {
+                setShowOnboarding(false);
+                setCurrentPage('dashboard');
+              }}
+              onSkip={() => {
+                setShowOnboarding(false);
+                setCurrentPage('dashboard');
+              }}
+            />
+          </div>
+        );
       case 'notifications':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <NotificationCenter />
+          </div>
+        );
+      case 'email-templates':
         return (
           <AccessControl 
             user={user} 
-            requiredPage="notifications"
-            requiredPermission={null}
-            fallbackMessage="Only administrators can manage notification settings."
+            requiredPage="email-templates"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only administrators can manage email templates."
           >
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
@@ -598,15 +647,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   Back to Dashboard
                 </Button>
               </div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notifications</CardTitle>
-                  <CardDescription>Manage system notifications and alerts</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">Notification settings interface coming soon...</p>
-                </CardContent>
-              </Card>
+              <EmailTemplateManager />
             </div>
           </AccessControl>
         );
@@ -619,30 +660,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 Back to Dashboard
               </Button>
             </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Help & Support</CardTitle>
-                <CardDescription>Get help and access documentation</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Quick Links</h3>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li>• Documentation</li>
-                      <li>• Video Tutorials</li>
-                      <li>• FAQ</li>
-                      <li>• Contact Support</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Recent Updates</h3>
-                    <p className="text-sm text-gray-600">Phase 12C: Advanced enterprise features now available!</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <HelpCenter />
           </div>
+        );
+      case 'terms':
+        return (
+          <TermsOfService onBack={handleBackToDashboard} />
+        );
+      case 'privacy':
+        return (
+          <PrivacyPolicy onBack={handleBackToDashboard} />
+        );
+      case 'subscription-checkout':
+        return (
+          <SubscriptionCheckout 
+            selectedPlanId={currentAction || 'plan-starter'}
+            billingCycle="monthly"
+            onBack={handleBackToDashboard}
+            onSuccess={handleBackToDashboard}
+          />
+        );
+      case 'tournament-checkout':
+        return (
+          <TournamentCheckout 
+            tournamentId="tournament-1"
+            tournamentName="Spring Championship 2025"
+            entryFee={25}
+            startDate={new Date().toISOString()}
+            maxParticipants={100}
+            currentParticipants={67}
+            onBack={handleBackToDashboard}
+            onSuccess={() => handleBackToDashboard()}
+          />
         );
       default:
         return null;

@@ -58,8 +58,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!orgAdmin.componentFeatures.includes('manage-categories')) {
         console.error('⚠️ ORG_ADMIN missing manage-categories feature! Fixing...');
         // Force re-init
-        const { forceReinitializeRolePermissions } = require('@/lib/mockData');
-        forceReinitializeRolePermissions();
+        import('@/lib/mockData').then(({ forceReinitializeRolePermissions }) => {
+          forceReinitializeRolePermissions();
+        });
       }
     }
   }, []);
