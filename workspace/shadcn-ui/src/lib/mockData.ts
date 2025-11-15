@@ -2938,12 +2938,6 @@ export function getAllAvailablePages(): string[] {
   return Array.from(allPages).sort();
 }
 
-// Check if a user can assign a specific role
-export function canAssignRole(creatorUser: User, targetRole: UserRole): boolean {
-  const assignableRoles = getAssignableRoles(creatorUser);
-  return assignableRoles.includes(targetRole);
-}
-
 // Audit logging functions
 export function logAuditEvent(
   creatorUser: User,
