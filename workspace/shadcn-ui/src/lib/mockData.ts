@@ -25,7 +25,9 @@ export const STORAGE_KEYS = {
   TOURNAMENT_DONATIONS: 'equiz_tournament_donations',
   KNOCKOUT_BRACKETS: 'equiz_knockout_brackets',
   KNOCKOUT_MATCHES: 'equiz_knockout_matches',
-  PARTICIPANT_JOURNEYS: 'equiz_participant_journeys'
+  PARTICIPANT_JOURNEYS: 'equiz_participant_journeys',
+  CUSTOM_CATEGORIES: 'equiz_custom_categories',
+  ROUND_CONFIG_TEMPLATES: 'equiz_round_config_templates'
 };
 
 // User roles
@@ -354,7 +356,16 @@ export const TOURNAMENT_FEATURES = {
   KNOCKOUT_TOURNAMENTS: 'tournaments.knockout',           // Bracket-style elimination
   BRACKET_VISUALIZATION: 'tournaments.bracket_view',      // Visual bracket display
   DOUBLE_ELIMINATION: 'tournaments.double_elimination',   // Double elimination brackets
-  SWISS_SYSTEM: 'tournaments.swiss_system'                // Swiss-system tournaments
+  SWISS_SYSTEM: 'tournaments.swiss_system',               // Swiss-system tournaments
+  
+  // Advanced Round Configuration Features
+  ROUND_CONFIG_TEMPLATES: 'tournaments.round_templates',  // Pre-built round configurations (Professional+)
+  QUESTION_POOL_VALIDATION: 'tournaments.pool_validation', // Real-time question availability checks (Professional+)
+  CLONE_ROUND_CONFIG: 'tournaments.clone_rounds',         // Duplicate round settings (Professional+)
+  
+  // Enterprise Round Features
+  CUSTOM_CATEGORIES: 'tournaments.custom_categories',     // Unlimited custom question categories (Enterprise)
+  CATEGORY_WEIGHTING: 'tournaments.category_weighting'    // Scoring multipliers per category (Enterprise)
 };
 
 // Feature to Plan Mapping
@@ -394,7 +405,16 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, string[]> = {
   [TOURNAMENT_FEATURES.KNOCKOUT_TOURNAMENTS]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.BRACKET_VISUALIZATION]: ['professional', 'enterprise'],
   [TOURNAMENT_FEATURES.DOUBLE_ELIMINATION]: ['enterprise'],
-  [TOURNAMENT_FEATURES.SWISS_SYSTEM]: ['enterprise']
+  [TOURNAMENT_FEATURES.SWISS_SYSTEM]: ['enterprise'],
+  
+  // Advanced Round Configuration Features (Professional+)
+  [TOURNAMENT_FEATURES.ROUND_CONFIG_TEMPLATES]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.QUESTION_POOL_VALIDATION]: ['professional', 'enterprise'],
+  [TOURNAMENT_FEATURES.CLONE_ROUND_CONFIG]: ['professional', 'enterprise'],
+  
+  // Enterprise Round Features
+  [TOURNAMENT_FEATURES.CUSTOM_CATEGORIES]: ['enterprise'],
+  [TOURNAMENT_FEATURES.CATEGORY_WEIGHTING]: ['enterprise']
 };
 
 // Role with component features
@@ -1065,12 +1085,27 @@ export type QuestionCategoryType =
   | 'tenets' 
   | 'custom';
 
+// Custom category definition (Enterprise feature)
+export interface CustomQuestionCategory {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string;
+  color: string; // Hex color for UI display
+  icon?: string; // Icon name or emoji
+  isActive: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+
 // Category distribution for a round
 export interface RoundCategoryDistribution {
   category: QuestionCategoryType;
   questionCount: number;
   difficulty?: 'easy' | 'medium' | 'hard';
   customCategoryName?: string; // For 'custom' type
+  customCategoryId?: string; // Reference to CustomQuestionCategory
+  weight?: number; // Scoring multiplier (1.0 = normal, 1.5 = 50% bonus, 2.0 = double)
 }
 
 // Round-specific question configuration
@@ -1100,6 +1135,48 @@ export interface RoundQuestionConfig {
   // Randomization
   randomizeQuestionOrder: boolean;
   randomizeOptionOrder: boolean;
+}
+
+// Round configuration template (Professional+ feature)
+export interface RoundConfigTemplate {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string;
+  templateType: 'beginner' | 'intermediate' | 'advanced' | 'expert' | 'custom';
+  isPublic: boolean; // Can be shared across tenants
+  
+  // Template configuration
+  numberOfRounds: number;
+  roundConfigs: Omit<RoundQuestionConfig, 'roundNumber' | 'roundName'>[]; // Template without specific round numbers
+  
+  // Metadata
+  usageCount: number;
+  rating?: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+}
+
+// Question pool validation result
+export interface QuestionPoolValidation {
+  isValid: boolean;
+  totalQuestionsNeeded: number;
+  totalQuestionsAvailable: number;
+  categoryBreakdown: Array<{
+    category: QuestionCategoryType;
+    customCategoryId?: string;
+    needed: number;
+    available: number;
+    sufficient: boolean;
+    difficulty?: {
+      easy: { needed: number; available: number };
+      medium: { needed: number; available: number };
+      hard: { needed: number; available: number };
+    };
+  }>;
+  warnings: string[];
+  errors: string[];
 }
 
 // Knockout tournament configuration
@@ -5035,4 +5112,404 @@ export function getBracketStandings(tournamentId: string): {
   
   return standings;
 }
+
+// ============================================================================
+// CUSTOM CATEGORY MANAGEMENT FUNCTIONS (Enterprise)
+// ============================================================================
+
+// Create custom category
+export function createCustomCategory(
+  tenantId: string,
+  categoryData: Omit<CustomQuestionCategory, 'id' | 'createdAt'>
+): CustomQuestionCategory {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  
+  const newCategory: CustomQuestionCategory = {
+    ...categoryData,
+    id: `cat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    createdAt: new Date().toISOString()
+  };
+  
+  categories.push(newCategory);
+  storage.set(STORAGE_KEYS.CUSTOM_CATEGORIES, categories);
+  
+  return newCategory;
+}
+
+// Get all custom categories for a tenant
+export function getCustomCategories(tenantId: string, activeOnly: boolean = true): CustomQuestionCategory[] {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  
+  let filtered = categories.filter(c => c.tenantId === tenantId);
+  if (activeOnly) {
+    filtered = filtered.filter(c => c.isActive);
+  }
+  
+  return filtered;
+}
+
+// Get custom category by ID
+export function getCustomCategory(categoryId: string): CustomQuestionCategory | null {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  return categories.find(c => c.id === categoryId) || null;
+}
+
+// Update custom category
+export function updateCustomCategory(
+  categoryId: string,
+  updates: Partial<Omit<CustomQuestionCategory, 'id' | 'tenantId' | 'createdAt' | 'createdBy'>>
+): CustomQuestionCategory | null {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  
+  const index = categories.findIndex(c => c.id === categoryId);
+  if (index === -1) return null;
+  
+  categories[index] = {
+    ...categories[index],
+    ...updates
+  };
+  
+  storage.set(STORAGE_KEYS.CUSTOM_CATEGORIES, categories);
+  return categories[index];
+}
+
+// Delete custom category
+export function deleteCustomCategory(categoryId: string): boolean {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  
+  const index = categories.findIndex(c => c.id === categoryId);
+  if (index === -1) return false;
+  
+  categories.splice(index, 1);
+  storage.set(STORAGE_KEYS.CUSTOM_CATEGORIES, categories);
+  
+  return true;
+}
+
+// Toggle category active status
+export function toggleCustomCategory(categoryId: string): CustomQuestionCategory | null {
+  const storage = new LocalStorage();
+  const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
+  
+  const index = categories.findIndex(c => c.id === categoryId);
+  if (index === -1) return null;
+  
+  categories[index].isActive = !categories[index].isActive;
+  storage.set(STORAGE_KEYS.CUSTOM_CATEGORIES, categories);
+  
+  return categories[index];
+}
+
+// ============================================================================
+// ROUND CONFIG TEMPLATE FUNCTIONS (Professional+)
+// ============================================================================
+
+// Create template from round configs
+export function createRoundTemplate(
+  tenantId: string,
+  templateData: Omit<RoundConfigTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>
+): RoundConfigTemplate {
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  
+  const newTemplate: RoundConfigTemplate = {
+    ...templateData,
+    id: `tpl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    usageCount: 0,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  templates.push(newTemplate);
+  storage.set(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES, templates);
+  
+  return newTemplate;
+}
+
+// Get all templates for a tenant (including public templates)
+export function getRoundTemplates(tenantId: string, includePublic: boolean = true): RoundConfigTemplate[] {
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  
+  let filtered = templates.filter(t => t.tenantId === tenantId);
+  
+  if (includePublic) {
+    const publicTemplates = templates.filter(t => t.isPublic && t.tenantId !== tenantId);
+    filtered = [...filtered, ...publicTemplates];
+  }
+  
+  return filtered.sort((a, b) => {
+    // Sort by usage count (popular first), then by rating
+    if (b.usageCount !== a.usageCount) {
+      return b.usageCount - a.usageCount;
+    }
+    return (b.rating || 0) - (a.rating || 0);
+  });
+}
+
+// Get template by ID
+export function getRoundTemplate(templateId: string): RoundConfigTemplate | null {
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  return templates.find(t => t.id === templateId) || null;
+}
+
+// Apply template to tournament (convert to RoundQuestionConfig array)
+export function applyRoundTemplate(templateId: string): RoundQuestionConfig[] {
+  const template = getRoundTemplate(templateId);
+  if (!template) return [];
+  
+  // Increment usage count
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  const index = templates.findIndex(t => t.id === templateId);
+  if (index !== -1) {
+    templates[index].usageCount++;
+    storage.set(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES, templates);
+  }
+  
+  // Convert template configs to full RoundQuestionConfig objects
+  return template.roundConfigs.map((config, index) => ({
+    ...config,
+    roundNumber: index + 1,
+    roundName: config.roundName || getRoundNameFromNumber(index + 1, template.numberOfRounds)
+  }));
+}
+
+// Helper to get round name from number
+function getRoundNameFromNumber(roundNumber: number, totalRounds: number): string {
+  const remaining = totalRounds - roundNumber + 1;
+  
+  if (remaining === 1) return 'Finals';
+  if (remaining === 2) return 'Semi Finals';
+  if (remaining === 3) return 'Quarter Finals';
+  if (remaining === 4) return 'Round of 16';
+  
+  return `Round ${roundNumber}`;
+}
+
+// Update template
+export function updateRoundTemplate(
+  templateId: string,
+  updates: Partial<Omit<RoundConfigTemplate, 'id' | 'tenantId' | 'createdAt' | 'createdBy' | 'usageCount'>>
+): RoundConfigTemplate | null {
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  
+  const index = templates.findIndex(t => t.id === templateId);
+  if (index === -1) return null;
+  
+  templates[index] = {
+    ...templates[index],
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+  
+  storage.set(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES, templates);
+  return templates[index];
+}
+
+// Rate template
+export function rateRoundTemplate(templateId: string, rating: number): RoundConfigTemplate | null {
+  if (rating < 1 || rating > 5) return null;
+  
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  
+  const index = templates.findIndex(t => t.id === templateId);
+  if (index === -1) return null;
+  
+  // Simple average rating (in production, track individual ratings)
+  const currentRating = templates[index].rating || 0;
+  const usageCount = templates[index].usageCount;
+  const newRating = usageCount > 0 
+    ? (currentRating * usageCount + rating) / (usageCount + 1)
+    : rating;
+  
+  templates[index].rating = Number(newRating.toFixed(2));
+  storage.set(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES, templates);
+  
+  return templates[index];
+}
+
+// Delete template
+export function deleteRoundTemplate(templateId: string): boolean {
+  const storage = new LocalStorage();
+  const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
+  
+  const index = templates.findIndex(t => t.id === templateId);
+  if (index === -1) return false;
+  
+  templates.splice(index, 1);
+  storage.set(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES, templates);
+  
+  return true;
+}
+
+// Clone template (create a copy for customization)
+export function cloneRoundTemplate(templateId: string, tenantId: string, newName?: string): RoundConfigTemplate | null {
+  const original = getRoundTemplate(templateId);
+  if (!original) return null;
+  
+  const cloned = createRoundTemplate(tenantId, {
+    name: newName || `${original.name} (Copy)`,
+    description: original.description,
+    templateType: 'custom',
+    isPublic: false,
+    numberOfRounds: original.numberOfRounds,
+    roundConfigs: original.roundConfigs,
+    createdBy: original.createdBy
+  });
+  
+  return cloned;
+}
+
+// ============================================================================
+// QUESTION POOL VALIDATION FUNCTIONS (Professional+)
+// ============================================================================
+
+// Validate question pool against round configurations
+export function validateQuestionPool(
+  tenantId: string,
+  roundConfigs: RoundQuestionConfig[]
+): QuestionPoolValidation {
+  const storage = new LocalStorage();
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const tenantQuestions = questions.filter(q => q.tenantId === tenantId);
+  
+  // Calculate total questions needed
+  const totalQuestionsNeeded = roundConfigs.reduce((sum, round) => sum + round.totalQuestions, 0);
+  const totalQuestionsAvailable = tenantQuestions.length;
+  
+  // Build category breakdown
+  const categoryNeeds = new Map<string, { 
+    category: QuestionCategoryType; 
+    customCategoryId?: string;
+    needed: number; 
+    easy?: number; 
+    medium?: number; 
+    hard?: number;
+  }>();
+  
+  // Calculate needs per category
+  roundConfigs.forEach(round => {
+    round.categoryDistribution.forEach(dist => {
+      const key = dist.customCategoryId || dist.category;
+      const existing = categoryNeeds.get(key) || { 
+        category: dist.category, 
+        customCategoryId: dist.customCategoryId,
+        needed: 0,
+        easy: 0,
+        medium: 0,
+        hard: 0
+      };
+      
+      existing.needed += dist.questionCount;
+      
+      if (dist.difficulty === 'easy') existing.easy! += dist.questionCount;
+      else if (dist.difficulty === 'medium') existing.medium! += dist.questionCount;
+      else if (dist.difficulty === 'hard') existing.hard! += dist.questionCount;
+      else {
+        // No specific difficulty - distribute evenly
+        const perDiff = Math.ceil(dist.questionCount / 3);
+        existing.easy! += perDiff;
+        existing.medium! += perDiff;
+        existing.hard! += perDiff;
+      }
+      
+      categoryNeeds.set(key, existing);
+    });
+  });
+  
+  // Check availability per category
+  const categoryBreakdown = Array.from(categoryNeeds.entries()).map(([key, needs]) => {
+    const categoryQuestions = tenantQuestions.filter(q => {
+      if (needs.customCategoryId) {
+        return q.customCategoryId === needs.customCategoryId;
+      }
+      return q.category === needs.category;
+    });
+    
+    const available = categoryQuestions.length;
+    const easyAvailable = categoryQuestions.filter(q => q.difficulty === 'easy').length;
+    const mediumAvailable = categoryQuestions.filter(q => q.difficulty === 'medium').length;
+    const hardAvailable = categoryQuestions.filter(q => q.difficulty === 'hard').length;
+    
+    return {
+      category: needs.category,
+      customCategoryId: needs.customCategoryId,
+      needed: needs.needed,
+      available,
+      sufficient: available >= needs.needed,
+      difficulty: {
+        easy: { needed: needs.easy || 0, available: easyAvailable },
+        medium: { needed: needs.medium || 0, available: mediumAvailable },
+        hard: { needed: needs.hard || 0, available: hardAvailable }
+      }
+    };
+  });
+  
+  // Generate warnings and errors
+  const warnings: string[] = [];
+  const errors: string[] = [];
+  
+  categoryBreakdown.forEach(cat => {
+    const categoryName = cat.customCategoryId 
+      ? getCustomCategory(cat.customCategoryId)?.name || 'Custom Category'
+      : cat.category;
+    
+    if (!cat.sufficient) {
+      errors.push(
+        `Insufficient questions for ${categoryName}: Need ${cat.needed}, have ${cat.available}`
+      );
+    }
+    
+    // Check difficulty levels
+    if (cat.difficulty.easy.available < cat.difficulty.easy.needed) {
+      warnings.push(
+        `Low easy questions for ${categoryName}: Need ${cat.difficulty.easy.needed}, have ${cat.difficulty.easy.available}`
+      );
+    }
+    if (cat.difficulty.medium.available < cat.difficulty.medium.needed) {
+      warnings.push(
+        `Low medium questions for ${categoryName}: Need ${cat.difficulty.medium.needed}, have ${cat.difficulty.medium.available}`
+      );
+    }
+    if (cat.difficulty.hard.available < cat.difficulty.hard.needed) {
+      warnings.push(
+        `Low hard questions for ${categoryName}: Need ${cat.difficulty.hard.needed}, have ${cat.difficulty.hard.available}`
+      );
+    }
+  });
+  
+  // Overall sufficiency check
+  if (totalQuestionsAvailable < totalQuestionsNeeded) {
+    errors.push(
+      `Insufficient total questions: Need ${totalQuestionsNeeded}, have ${totalQuestionsAvailable}`
+    );
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    totalQuestionsNeeded,
+    totalQuestionsAvailable,
+    categoryBreakdown,
+    warnings,
+    errors
+  };
+}
+
+// Quick check if tenant has enough questions
+export function hasEnoughQuestions(tenantId: string, requiredCount: number): boolean {
+  const storage = new LocalStorage();
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const tenantQuestions = questions.filter(q => q.tenantId === tenantId);
+  return tenantQuestions.length >= requiredCount;
+}
+
 
