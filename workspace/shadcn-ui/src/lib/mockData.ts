@@ -7473,10 +7473,6 @@ function changePerspective(text: string): string {
 function addContext(text: string, category: string): string {
   return addBiblicalContextAdvanced(text, category, 'standard');
 }
-  
-  const prefix = contexts[category as keyof typeof contexts] || 'In the Bible, ';
-  return prefix + text.toLowerCase();
-}
 
 // Helper: Shuffle array
 function shuffleArray<T>(array: T[]): T[] {
