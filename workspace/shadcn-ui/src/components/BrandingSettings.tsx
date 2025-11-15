@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Upload, Image, Palette, Type, Save, RefreshCw, Eye, Download } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tenant } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tenant, hasPermission } from '@/lib/mockData';
 
 interface BrandingSettingsProps {
   onBack: () => void;

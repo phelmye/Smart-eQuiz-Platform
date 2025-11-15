@@ -14,12 +14,13 @@ import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES, hasPermissio
 
 interface TournamentEngineProps {
   onBack: () => void;
+  initialAction?: string;
 }
 
-export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack }) => {
+export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, initialAction }) => {
   const { user, tenant } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'create');
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [newTournament, setNewTournament] = useState({
     name: '',

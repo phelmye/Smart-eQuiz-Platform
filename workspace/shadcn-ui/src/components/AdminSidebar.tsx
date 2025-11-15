@@ -178,6 +178,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'Create Tournament',
           icon: Plus,
           page: 'tournaments',
+          action: 'create',
           requiredRoles: ['super_admin', 'org_admin'],
           requiredPermission: 'tournaments.create'
         },

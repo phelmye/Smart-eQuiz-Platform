@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Edit, Trash2, Building, Users, Calendar, Crown } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tenant, User, Tournament } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tenant, User, Tournament, hasPermission } from '@/lib/mockData';
 
 interface TenantManagementProps {
   onBack: () => void;

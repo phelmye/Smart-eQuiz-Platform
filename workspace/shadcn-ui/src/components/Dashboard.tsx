@@ -315,7 +315,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             requiredPermission="tournaments.read"
             fallbackMessage="You need tournament access permissions to view this page."
           >
-            <TournamentEngine onBack={handleBackToDashboard} />
+            <TournamentEngine onBack={handleBackToDashboard} initialAction={currentAction} />
           </AccessControl>
         );
       case 'ai-generator':
