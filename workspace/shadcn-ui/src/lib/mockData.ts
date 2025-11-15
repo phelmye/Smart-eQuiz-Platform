@@ -1737,6 +1737,8 @@ export const defaultRolePermissions: RolePermission[] = [
     permissions: [
       // User Management - Limited to plan constraints
       'users.create', 'users.read', 'users.update', 'users.delete',
+      // Role Management
+      'roles.manage',
       // Tournament Management - Limited to plan constraints
       'tournaments.create', 'tournaments.read', 'tournaments.update', 'tournaments.delete',
       'tournaments.participate', 'tournaments.inspect',
@@ -1751,12 +1753,16 @@ export const defaultRolePermissions: RolePermission[] = [
       // Monitoring and Inspection
       'participants.monitor',
       // Profile Management
-      'profile.manage'
+      'profile.manage',
+      // System configuration (limited)
+      'system.configure'
     ],
     canAccessPages: [
-      'dashboard', 'user-management', 'tournaments', 'question-bank', 'ai-generator',
-      'analytics', 'payments', 'billing', 'payment-integration', 'branding', 'notifications',
-      'help', 'profile'
+      'dashboard', 'user-management', 'role-management', 'role-component-management', 
+      'access-control', 'tournaments', 'question-bank', 'question-categories', 
+      'custom-categories', 'round-templates', 'ai-generator', 'analytics', 
+      'payments', 'billing', 'payment-integration', 'branding', 'system-settings',
+      'security', 'notifications', 'audit-logs', 'help', 'profile'
     ],
     isSystemRole: true
   },
@@ -1768,7 +1774,7 @@ export const defaultRolePermissions: RolePermission[] = [
       'questions.create', 'questions.read', 'questions.update', 'questions.delete',
       'tournaments.read' // can view tournaments to understand context
     ],
-    canAccessPages: ['dashboard', 'questions', 'tournaments'],
+    canAccessPages: ['dashboard', 'question-bank', 'question-categories', 'custom-categories', 'round-templates', 'ai-generator', 'tournaments', 'help'],
     isSystemRole: false
   },
   {
