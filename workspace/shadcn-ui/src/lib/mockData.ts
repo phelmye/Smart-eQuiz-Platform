@@ -4335,7 +4335,7 @@ export function calculateParishScore(
       finalScore = totalScore;
       break;
       
-    case 'topN':
+    case 'topN': {
       // Sum of top N scores
       const topN = tournament.parishScoringConfig.topNCount || 5;
       const sortedScores = Object.values(memberScores).sort((a, b) => b - a);
@@ -4343,14 +4343,16 @@ export function calculateParishScore(
         .reduce((sum, score) => sum + score, 0);
       finalScore = topNScore;
       break;
+    }
       
-    case 'weighted':
+    case 'weighted': {
       // Weighted calculation (can be customized)
       // Default: Average with bonus for participation rate
       const participationRate = activeMemberCount / applications.length;
       weightedScore = (totalScore / activeMemberCount) * (1 + participationRate * 0.1);
       finalScore = weightedScore;
       break;
+    }
   }
   
   // Get parish details
@@ -4659,10 +4661,11 @@ function validateCustomRules(
       case 'lessThan':
         ruleValid = Number(fieldValue) < Number(rule.value);
         break;
-      case 'between':
+      case 'between': {
         const num = Number(fieldValue);
         ruleValid = num >= rule.value[0] && num <= rule.value[1];
         break;
+      }
     }
     
     if (!ruleValid) {
@@ -7191,13 +7194,14 @@ function generateAdvancedVariation(
       qualityScore = quality === 'expert' ? 92 : quality === 'advanced' ? 87 : quality === 'standard' ? 82 : 77;
       break;
       
-    case 'creative':
+    case 'creative': {
       const creative = applyCreativeTransformation(question, questionOptions, quality);
       question = creative.question;
       questionOptions = creative.options;
       correctAnswer = creative.correctAnswer;
       qualityScore = quality === 'expert' ? 95 : quality === 'advanced' ? 90 : quality === 'standard' ? 85 : 80;
       break;
+    }
       
     case 'hybrid':
       // Combine multiple strategies

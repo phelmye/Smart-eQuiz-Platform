@@ -67,26 +67,6 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Check if user has practice access
-  if (!user || !canAccessPracticeMode(user)) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <Card className="max-w-2xl mx-auto">
-          <CardContent className="p-8 text-center">
-            <h2 className="text-xl font-bold text-red-600 mb-4">Practice Access Required</h2>
-            <p className="text-gray-600 mb-4">
-              You need to apply for practice access before you can use this feature.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Practice access allows you to train and improve your skills. Apply through your dashboard to get started.
-            </p>
-            <Button onClick={onBack}>Back to Dashboard</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   useEffect(() => {
     loadCategories();
     loadStats();
@@ -297,6 +277,26 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
   const resetPractice = () => {
     setSession(null);
   };
+
+  // Check if user has practice access
+  if (!user || !canAccessPracticeMode(user)) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Practice Access Required</h2>
+            <p className="text-gray-600 mb-4">
+              You need to apply for practice access before you can use this feature.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Practice access allows you to train and improve your skills. Apply through your dashboard to get started.
+            </p>
+            <Button onClick={onBack}>Back to Dashboard</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!session) {
     return (
