@@ -6699,7 +6699,7 @@ export function getUserBonusEligibility(userId: string, tenantId: string): {
 }
 
 // Get user practice analytics (mock for now - would be tracked in real app)
-function getUserPracticeAnalytics(userId: string, tenantId: string): UserPracticeAnalytics {
+export function getUserPracticeAnalytics(tenantId: string, userId: string): UserPracticeAnalytics {
   // In production, this would fetch from database
   // For now, return mock data based on user activity
   return {
@@ -7489,13 +7489,6 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Get bonus question requests for tenant
-export function getBonusQuestionRequests(tenantId: string): BonusQuestionRequest[] {
-  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
-  return requests.filter(r => r.tenantId === tenantId).sort((a, b) => 
-    new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
-  );
-}
-
 // Get bonus question requests with filtering
 export function getBonusQuestionRequests(filters?: {
   tenantId?: string;
