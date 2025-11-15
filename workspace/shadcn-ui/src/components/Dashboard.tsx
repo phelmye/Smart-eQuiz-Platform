@@ -150,18 +150,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       'dashboard': 'Dashboard',
       'user-management': 'User Management',
       'role-management': 'Role Management',
+      'role-component-management': 'Component Features',
+      'access-control': 'Access Control',
       'tenant-management': 'Tenant Management',
       'audit-logs': 'Audit Logs',
       'analytics': 'Analytics', 
       'payments': 'Payments',
       'branding': 'Branding Settings',
       'question-bank': 'Question Bank',
+      'question-categories': 'Question Categories',
+      'custom-categories': 'Custom Categories',
+      'round-templates': 'Round Templates',
       'tournaments': 'Tournaments',
       'ai-generator': 'AI Generator',
       'system-settings': 'System Settings',
       'plan-management': 'Plan Management',
       'billing': 'Billing & Plans',
-      'payment-integration': 'Payment Integration'
+      'payment-integration': 'Payment Integration',
+      'security': 'Security',
+      'notifications': 'Notifications',
+      'help': 'Help & Support'
     };
 
     if (currentPage === 'dashboard') {
@@ -390,6 +398,114 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           >
             <QuestionCategoryManager user={user} onBack={handleBackToDashboard} />
           </ComponentAccessControl>
+        );
+      case 'access-control':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="access-control"
+            requiredPermission="users.read"
+            fallbackMessage="Only administrators can manage access control."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Access Control</CardTitle>
+                  <CardDescription>Manage user permissions and access rights</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Access control interface coming soon...</p>
+                </CardContent>
+              </Card>
+            </div>
+          </AccessControl>
+        );
+      case 'security':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="security"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage security settings."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Settings</CardTitle>
+                  <CardDescription>Configure security and authentication settings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Security settings interface coming soon...</p>
+                </CardContent>
+              </Card>
+            </div>
+          </AccessControl>
+        );
+      case 'notifications':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>Manage system notifications and alerts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Notification settings interface coming soon...</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case 'help':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Help & Support</CardTitle>
+                <CardDescription>Get help and access documentation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Quick Links</h3>
+                    <ul className="space-y-2 text-sm text-gray-600">
+                      <li>• Documentation</li>
+                      <li>• Video Tutorials</li>
+                      <li>• FAQ</li>
+                      <li>• Contact Support</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Recent Updates</h3>
+                    <p className="text-sm text-gray-600">Phase 12C: Advanced enterprise features now available!</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         );
       default:
         return null;
