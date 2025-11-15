@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   PAYMENT_INTEGRATIONS: 'equiz_payment_integrations',
   ROLE_PERMISSIONS: 'equiz_role_permissions',
   TENANT_ROLES: 'equiz_tenant_roles',
+  TENANT_ROLE_CUSTOMIZATIONS: 'equiz_tenant_role_customizations', // NEW: Phase 2
   AUDIT_LOGS: 'equiz_audit_logs',
   CURRENT_USER: 'equiz_current_user',
   BRANDING: 'equiz_branding',
@@ -488,6 +489,27 @@ export interface TenantRole {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// NEW: Tenant-specific role customization (Phase 2)
+export interface TenantRoleCustomization {
+  id: string;
+  tenantId: string;
+  roleId: string; // Base role being customized
+  displayName?: string; // Custom display name for this role in this tenant
+  customPermissions: {
+    add: string[];    // Additional permissions granted
+    remove: string[]; // Base permissions revoked
+  };
+  customPages: {
+    add: string[];    // Additional pages granted
+    remove: string[]; // Base pages revoked
+  };
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  notes?: string; // Why this customization was made
 }
 
 export interface Tenant {
@@ -1758,7 +1780,7 @@ export const defaultRolePermissions: RolePermission[] = [
       'system.configure'
     ],
     canAccessPages: [
-      'dashboard', 'user-management', 'role-management', 'role-component-management', 
+      'dashboard', 'user-management', 'role-management', 'role-customization', 'role-component-management', 
       'access-control', 'tournaments', 'question-bank', 'question-categories', 
       'custom-categories', 'round-templates', 'ai-generator', 'analytics', 
       'payments', 'billing', 'payment-integration', 'branding', 'system-settings',
@@ -2538,14 +2560,30 @@ export function hasPermission(user: User, permission: string): boolean {
   // Super admin has all permissions
   if (normalizedRole === 'super_admin') return true;
   
-  // Get role permissions
+  // Get base role permissions
   const rolePermission = defaultRolePermissions.find(rp => rp.roleId.toLowerCase() === normalizedRole);
   if (!rolePermission) return false;
   
   // Check wildcard permission
   if (rolePermission.permissions.includes('*')) return true;
   
-  // Check specific permission
+  // NEW: Phase 2 - Check tenant-specific customizations
+  const customization = getTenantRoleCustomization(user.tenantId, user.role);
+  
+  // If customization exists, apply it
+  if (customization && customization.isActive) {
+    // Check if permission is explicitly removed
+    if (customization.customPermissions.remove.includes(permission)) {
+      return false; // Explicitly denied
+    }
+    
+    // Check if permission is explicitly added
+    if (customization.customPermissions.add.includes(permission)) {
+      return true; // Explicitly granted
+    }
+  }
+  
+  // Check base permission
   const hasBasicPermission = rolePermission.permissions.includes(permission);
   
   // For org_admin and other roles, also check if feature is allowed by plan
@@ -2583,7 +2621,22 @@ export function canAccessPage(user: User, page: string): boolean {
   // Check wildcard access
   if (rolePermission.canAccessPages.includes('*')) return true;
   
-  // Check specific page access
+  // NEW: Phase 2 - Check tenant-specific page customizations
+  const customization = getTenantRoleCustomization(user.tenantId, user.role);
+  
+  if (customization && customization.isActive) {
+    // Check if page is explicitly removed
+    if (customization.customPages.remove.includes(page)) {
+      return false; // Explicitly denied
+    }
+    
+    // Check if page is explicitly added
+    if (customization.customPages.add.includes(page)) {
+      return true; // Explicitly granted
+    }
+  }
+  
+  // Check base page access
   const hasPageAccess = rolePermission.canAccessPages.includes(page);
   
   // For pages that require plan features, check plan access
@@ -2722,6 +2775,167 @@ export function getAssignableRoles(creatorUser: User): UserRole[] {
       // Other roles can only assign basic participant roles
       return baseRoles;
   }
+}
+
+// Check if a user can assign a specific role
+export function canAssignRole(creatorUser: User, targetRole: UserRole): boolean {
+  return getAssignableRoles(creatorUser).includes(targetRole);
+}
+
+// ========================================
+// PHASE 2: Tenant Role Customization Functions
+// ========================================
+
+// Get tenant role customization
+export function getTenantRoleCustomization(tenantId: string | undefined, roleId: string): TenantRoleCustomization | undefined {
+  if (!tenantId) return undefined;
+  
+  const customizations = storage.get(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS) || [];
+  return customizations.find((c: TenantRoleCustomization) => 
+    c.tenantId === tenantId && 
+    c.roleId.toLowerCase() === roleId.toLowerCase() && 
+    c.isActive
+  );
+}
+
+// Get all customizations for a tenant
+export function getTenantRoleCustomizations(tenantId: string): TenantRoleCustomization[] {
+  const customizations = storage.get(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS) || [];
+  return customizations.filter((c: TenantRoleCustomization) => c.tenantId === tenantId);
+}
+
+// Create or update tenant role customization
+export function saveTenantRoleCustomization(customization: Omit<TenantRoleCustomization, 'id' | 'createdAt' | 'updatedAt'>): TenantRoleCustomization {
+  const customizations = storage.get(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS) || [];
+  
+  // Check if customization already exists
+  const existingIndex = customizations.findIndex((c: TenantRoleCustomization) => 
+    c.tenantId === customization.tenantId && c.roleId === customization.roleId
+  );
+  
+  const now = new Date().toISOString();
+  
+  if (existingIndex >= 0) {
+    // Update existing
+    customizations[existingIndex] = {
+      ...customizations[existingIndex],
+      ...customization,
+      updatedAt: now
+    };
+    storage.set(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS, customizations);
+    return customizations[existingIndex];
+  } else {
+    // Create new
+    const newCustomization: TenantRoleCustomization = {
+      ...customization,
+      id: `trc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: now,
+      updatedAt: now
+    };
+    customizations.push(newCustomization);
+    storage.set(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS, customizations);
+    return newCustomization;
+  }
+}
+
+// Delete tenant role customization
+export function deleteTenantRoleCustomization(tenantId: string, roleId: string): boolean {
+  const customizations = storage.get(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS) || [];
+  const filteredCustomizations = customizations.filter((c: TenantRoleCustomization) => 
+    !(c.tenantId === tenantId && c.roleId === roleId)
+  );
+  
+  if (filteredCustomizations.length < customizations.length) {
+    storage.set(STORAGE_KEYS.TENANT_ROLE_CUSTOMIZATIONS, filteredCustomizations);
+    return true;
+  }
+  return false;
+}
+
+// Get effective permissions for a user (base + customizations)
+export function getEffectivePermissions(user: User): string[] {
+  if (!user) return [];
+  
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin has all permissions
+  if (normalizedRole === 'super_admin') return ['*'];
+  
+  // Get base role permissions
+  const rolePermission = defaultRolePermissions.find(rp => rp.roleId.toLowerCase() === normalizedRole);
+  if (!rolePermission) return [];
+  
+  let permissions = [...rolePermission.permissions];
+  
+  // Apply tenant customizations
+  const customization = getTenantRoleCustomization(user.tenantId, user.role);
+  if (customization && customization.isActive) {
+    // Remove denied permissions
+    permissions = permissions.filter(p => !customization.customPermissions.remove.includes(p));
+    
+    // Add granted permissions
+    permissions = [...new Set([...permissions, ...customization.customPermissions.add])];
+  }
+  
+  return permissions;
+}
+
+// Get effective pages for a user (base + customizations)
+export function getEffectivePages(user: User): string[] {
+  if (!user) return [];
+  
+  const normalizedRole = user.role?.toLowerCase();
+  
+  // Super admin can access all pages
+  if (normalizedRole === 'super_admin') return ['*'];
+  
+  // Get base role pages
+  const rolePermission = defaultRolePermissions.find(rp => rp.roleId.toLowerCase() === normalizedRole);
+  if (!rolePermission) return [];
+  
+  let pages = [...rolePermission.canAccessPages];
+  
+  // Apply tenant customizations
+  const customization = getTenantRoleCustomization(user.tenantId, user.role);
+  if (customization && customization.isActive) {
+    // Remove denied pages
+    pages = pages.filter(p => !customization.customPages.remove.includes(p));
+    
+    // Add granted pages
+    pages = [...new Set([...pages, ...customization.customPages.add])];
+  }
+  
+  return pages;
+}
+
+// Get all available permissions (for UI selection)
+export function getAllAvailablePermissions(): string[] {
+  const allPermissions = new Set<string>();
+  
+  defaultRolePermissions.forEach(role => {
+    role.permissions.forEach(perm => {
+      if (perm !== '*') {
+        allPermissions.add(perm);
+      }
+    });
+  });
+  
+  return Array.from(allPermissions).sort();
+}
+
+// Get all available pages (for UI selection)
+export function getAllAvailablePages(): string[] {
+  const allPages = new Set<string>();
+  
+  defaultRolePermissions.forEach(role => {
+    role.canAccessPages.forEach(page => {
+      if (page !== '*') {
+        allPages.add(page);
+      }
+    });
+  });
+  
+  return Array.from(allPages).sort();
 }
 
 // Check if a user can assign a specific role

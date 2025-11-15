@@ -128,6 +128,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           requiredPermission: 'roles.manage'
         },
         {
+          id: 'role-customization',
+          label: 'Customize Roles',
+          icon: Shield,
+          page: 'role-customization',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'roles.manage'
+        },
+        {
           id: 'role-component-management',
           label: 'Component Features',
           icon: Layers,

@@ -30,6 +30,7 @@ import QuestionCategoryManager from './QuestionCategoryManager';
 import AccessControl from './AccessControl';
 import ComponentAccessControl from './ComponentAccessControl';
 import AuditLogViewer from './AuditLogViewer';
+import TenantRoleCustomization from './TenantRoleCustomization';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
 
 interface DashboardProps {
@@ -212,6 +213,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             fallbackMessage="Only organization administrators can manage user roles and permissions."
           >
             <RoleManagement user={user} />
+          </AccessControl>
+        );
+      case 'role-customization':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="role-customization"
+            requiredPermission="roles.manage"
+            fallbackMessage="Only organization administrators can customize role permissions."
+          >
+            <TenantRoleCustomization 
+              tenantId={tenant?.id || user.tenantId} 
+              currentUser={user}
+              onBack={handleBackToDashboard}
+            />
           </AccessControl>
         );
       case 'tenant-management':
