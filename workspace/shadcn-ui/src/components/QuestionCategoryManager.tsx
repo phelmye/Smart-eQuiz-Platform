@@ -217,16 +217,16 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
           <AlertDescription>
             <div className="flex items-center justify-between">
               <div>
-                <span className="font-medium">Plan: {userPlan.displayName}</span>
-                {(userPlan.maxQuestionCategories || 0) === -1 ? (
+                <span className="font-medium">Plan: {userPlan?.displayName}</span>
+                {(userPlan?.maxQuestionCategories ?? 0) === -1 ? (
                   <span className="text-green-700 ml-2">• Unlimited categories</span>
                 ) : (
                   <span className="text-blue-700 ml-2">
-                    • {categories.length} / {userPlan.maxQuestionCategories || 0} categories used
+                    • {categories.length} / {userPlan?.maxQuestionCategories ?? 0} categories used
                   </span>
                 )}
               </div>
-              {(userPlan.maxQuestionCategories || 0) !== -1 && (
+              {(userPlan?.maxQuestionCategories ?? 0) !== -1 && (
                 <Badge variant={canCreateCategory() ? "secondary" : "destructive"}>
                   {canCreateCategory() 
                     ? `${getRemainingCategories()} remaining` 
@@ -513,7 +513,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
               <div>
                 <h3 className="font-semibold text-orange-800">Category Limit Reached</h3>
                 <p className="text-orange-700 mt-1">
-                  You've reached the maximum of {userPlan.maxQuestionCategories || 0} categories for your {userPlan.displayName}. 
+                  You've reached the maximum of {userPlan?.maxQuestionCategories ?? 0} categories for your {userPlan?.displayName ?? 'current plan'}. 
                   To create more categories, you can either delete existing ones or upgrade to a higher plan.
                 </p>
                 <div className="mt-3 flex gap-2">
