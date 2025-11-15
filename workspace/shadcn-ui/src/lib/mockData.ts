@@ -33,7 +33,9 @@ export const STORAGE_KEYS = {
   AI_GENERATION_CONFIGS: 'equiz_ai_generation_configs',
   AI_GENERATION_REQUESTS: 'equiz_ai_generation_requests',
   TOURNAMENT_QUESTION_CONFIGS: 'equiz_tournament_question_configs',
-  QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs'
+  QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs',
+  BONUS_QUESTION_CONFIGS: 'equiz_bonus_question_configs',
+  BONUS_QUESTION_REQUESTS: 'equiz_bonus_question_requests'
 };
 
 // User roles
@@ -1346,6 +1348,249 @@ export interface QuestionDuplicateCheck {
     status: QuestionStatus;
   }[];
   warnings: string[];
+}
+
+// ============================================================================
+// BONUS QUESTIONS (Reward for practice engagement)
+// ============================================================================
+
+// User practice analytics for bonus eligibility
+export interface UserPracticeAnalytics {
+  userId: string;
+  tenantId: string;
+  
+  // Practice stats
+  totalPracticeSessions: number;
+  totalQuestionsAnswered: number;
+  totalCorrectAnswers: number;
+  averageAccuracy: number;                    // 0-100%
+  currentStreak: number;                      // Consecutive days
+  longestStreak: number;
+  
+  // Performance by category
+  categoryPerformance: {
+    category: string;
+    questionsAnswered: number;
+    correctAnswers: number;
+    accuracy: number;
+    averageTimePerQuestion: number;           // seconds
+    lastPracticed: string;
+  }[];
+  
+  // Bonus eligibility
+  bonusQuestionsUnlocked: boolean;
+  bonusQuestionsUsedCount: number;
+  bonusQuestionsLimit: number;
+  lastBonusUnlock: string;
+  
+  // Achievements
+  achievements: {
+    id: string;
+    name: string;
+    description: string;
+    unlockedAt: string;
+    icon: string;
+  }[];
+  
+  // Time tracking
+  totalPracticeTime: number;                  // minutes
+  lastPracticeDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Question performance tracking
+export interface QuestionPerformance {
+  questionId: string;
+  tenantId: string;
+  
+  // Usage statistics
+  timesUsed: number;
+  timesPracticed: number;
+  timesInTournament: number;
+  
+  // Performance metrics
+  totalAttempts: number;
+  correctAttempts: number;
+  incorrectAttempts: number;
+  successRate: number;                        // 0-100%
+  averageTimeToAnswer: number;                // seconds
+  
+  // Difficulty assessment
+  perceivedDifficulty: 'easier' | 'appropriate' | 'harder';
+  difficultyScore: number;                    // 1-10
+  
+  // User feedback
+  userRatings: {
+    userId: string;
+    rating: number;                           // 1-5 stars
+    feedback?: string;
+    reportedIssue?: string;
+    ratedAt: string;
+  }[];
+  averageRating: number;
+  
+  // Quality indicators
+  qualityScore: number;                       // 0-100
+  flaggedForReview: boolean;
+  flagReason?: string;
+  
+  lastUsed: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Bonus question configuration for tenant (ENHANCED)
+export interface BonusQuestionConfig {
+  tenantId: string;
+  enabled: boolean;
+  
+  // Eligibility requirements (MULTI-TIER SYSTEM)
+  unlockTiers: {
+    tier: 1 | 2 | 3 | 4 | 5;
+    name: string;
+    requirePracticeCount: number;              // Min practice sessions
+    requireAccuracy: number;                   // Min accuracy %
+    requireStreak: number;                     // Min consecutive days
+    questionsLimit: number;                    // Max bonus questions for this tier
+    retwistQuality: 'basic' | 'standard' | 'advanced' | 'expert';
+    features: string[];                        // Unlocked features
+  }[];
+  
+  // Usage options
+  allowDirectUse: boolean;
+  allowRetwist: boolean;
+  allowDifficultyAdjustment: boolean;        // Can change difficulty level
+  allowCategoryChange: boolean;               // Can change category
+  allowMultipleVariations: boolean;           // Generate multiple versions
+  
+  // Approval settings
+  autoApproveDirectUse: boolean;
+  requireApprovalAfterRetwist: boolean;
+  requireQualityScore: number;                // Min quality score (0-100)
+  
+  // Limits
+  maxQuestionsPerTournament: number;
+  maxRetwistsPerQuestion: number;             // Prevent over-reuse
+  cooldownPeriod: number;                     // Days before reusing question
+  
+  // Quality control
+  eligibleStatuses: QuestionStatus[];
+  minQuestionRating: number;                  // Min avg rating (1-5)
+  minSuccessRate: number;                     // Min success rate %
+  excludeRecentlyUsed: boolean;               // Exclude from last X days
+  excludeRecentlyUsedDays: number;
+  
+  // Gamification
+  enableAchievements: boolean;
+  enableLeaderboard: boolean;
+  pointsPerBonusQuestion: number;
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Bonus question request (ENHANCED)
+export interface BonusQuestionRequest {
+  id: string;
+  tenantId: string;
+  tournamentId?: string;
+  requestedBy: string;
+  userTier: number;                           // User's unlock tier
+  
+  // Selection criteria
+  sourceQuestionIds: string[];
+  categoryDistribution: {
+    category: string;
+    count: number;
+    targetDifficulty?: 'easy' | 'medium' | 'hard';
+  }[];
+  
+  // Retwist settings (ENHANCED)
+  useDirectly: boolean;
+  retwistStrategy: 'synonym' | 'paraphrase' | 'perspective' | 'context' | 'creative' | 'hybrid';
+  retwistQuality: 'basic' | 'standard' | 'advanced' | 'expert';
+  generateVariations: number;                 // Number of variations per question
+  retwistPrompt?: string;
+  
+  // Transformations
+  preserveDifficulty: boolean;
+  targetDifficulty?: 'easy' | 'medium' | 'hard';
+  preserveCategory: boolean;
+  targetCategory?: string;
+  addBiblicalContext: boolean;
+  expandExplanations: boolean;
+  
+  // Generated questions
+  generatedQuestionIds: string[];
+  originalQuestionMapping: {
+    originalId: string;
+    retwistedId: string;
+    variationNumber: number;                  // 1, 2, 3... if multiple variations
+    strategy: string;
+    qualityScore: number;
+  }[];
+  
+  // Status
+  status: 'pending' | 'analyzing' | 'retwisting' | 'generating_variations' | 'awaiting_approval' | 'approved' | 'completed' | 'failed';
+  progress: number;
+  error?: string;
+  
+  // Analytics
+  estimatedQualityScore: number;
+  similarityToOriginals: number;              // How different from originals
+  
+  // Approval
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedQuestions?: string[];               // IDs of rejected variations
+  
+  // Timestamps
+  requestedAt: string;
+  completedAt?: string;
+}
+
+// Bonus question template (ENHANCED)
+export interface BonusQuestionTemplate {
+  originalQuestionId: string;
+  originalQuestion: Question;
+  
+  // Multiple variations with different strategies
+  variations: {
+    id: string;
+    retwistedQuestion: string;
+    options: string[];
+    correctAnswer: number;
+    explanation?: string;
+    
+    // Strategy details
+    retwistMethod: 'synonym' | 'paraphrase' | 'perspective' | 'context' | 'ai_creative' | 'hybrid';
+    transformations: string[];                // List of applied transformations
+    
+    // Quality metrics
+    similarity: number;                       // How similar to original (0-1)
+    readability: number;                      // Readability score (0-100)
+    biblicalAccuracy: number;                 // Accuracy score (0-100)
+    qualityScore: number;                     // Overall quality (0-100)
+    
+    // Metadata
+    difficulty?: 'easy' | 'medium' | 'hard';
+    category?: string;
+    estimatedTimeToAnswer?: number;           // seconds
+    
+    createdAt: string;
+  }[];
+  
+  // Selection
+  selectedVariationId?: string;
+  selectionReason?: string;
+  
+  // Performance prediction
+  predictedSuccessRate: number;
+  predictedDifficulty: 'easy' | 'medium' | 'hard';
+  
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // Question pool validation result
@@ -6265,5 +6510,1130 @@ export function validateTournamentQuestions(tournamentId: string): {
     categoryCounts: results
   };
 }
+
+// ============================================================================
+// BONUS QUESTIONS FUNCTIONS
+// ============================================================================
+
+// Get or create bonus question config for tenant
+export function getBonusQuestionConfig(tenantId: string): BonusQuestionConfig {
+  const configs = storage.get<BonusQuestionConfig[]>(STORAGE_KEYS.BONUS_QUESTION_CONFIGS) || [];
+  let config = configs.find(c => c.tenantId === tenantId);
+  
+  if (!config) {
+    config = {
+      tenantId,
+      enabled: true,
+      
+      // Multi-tier unlock system
+      unlockTiers: [
+        {
+          tier: 1,
+          name: 'Bronze',
+          requirePracticeCount: 5,
+          requireAccuracy: 60,
+          requireStreak: 2,
+          questionsLimit: 5,
+          retwistQuality: 'basic',
+          features: ['Direct Use', 'Basic Retwist']
+        },
+        {
+          tier: 2,
+          name: 'Silver',
+          requirePracticeCount: 15,
+          requireAccuracy: 70,
+          requireStreak: 5,
+          questionsLimit: 10,
+          retwistQuality: 'standard',
+          features: ['Direct Use', 'Standard Retwist', 'Difficulty Adjustment']
+        },
+        {
+          tier: 3,
+          name: 'Gold',
+          requirePracticeCount: 30,
+          requireAccuracy: 80,
+          requireStreak: 10,
+          questionsLimit: 15,
+          retwistQuality: 'advanced',
+          features: ['All Retwist Options', 'Multiple Variations', 'Category Change']
+        },
+        {
+          tier: 4,
+          name: 'Platinum',
+          requirePracticeCount: 50,
+          requireAccuracy: 85,
+          requireStreak: 15,
+          questionsLimit: 20,
+          retwistQuality: 'expert',
+          features: ['Expert AI Retwist', 'Unlimited Variations', 'Context Expansion']
+        },
+        {
+          tier: 5,
+          name: 'Diamond',
+          requirePracticeCount: 100,
+          requireAccuracy: 90,
+          requireStreak: 30,
+          questionsLimit: 30,
+          retwistQuality: 'expert',
+          features: ['All Features', 'Priority Processing', 'Custom AI Prompts']
+        }
+      ],
+      
+      allowDirectUse: true,
+      allowRetwist: true,
+      allowDifficultyAdjustment: true,
+      allowCategoryChange: true,
+      allowMultipleVariations: true,
+      
+      autoApproveDirectUse: true,
+      requireApprovalAfterRetwist: true,
+      requireQualityScore: 70,
+      
+      maxQuestionsPerTournament: 20,
+      maxRetwistsPerQuestion: 3,
+      cooldownPeriod: 30,
+      
+      eligibleStatuses: [
+        QuestionStatus.QUESTION_POOL,
+        QuestionStatus.RECENT_TOURNAMENT
+      ],
+      minQuestionRating: 3.0,
+      minSuccessRate: 50,
+      excludeRecentlyUsed: true,
+      excludeRecentlyUsedDays: 14,
+      
+      enableAchievements: true,
+      enableLeaderboard: true,
+      pointsPerBonusQuestion: 50,
+      
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    configs.push(config);
+    storage.set(STORAGE_KEYS.BONUS_QUESTION_CONFIGS, configs);
+  }
+  
+  return config;
+}
+
+// Get user's bonus eligibility and tier
+export function getUserBonusEligibility(userId: string, tenantId: string): {
+  eligible: boolean;
+  currentTier: number;
+  tierName: string;
+  questionsLimit: number;
+  questionsUsed: number;
+  questionsRemaining: number;
+  nextTier?: {
+    tier: number;
+    name: string;
+    requirements: {
+      practiceNeeded: number;
+      accuracyNeeded: number;
+      streakNeeded: number;
+    };
+  };
+  achievements: string[];
+} {
+  const config = getBonusQuestionConfig(tenantId);
+  
+  if (!config.enabled) {
+    return {
+      eligible: false,
+      currentTier: 0,
+      tierName: 'None',
+      questionsLimit: 0,
+      questionsUsed: 0,
+      questionsRemaining: 0,
+      achievements: []
+    };
+  }
+  
+  // Get user analytics (mock data for now)
+  const analytics = getUserPracticeAnalytics(userId, tenantId);
+  
+  // Determine tier based on performance
+  let currentTier = 0;
+  let tierConfig = config.unlockTiers[0];
+  
+  for (const tier of config.unlockTiers) {
+    if (
+      analytics.totalPracticeSessions >= tier.requirePracticeCount &&
+      analytics.averageAccuracy >= tier.requireAccuracy &&
+      analytics.currentStreak >= tier.requireStreak
+    ) {
+      currentTier = tier.tier;
+      tierConfig = tier;
+    } else {
+      break;
+    }
+  }
+  
+  const eligible = currentTier > 0;
+  const questionsUsed = analytics.bonusQuestionsUsedCount;
+  const questionsLimit = eligible ? tierConfig.questionsLimit : 0;
+  
+  // Find next tier
+  const nextTierIndex = config.unlockTiers.findIndex(t => t.tier === currentTier + 1);
+  const nextTier = nextTierIndex >= 0 ? config.unlockTiers[nextTierIndex] : undefined;
+  
+  return {
+    eligible,
+    currentTier,
+    tierName: eligible ? tierConfig.name : 'None',
+    questionsLimit,
+    questionsUsed,
+    questionsRemaining: Math.max(0, questionsLimit - questionsUsed),
+    nextTier: nextTier ? {
+      tier: nextTier.tier,
+      name: nextTier.name,
+      requirements: {
+        practiceNeeded: Math.max(0, nextTier.requirePracticeCount - analytics.totalPracticeSessions),
+        accuracyNeeded: Math.max(0, nextTier.requireAccuracy - analytics.averageAccuracy),
+        streakNeeded: Math.max(0, nextTier.requireStreak - analytics.currentStreak)
+      }
+    } : undefined,
+    achievements: analytics.achievements.map(a => a.name)
+  };
+}
+
+// Get user practice analytics (mock for now - would be tracked in real app)
+function getUserPracticeAnalytics(userId: string, tenantId: string): UserPracticeAnalytics {
+  // In production, this would fetch from database
+  // For now, return mock data based on user activity
+  return {
+    userId,
+    tenantId,
+    totalPracticeSessions: 25,
+    totalQuestionsAnswered: 500,
+    totalCorrectAnswers: 400,
+    averageAccuracy: 80,
+    currentStreak: 7,
+    longestStreak: 15,
+    categoryPerformance: [],
+    bonusQuestionsUnlocked: true,
+    bonusQuestionsUsedCount: 3,
+    bonusQuestionsLimit: 15,
+    lastBonusUnlock: new Date().toISOString(),
+    achievements: [],
+    totalPracticeTime: 600,
+    lastPracticeDate: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+// Get eligible questions for bonus selection (ENHANCED with quality filtering)
+export function getEligibleBonusQuestions(
+  tenantId: string,
+  userId: string,
+  options: {
+    category?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+    minRating?: number;
+    minSuccessRate?: number;
+    excludeQuestionIds?: string[];
+    sortBy?: 'usage' | 'rating' | 'performance' | 'random';
+    limit?: number;
+  } = {}
+): Question[] {
+  const config = getBonusQuestionConfig(tenantId);
+  
+  if (!config.enabled) {
+    return [];
+  }
+  
+  // Check user eligibility
+  const eligibility = getUserBonusEligibility(userId, tenantId);
+  if (!eligibility.eligible) {
+    return [];
+  }
+  
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  
+  let eligible = questions.filter(q => 
+    q.tenantId === tenantId && 
+    config.eligibleStatuses.includes(q.status)
+  );
+  
+  // Filter by category
+  if (options.category) {
+    eligible = eligible.filter(q => q.category === options.category);
+  }
+  
+  // Filter by difficulty
+  if (options.difficulty) {
+    eligible = eligible.filter(q => q.difficulty === options.difficulty);
+  }
+  
+  // Exclude recently used questions (cooldown period)
+  if (config.excludeRecentlyUsed) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - config.excludeRecentlyUsedDays);
+    
+    eligible = eligible.filter(q => {
+      if (!q.lastUsedDate) return true;
+      return new Date(q.lastUsedDate) < cutoffDate;
+    });
+  }
+  
+  // Filter by quality metrics (mock - in production would use QuestionPerformance data)
+  const minRating = options.minRating ?? config.minQuestionRating;
+  const minSuccessRate = options.minSuccessRate ?? config.minSuccessRate;
+  
+  eligible = eligible.filter(q => {
+    // Mock quality check - in production would check actual performance data
+    const mockRating = 3.5 + Math.random() * 1.5; // 3.5-5.0
+    const mockSuccessRate = 60 + Math.random() * 40; // 60-100%
+    
+    return mockRating >= minRating && mockSuccessRate >= minSuccessRate;
+  });
+  
+  // Exclude specific questions
+  if (options.excludeQuestionIds) {
+    eligible = eligible.filter(q => !options.excludeQuestionIds!.includes(q.id));
+  }
+  
+  // Sort questions
+  const sortBy = options.sortBy || 'usage';
+  
+  switch (sortBy) {
+    case 'usage':
+      // Prefer less used questions
+      eligible.sort((a, b) => a.usageCount - b.usageCount);
+      break;
+    case 'rating':
+      // Prefer higher rated questions (mock)
+      eligible.sort(() => Math.random() - 0.5);
+      break;
+    case 'performance':
+      // Prefer better performing questions (mock)
+      eligible.sort(() => Math.random() - 0.5);
+      break;
+    case 'random':
+      // Random shuffle
+      eligible.sort(() => Math.random() - 0.5);
+      break;
+  }
+  
+  // Apply limit
+  if (options.limit && options.limit > 0) {
+    eligible = eligible.slice(0, options.limit);
+  }
+  
+  return eligible;
+}
+
+// Create bonus question request (ENHANCED)
+export function createBonusQuestionRequest(
+  tenantId: string,
+  userId: string,
+  params: {
+    sourceQuestionIds: string[];
+    tournamentId?: string;
+    useDirectly: boolean;
+    retwistStrategy?: 'synonym' | 'paraphrase' | 'perspective' | 'context' | 'creative' | 'hybrid';
+    retwistQuality?: 'basic' | 'standard' | 'advanced' | 'expert';
+    generateVariations?: number;
+    retwistPrompt?: string;
+    preserveDifficulty?: boolean;
+    targetDifficulty?: 'easy' | 'medium' | 'hard';
+    preserveCategory?: boolean;
+    targetCategory?: string;
+    addBiblicalContext?: boolean;
+    expandExplanations?: boolean;
+  }
+): BonusQuestionRequest | { error: string } {
+  const config = getBonusQuestionConfig(tenantId);
+  
+  if (!config.enabled) {
+    return { error: 'Bonus questions feature is not enabled for this tenant' };
+  }
+  
+  // Check user eligibility
+  const eligibility = getUserBonusEligibility(userId, tenantId);
+  if (!eligibility.eligible) {
+    return { error: 'You have not unlocked bonus questions yet. Keep practicing!' };
+  }
+  
+  if (params.sourceQuestionIds.length === 0) {
+    return { error: 'No questions selected' };
+  }
+  
+  if (params.sourceQuestionIds.length > eligibility.questionsRemaining) {
+    return { error: `You can only select ${eligibility.questionsRemaining} more bonus questions (${eligibility.questionsUsed}/${eligibility.questionsLimit} used)` };
+  }
+  
+  if (params.sourceQuestionIds.length > config.maxQuestionsPerTournament) {
+    return { error: `Maximum ${config.maxQuestionsPerTournament} bonus questions allowed per tournament` };
+  }
+  
+  if (!params.useDirectly && !config.allowRetwist) {
+    return { error: 'Question retwisting is not allowed for this tenant' };
+  }
+  
+  if (params.useDirectly && !config.allowDirectUse) {
+    return { error: 'Direct use of questions is not allowed for this tenant' };
+  }
+  
+  // Validate tier-based features
+  const tierConfig = config.unlockTiers.find(t => t.tier === eligibility.currentTier);
+  if (!tierConfig) {
+    return { error: 'Invalid tier configuration' };
+  }
+  
+  const variations = params.generateVariations || 1;
+  if (variations > 1 && !config.allowMultipleVariations) {
+    return { error: 'Multiple variations not allowed for your tier' };
+  }
+  
+  if (variations > eligibility.currentTier) {
+    return { error: `Your tier (${tierConfig.name}) allows up to ${eligibility.currentTier} variation(s) per question` };
+  }
+  
+  // Count questions by category
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const selectedQuestions = questions.filter(q => params.sourceQuestionIds.includes(q.id));
+  
+  const categoryDistribution = new Map<string, number>();
+  selectedQuestions.forEach(q => {
+    categoryDistribution.set(q.category, (categoryDistribution.get(q.category) || 0) + 1);
+  });
+  
+  const request: BonusQuestionRequest = {
+    id: `bonus-req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    tenantId,
+    tournamentId: params.tournamentId,
+    requestedBy: userId,
+    userTier: eligibility.currentTier,
+    sourceQuestionIds: params.sourceQuestionIds,
+    categoryDistribution: Array.from(categoryDistribution.entries()).map(([category, count]) => ({
+      category,
+      count,
+      targetDifficulty: params.targetDifficulty
+    })),
+    useDirectly: params.useDirectly,
+    retwistStrategy: params.retwistStrategy || 'hybrid',
+    retwistQuality: params.retwistQuality || tierConfig.retwistQuality,
+    generateVariations: variations,
+    retwistPrompt: params.retwistPrompt,
+    preserveDifficulty: params.preserveDifficulty ?? true,
+    targetDifficulty: params.targetDifficulty,
+    preserveCategory: params.preserveCategory ?? true,
+    targetCategory: params.targetCategory,
+    addBiblicalContext: params.addBiblicalContext ?? false,
+    expandExplanations: params.expandExplanations ?? false,
+    generatedQuestionIds: [],
+    originalQuestionMapping: [],
+    status: params.useDirectly ? 'approved' : 'pending',
+    progress: params.useDirectly ? 100 : 0,
+    estimatedQualityScore: 0,
+    similarityToOriginals: 0,
+    requestedAt: new Date().toISOString()
+  };
+  
+  // If using directly, create copies immediately
+  if (params.useDirectly) {
+    const copies: Question[] = [];
+    
+    selectedQuestions.forEach(original => {
+      const copy: Question = {
+        ...original,
+        id: `bonus-q-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        status: config.autoApproveDirectUse ? QuestionStatus.TOURNAMENT_RESERVED : QuestionStatus.AI_PENDING_REVIEW,
+        approvalStatus: config.autoApproveDirectUse ? QuestionApprovalStatus.APPROVED : QuestionApprovalStatus.PENDING,
+        createdBy: userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        usageCount: 0,
+        tags: [...(original.tags || []), 'bonus', 'direct-use', `tier-${eligibility.currentTier}`]
+      };
+      
+      if (params.tournamentId) {
+        copy.tournamentId = params.tournamentId;
+      }
+      
+      copies.push(copy);
+      request.generatedQuestionIds.push(copy.id);
+      request.originalQuestionMapping.push({
+        originalId: original.id,
+        retwistedId: copy.id,
+        variationNumber: 1,
+        strategy: 'direct',
+        qualityScore: 100
+      });
+    });
+    
+    // Save copies
+    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    allQuestions.push(...copies);
+    storage.set(STORAGE_KEYS.QUESTIONS, allQuestions);
+    
+    request.status = 'completed';
+    request.estimatedQualityScore = 100;
+    request.similarityToOriginals = 100;
+    request.completedAt = new Date().toISOString();
+  }
+  
+  // Save request
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  requests.push(request);
+  storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+  
+  return request;
+}
+
+// Retwist questions using AI (ENHANCED with multiple strategies)
+export async function retwistBonusQuestions(
+  requestId: string
+): Promise<{ success: boolean; error?: string; variations?: number }> {
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  const requestIndex = requests.findIndex(r => r.id === requestId);
+  const request = requests[requestIndex];
+  
+  if (!request) {
+    return { success: false, error: 'Request not found' };
+  }
+  
+  if (request.useDirectly) {
+    return { success: false, error: 'This request is set to use questions directly' };
+  }
+  
+  request.status = 'analyzing';
+  storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+  
+  try {
+    const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const sourceQuestions = questions.filter(q => request.sourceQuestionIds.includes(q.id));
+    const retwisted: Question[] = [];
+    let totalVariations = 0;
+    
+    request.status = 'retwisting';
+    storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+    
+    for (let i = 0; i < sourceQuestions.length; i++) {
+      const original = sourceQuestions[i];
+      
+      // Generate multiple variations per question
+      const numVariations = request.generateVariations;
+      
+      for (let v = 1; v <= numVariations; v++) {
+        // Simulate AI processing time
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        request.status = 'generating_variations';
+        storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+        
+        // Generate variation using specified strategy
+        const variation = generateAdvancedVariation(
+          original, 
+          request.retwistStrategy,
+          request.retwistQuality,
+          {
+            addContext: request.addBiblicalContext,
+            expandExplanation: request.expandExplanations,
+            customPrompt: request.retwistPrompt,
+            targetDifficulty: request.targetDifficulty,
+            targetCategory: request.targetCategory
+          }
+        );
+        
+        const retwistedQuestion: Question = {
+          ...original,
+          id: `bonus-retwist-${Date.now()}-${i}-${v}-${Math.random().toString(36).substr(2, 9)}`,
+          question: variation.question,
+          options: variation.options,
+          correctAnswer: variation.correctAnswer,
+          status: QuestionStatus.AI_PENDING_REVIEW,
+          approvalStatus: QuestionApprovalStatus.PENDING,
+          aiGeneratedAt: new Date().toISOString(),
+          aiModel: `bonus-retwist-${request.retwistQuality}`,
+          aiPrompt: request.retwistPrompt || `Retwist using ${request.retwistStrategy} strategy`,
+          createdBy: request.requestedBy,
+          difficulty: request.preserveDifficulty ? original.difficulty : (variation.difficulty || original.difficulty),
+          category: request.preserveCategory ? original.category : (variation.category || original.category),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          usageCount: 0,
+          tags: [
+            ...(original.tags || []), 
+            'bonus', 
+            'retwisted', 
+            `tier-${request.userTier}`,
+            `strategy-${request.retwistStrategy}`,
+            `quality-${request.retwistQuality}`,
+            `original:${original.id}`,
+            `variation-${v}`
+          ]
+        };
+        
+        retwisted.push(retwistedQuestion);
+        request.generatedQuestionIds.push(retwistedQuestion.id);
+        request.originalQuestionMapping.push({
+          originalId: original.id,
+          retwistedId: retwistedQuestion.id,
+          variationNumber: v,
+          strategy: request.retwistStrategy,
+          qualityScore: variation.qualityScore
+        });
+        
+        totalVariations++;
+        request.progress = Math.round((totalVariations / (sourceQuestions.length * numVariations)) * 100);
+        storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+      }
+    }
+    
+    // Save retwisted questions
+    questions.push(...retwisted);
+    storage.set(STORAGE_KEYS.QUESTIONS, questions);
+    
+    // Calculate quality metrics
+    const avgQuality = request.originalQuestionMapping.reduce((sum, m) => sum + m.qualityScore, 0) / request.originalQuestionMapping.length;
+    const avgSimilarity = 75 - (request.retwistQuality === 'expert' ? 20 : request.retwistQuality === 'advanced' ? 15 : request.retwistQuality === 'standard' ? 10 : 5);
+    
+    request.status = 'awaiting_approval';
+    request.progress = 100;
+    request.estimatedQualityScore = Math.round(avgQuality);
+    request.similarityToOriginals = avgSimilarity;
+    storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+    
+    return { success: true, variations: totalVariations };
+  } catch (error) {
+    request.status = 'failed';
+    request.error = error instanceof Error ? error.message : 'Unknown error';
+    storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+    
+    return { success: false, error: request.error };
+  }
+}
+
+// Generate advanced question variation with multiple strategies
+function generateAdvancedVariation(
+  original: Question,
+  strategy: string,
+  quality: string,
+  options: {
+    addContext?: boolean;
+    expandExplanation?: boolean;
+    customPrompt?: string;
+    targetDifficulty?: 'easy' | 'medium' | 'hard';
+    targetCategory?: string;
+  }
+): {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  category?: string;
+  qualityScore: number;
+} {
+  let question = original.question;
+  let questionOptions = [...original.options];
+  let correctAnswer = original.correctAnswer;
+  let qualityScore = 70;
+  
+  // Apply strategy-specific transformations
+  switch (strategy) {
+    case 'synonym':
+      question = applySynonymReplacement(question, quality);
+      questionOptions = questionOptions.map(opt => applySynonymReplacement(opt, quality));
+      qualityScore = quality === 'expert' ? 85 : quality === 'advanced' ? 80 : quality === 'standard' ? 75 : 70;
+      break;
+      
+    case 'paraphrase':
+      question = paraphraseAdvanced(question, quality);
+      questionOptions = questionOptions.map(opt => paraphraseAdvanced(opt, quality));
+      qualityScore = quality === 'expert' ? 90 : quality === 'advanced' ? 85 : quality === 'standard' ? 80 : 75;
+      break;
+      
+    case 'perspective':
+      question = changePerspectiveAdvanced(question, quality);
+      qualityScore = quality === 'expert' ? 88 : quality === 'advanced' ? 83 : quality === 'standard' ? 78 : 73;
+      break;
+      
+    case 'context':
+      question = addBiblicalContextAdvanced(question, original.category, quality);
+      qualityScore = quality === 'expert' ? 92 : quality === 'advanced' ? 87 : quality === 'standard' ? 82 : 77;
+      break;
+      
+    case 'creative':
+      const creative = applyCreativeTransformation(question, questionOptions, quality);
+      question = creative.question;
+      questionOptions = creative.options;
+      correctAnswer = creative.correctAnswer;
+      qualityScore = quality === 'expert' ? 95 : quality === 'advanced' ? 90 : quality === 'standard' ? 85 : 80;
+      break;
+      
+    case 'hybrid':
+      // Combine multiple strategies
+      question = applySynonymReplacement(question, quality);
+      question = paraphraseAdvanced(question, quality);
+      if (Math.random() > 0.5) {
+        question = addBiblicalContextAdvanced(question, original.category, quality);
+      }
+      questionOptions = questionOptions.map(opt => applySynonymReplacement(opt, quality));
+      qualityScore = quality === 'expert' ? 93 : quality === 'advanced' ? 88 : quality === 'standard' ? 83 : 78;
+      break;
+  }
+  
+  // Add additional context if requested
+  if (options.addContext && strategy !== 'context') {
+    question = addBiblicalContextAdvanced(question, original.category, quality);
+    qualityScore += 5;
+  }
+  
+  // Shuffle options for variety
+  const shuffled = shuffleOptionsWithAnswer(questionOptions, correctAnswer);
+  questionOptions = shuffled.options;
+  correctAnswer = shuffled.correctAnswer;
+  
+  return {
+    question,
+    options: questionOptions,
+    correctAnswer,
+    difficulty: options.targetDifficulty,
+    category: options.targetCategory,
+    qualityScore: Math.min(100, qualityScore)
+  };
+}
+
+// Generate question variations for retwisting (deprecated - use generateAdvancedVariation)
+function generateQuestionVariations(
+  original: Question,
+  customPrompt?: string
+): Array<{
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  category?: string;
+}> {
+  // Legacy support - redirect to advanced function
+  return [
+    generateAdvancedVariation(original, 'paraphrase', 'standard', { customPrompt })
+  ];
+}
+
+// Advanced synonym replacement with biblical vocabulary
+function applySynonymReplacement(text: string, quality: string): string {
+  const synonymMap: Record<string, string[]> = {
+    'said': ['proclaimed', 'declared', 'spoke', 'uttered', 'testified'],
+    'went': ['traveled', 'journeyed', 'proceeded', 'departed', 'ventured'],
+    'came': ['arrived', 'approached', 'entered', 'descended', 'appeared'],
+    'gave': ['bestowed', 'granted', 'provided', 'offered', 'presented'],
+    'made': ['created', 'established', 'formed', 'fashioned', 'constructed'],
+    'told': ['instructed', 'informed', 'revealed', 'communicated', 'conveyed'],
+    'saw': ['witnessed', 'beheld', 'observed', 'perceived', 'discerned'],
+    'heard': ['listened to', 'received word', 'learned', 'was told', 'perceived'],
+    'people': ['multitude', 'congregation', 'assembly', 'followers', 'disciples'],
+    'God': ['the Lord', 'the Almighty', 'the Creator', 'Yahweh', 'the Divine'],
+    'Jesus': ['Christ', 'the Messiah', 'the Son of God', 'our Savior', 'the Lord'],
+    'prophet': ['seer', 'man of God', 'messenger', 'oracle', 'herald'],
+    'king': ['monarch', 'ruler', 'sovereign', 'regent', 'leader'],
+    'temple': ['sanctuary', 'house of God', 'holy place', 'tabernacle', 'shrine'],
+    'prayer': ['supplication', 'petition', 'intercession', 'invocation', 'plea'],
+    'faith': ['belief', 'trust', 'confidence', 'conviction', 'devotion'],
+    'sin': ['transgression', 'iniquity', 'wrongdoing', 'trespass', 'offense'],
+    'saved': ['redeemed', 'delivered', 'rescued', 'liberated', 'freed'],
+    'holy': ['sacred', 'divine', 'consecrated', 'sanctified', 'hallowed'],
+    'blessed': ['favored', 'fortunate', 'endowed', 'graced', 'sanctified'],
+    'wrote': ['authored', 'composed', 'penned', 'inscribed', 'recorded'],
+    'first': ['initial', 'earliest', 'primary', 'foremost', 'original']
+  };
+  
+  const replacementChance = quality === 'expert' ? 0.7 : quality === 'advanced' ? 0.5 : quality === 'standard' ? 0.3 : 0.2;
+  
+  let result = text;
+  Object.entries(synonymMap).forEach(([word, synonyms]) => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    result = result.replace(regex, (match) => {
+      if (Math.random() < replacementChance) {
+        return synonyms[Math.floor(Math.random() * synonyms.length)];
+      }
+      return match;
+    });
+  });
+  
+  return result;
+}
+
+// Advanced paraphrasing with sentence restructuring
+function paraphraseAdvanced(text: string, quality: string): string {
+  const patterns = [
+    // Question → Who/What/When/Where/Why/How transformations
+    { from: /^What did (.+?) do\?$/i, to: 'What action did $1 take?' },
+    { from: /^Who was (.+?)\?$/i, to: 'Can you identify who $1 was?' },
+    { from: /^Where did (.+?) go\?$/i, to: 'To which place did $1 travel?' },
+    { from: /^When did (.+?) happen\?$/i, to: 'At what time did $1 occur?' },
+    { from: /^Why did (.+?)\?$/i, to: 'For what reason did $1?' },
+    { from: /^How did (.+?)\?$/i, to: 'In what manner did $1?' },
+    
+    // Biblical phrase restructuring
+    { from: /in the beginning/i, to: 'at the dawn of creation' },
+    { from: /according to the scriptures/i, to: 'as written in holy text' },
+    { from: /it is written/i, to: 'the scripture declares' },
+    { from: /in those days/i, to: 'during that era' },
+    { from: /the word of the Lord/i, to: "the Lord's divine message" },
+    
+    // Action restructuring
+    { from: /was born in/i, to: 'came into the world in' },
+    { from: /preached about/i, to: 'proclaimed the message of' },
+    { from: /believed in/i, to: 'placed their faith in' },
+    { from: /prayed to/i, to: 'offered supplication to' },
+    { from: /testified that/i, to: 'bore witness that' }
+  ];
+  
+  let result = text;
+  const numPatterns = quality === 'expert' ? 5 : quality === 'advanced' ? 3 : quality === 'standard' ? 2 : 1;
+  
+  patterns.slice(0, numPatterns).forEach(pattern => {
+    result = result.replace(pattern.from, pattern.to);
+  });
+  
+  return result;
+}
+
+// Change question perspective
+function changePerspectiveAdvanced(text: string, quality: string): string {
+  // Convert 3rd person to 1st person perspective or vice versa
+  const perspectives = [
+    { from: /he said/gi, to: 'I said' },
+    { from: /she said/gi, to: 'I said' },
+    { from: /they said/gi, to: 'we said' },
+    { from: /he went/gi, to: 'I went' },
+    { from: /she went/gi, to: 'I went' },
+    { from: /they went/gi, to: 'we went' },
+    { from: /his/gi, to: 'my' },
+    { from: /her/gi, to: 'my' },
+    { from: /their/gi, to: 'our' },
+    { from: /he was/gi, to: 'I was' },
+    { from: /she was/gi, to: 'I was' },
+    { from: /they were/gi, to: 'we were' }
+  ];
+  
+  // Alternatively, add narrative framing
+  const narrativeFrames = [
+    'From the biblical account, ',
+    'As recorded in scripture, ',
+    'According to the testimony, ',
+    'In the sacred narrative, ',
+    'The biblical record shows that '
+  ];
+  
+  let result = text;
+  
+  if (quality === 'expert' || quality === 'advanced') {
+    // Apply perspective shift for advanced quality
+    if (Math.random() > 0.5) {
+      perspectives.forEach(p => {
+        result = result.replace(p.from, p.to);
+      });
+    } else {
+      // Add narrative frame
+      result = narrativeFrames[Math.floor(Math.random() * narrativeFrames.length)] + result;
+    }
+  }
+  
+  return result;
+}
+
+// Add biblical context to question
+function addBiblicalContextAdvanced(text: string, category: string, quality: string): string {
+  const contextByCategory: Record<string, string[]> = {
+    'Old Testament': [
+      '(as documented in the Hebrew scriptures)',
+      '(in the ancient covenant)',
+      '(during the patriarchal period)',
+      '(in the prophetic writings)',
+      '(according to Mosaic law)'
+    ],
+    'New Testament': [
+      '(in the gospel accounts)',
+      '(during the apostolic age)',
+      '(in the early church era)',
+      '(as Jesus taught)',
+      '(in the New Covenant)'
+    ],
+    'Prophets': [
+      '(through divine revelation)',
+      '(by prophetic vision)',
+      '(as foretold by the prophets)',
+      '(through inspired utterance)',
+      '(in prophetic declaration)'
+    ],
+    'Life of Jesus': [
+      '(during Christ\'s earthly ministry)',
+      '(in the Messianic age)',
+      '(during the Incarnation)',
+      '(in Jesus\' redemptive mission)',
+      '(through Christ\'s teachings)'
+    ],
+    'Apostles': [
+      '(in the apostolic mission)',
+      '(during the church\'s foundation)',
+      '(through apostolic authority)',
+      '(in early Christian testimony)',
+      '(by apostolic witness)'
+    ]
+  };
+  
+  const contexts = contextByCategory[category] || [
+    '(in biblical history)',
+    '(according to scripture)',
+    '(in the sacred text)',
+    '(as recorded in the Bible)',
+    '(in God\'s revelation)'
+  ];
+  
+  const contextToAdd = contexts[Math.floor(Math.random() * contexts.length)];
+  
+  // Insert context at appropriate position
+  if (text.includes('?')) {
+    return text.replace('?', ` ${contextToAdd}?`);
+  }
+  
+  return `${text} ${contextToAdd}`;
+}
+
+// Apply creative AI transformation
+function applyCreativeTransformation(
+  question: string, 
+  options: string[], 
+  quality: string
+): {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+} {
+  // Apply multiple transformations for creative variation
+  let newQuestion = question;
+  let newOptions = [...options];
+  
+  // Add rhetorical elements for expert quality
+  if (quality === 'expert') {
+    const rhetoricalFrames = [
+      'Consider this: ',
+      'Reflect on the following: ',
+      'Examine the scriptural account: ',
+      'Ponder this biblical truth: ',
+      'Contemplate this question: '
+    ];
+    newQuestion = rhetoricalFrames[Math.floor(Math.random() * rhetoricalFrames.length)] + newQuestion;
+  }
+  
+  // Add descriptive elements
+  newQuestion = applySynonymReplacement(newQuestion, quality);
+  newQuestion = paraphraseAdvanced(newQuestion, quality);
+  newOptions = newOptions.map(opt => applySynonymReplacement(opt, quality));
+  
+  // Randomly enhance with context
+  if (Math.random() > 0.6) {
+    newQuestion = addBiblicalContextAdvanced(newQuestion, 'Old Testament', quality);
+  }
+  
+  return {
+    question: newQuestion,
+    options: newOptions,
+    correctAnswer: 0 // Maintain original correct answer after shuffle
+  };
+}
+
+// Shuffle options while maintaining correct answer
+function shuffleOptionsWithAnswer(options: string[], correctAnswer: number): {
+  options: string[];
+  correctAnswer: number;
+} {
+  const correctText = options[correctAnswer];
+  const shuffled = [...options].sort(() => Math.random() - 0.5);
+  const newCorrectIndex = shuffled.indexOf(correctText);
+  
+  return {
+    options: shuffled,
+    correctAnswer: newCorrectIndex
+  };
+}
+
+// Helper: Paraphrase question text (legacy - use applySynonymReplacement)
+function paraphraseQuestion(text: string): string {
+  return applySynonymReplacement(text, 'standard');
+}
+
+// Helper: Paraphrase option text
+function paraphraseOption(text: string): string {
+  return applySynonymReplacement(text, 'basic');
+}
+
+// Helper: Change question perspective (legacy - use changePerspectiveAdvanced)
+function changePerspective(text: string): string {
+  return changePerspectiveAdvanced(text, 'standard');
+}
+
+// Helper: Add contextual information (legacy - use addBiblicalContextAdvanced)
+function addContext(text: string, category: string): string {
+  return addBiblicalContextAdvanced(text, category, 'standard');
+}
+  
+  const prefix = contexts[category as keyof typeof contexts] || 'In the Bible, ';
+  return prefix + text.toLowerCase();
+}
+
+// Helper: Shuffle array
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+// Get bonus question requests for tenant
+export function getBonusQuestionRequests(tenantId: string): BonusQuestionRequest[] {
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  return requests.filter(r => r.tenantId === tenantId).sort((a, b) => 
+    new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
+  );
+}
+
+// Get bonus question requests with filtering
+export function getBonusQuestionRequests(filters?: {
+  tenantId?: string;
+  requestedBy?: string;
+  status?: BonusQuestionRequest['status'];
+  tournamentId?: string;
+  startDate?: string;
+  endDate?: string;
+}): BonusQuestionRequest[] {
+  let requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  
+  if (filters) {
+    if (filters.tenantId) {
+      requests = requests.filter(r => r.tenantId === filters.tenantId);
+    }
+    if (filters.requestedBy) {
+      requests = requests.filter(r => r.requestedBy === filters.requestedBy);
+    }
+    if (filters.status) {
+      requests = requests.filter(r => r.status === filters.status);
+    }
+    if (filters.tournamentId) {
+      requests = requests.filter(r => r.tournamentId === filters.tournamentId);
+    }
+    if (filters.startDate) {
+      requests = requests.filter(r => r.requestedAt >= filters.startDate!);
+    }
+    if (filters.endDate) {
+      requests = requests.filter(r => r.requestedAt <= filters.endDate!);
+    }
+  }
+  
+  // Sort by requested date descending
+  return requests.sort((a, b) => 
+    new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
+  );
+}
+
+// Update bonus question request status
+export function updateBonusQuestionRequestStatus(
+  requestId: string,
+  status: BonusQuestionRequest['status'],
+  error?: string
+): { success: boolean; error?: string } {
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  const request = requests.find(r => r.id === requestId);
+  
+  if (!request) {
+    return { success: false, error: 'Request not found' };
+  }
+  
+  request.status = status;
+  if (error) {
+    request.error = error;
+  }
+  request.updatedAt = new Date().toISOString();
+  
+  if (status === 'completed' || status === 'failed') {
+    request.completedAt = new Date().toISOString();
+  }
+  
+  storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+  
+  return { success: true };
+}
+
+// Cancel bonus question request
+export function cancelBonusQuestionRequest(
+  requestId: string,
+  userId: string
+): { success: boolean; error?: string } {
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  const request = requests.find(r => r.id === requestId);
+  
+  if (!request) {
+    return { success: false, error: 'Request not found' };
+  }
+  
+  if (request.status === 'completed') {
+    return { success: false, error: 'Cannot cancel completed request' };
+  }
+  
+  request.status = 'failed';
+  request.error = `Cancelled by user ${userId}`;
+  request.completedAt = new Date().toISOString();
+  request.updatedAt = new Date().toISOString();
+  
+  storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+  
+  return { success: true };
+}
+
+// Approve bonus questions (after retwisting)
+export function approveBonusQuestions(
+  requestId: string,
+  userId: string,
+  questionIds: string[], // Specific questions to approve
+  destination: 'pool' | 'tournament' = 'tournament'
+): { success: boolean; error?: string } {
+  const requests = storage.get<BonusQuestionRequest[]>(STORAGE_KEYS.BONUS_QUESTION_REQUESTS) || [];
+  const request = requests.find(r => r.id === requestId);
+  
+  if (!request) {
+    return { success: false, error: 'Request not found' };
+  }
+  
+  if (request.status !== 'awaiting_approval') {
+    return { success: false, error: 'Request is not awaiting approval' };
+  }
+  
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  
+  questionIds.forEach(qid => {
+    const question = questions.find(q => q.id === qid);
+    if (question) {
+      question.approvalStatus = QuestionApprovalStatus.APPROVED;
+      question.approvedBy = userId;
+      question.approvedAt = new Date().toISOString();
+      question.status = destination === 'pool' ? QuestionStatus.QUESTION_POOL : QuestionStatus.TOURNAMENT_RESERVED;
+      question.updatedAt = new Date().toISOString();
+      
+      if (destination === 'tournament' && request.tournamentId) {
+        question.tournamentId = request.tournamentId;
+      }
+    }
+  });
+  
+  storage.set(STORAGE_KEYS.QUESTIONS, questions);
+  
+  request.status = 'completed';
+  request.approvedBy = userId;
+  request.approvedAt = new Date().toISOString();
+  request.completedAt = new Date().toISOString();
+  storage.set(STORAGE_KEYS.BONUS_QUESTION_REQUESTS, requests);
+  
+  return { success: true };
+}
+
+
 
 
