@@ -24,7 +24,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut } from 'lucide-react';
+import { useAuth } from './AuthSystem';-react';
 import { 
   User, 
   Plan, 
@@ -54,6 +55,7 @@ interface QuestionCategoryManagerProps {
 }
 
 export default function QuestionCategoryManager({ user, onBack }: QuestionCategoryManagerProps) {
+  const { logout } = useAuth();
   const [categories, setCategories] = useState<QuestionCategory[]>([]);
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -283,6 +285,10 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
                 </DialogContent>
               </Dialog>
             )}
+            <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
           </div>
         </div>
 

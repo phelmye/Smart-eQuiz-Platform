@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Upload, Image, Palette, Type, Save, RefreshCw, Eye, Download } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Palette, Type, Save, RefreshCw, Eye, Download, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tenant, hasPermission } from '@/lib/mockData';
 
@@ -68,7 +68,7 @@ const defaultBranding: BrandingConfig = {
 };
 
 export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) => {
-  const { user, tenant } = useAuth();
+  const { user, tenant, logout } = useAuth();
   const [branding, setBranding] = useState<BrandingConfig>(defaultBranding);
   const [isLoading, setIsLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -248,6 +248,12 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
               <Button variant="outline" onClick={resetToDefaults}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reset to Defaults
+              </Button>
+              
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
               </Button>
               
               <Button onClick={saveBrandingConfig} disabled={isLoading}>

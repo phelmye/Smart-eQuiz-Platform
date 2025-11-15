@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 
@@ -64,7 +64,7 @@ const BIBLE_CATEGORIES = [
 ];
 
 export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories, initialAction }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(initialAction === 'add');
@@ -415,12 +415,18 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
                 <p className="text-gray-600">Manage quiz questions and categories</p>
               </div>
             </div>
-            {onNavigateToCategories && (
-              <Button variant="outline" onClick={onNavigateToCategories}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Manage Categories
+            <div className="flex items-center gap-2">
+              {onNavigateToCategories && (
+                <Button variant="outline" onClick={onNavigateToCategories}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Manage Categories
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
               </Button>
-            )}
+            </div>
           </div>
 
           {/* Stats Cards */}

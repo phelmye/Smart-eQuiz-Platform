@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, User, Tenant, UserRole, mockUsers, getAvailableRolesForTenant, canCreateMoreUsers, defaultPlans, hasPermission, getAssignableRoles, canAssignRole, logAuditEvent } from '@/lib/mockData';
 
@@ -17,7 +17,7 @@ interface UserManagementProps {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }) => {
-  const { user: currentUser, tenant } = useAuth();
+  const { user: currentUser, tenant, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -337,10 +337,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
               </div>
             </div>
 
-            <Button onClick={() => openCreateDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => openCreateDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Plan Information for org_admin */}

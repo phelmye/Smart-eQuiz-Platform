@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
+import { useAuth } from '../AuthSystem';
 
 /**
  * Standard Admin Page Layout Wrapper
@@ -26,7 +27,7 @@ export const AdminPageLayout: React.FC<AdminPageLayoutProps> = ({
 
 /**
  * Standard Admin Page Header
- * Consistent header structure with back button, title, subtitle, and action buttons
+ * Consistent header structure with back button, title, subtitle, action buttons, and logout
  */
 interface AdminHeaderProps {
   onBack: () => void;
@@ -34,6 +35,8 @@ interface AdminHeaderProps {
   subtitle?: string;
   actions?: React.ReactNode;
   backButtonLabel?: string;
+  showLogout?: boolean;
+  onLogout?: () => void;
 }
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ 
@@ -41,8 +44,20 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   title, 
   subtitle, 
   actions,
-  backButtonLabel = 'Back'
+  backButtonLabel = 'Back',
+  showLogout = true,
+  onLogout
 }) => {
+  const auth = useAuth();
+  
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    } else if (auth?.logout) {
+      auth.logout();
+    }
+  };
+
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-4">
@@ -55,11 +70,20 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
           </div>
         </div>
-        {actions && (
-          <div className="flex items-center gap-2">
-            {actions}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {actions}
+          {showLogout && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
