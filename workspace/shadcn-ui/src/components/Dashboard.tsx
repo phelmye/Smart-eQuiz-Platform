@@ -394,9 +394,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </AccessControl>
         );
       case 'system-settings':
-        return <SystemSettings onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="system-settings"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can access system settings."
+          >
+            <SystemSettings onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'plan-management':
-        return <PlanManagement onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="plan-management"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage subscription plans."
+          >
+            <PlanManagement onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'billing':
         return <BillingSelection 
           availablePlans={defaultPlans}
@@ -412,7 +430,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           }}
         />;
       case 'payment-integration':
-        return <PaymentIntegrationManagement onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="payment-integration"
+            requiredPermission="billing.read"
+            fallbackMessage="You need billing management permissions to access payment integration settings."
+          >
+            <PaymentIntegrationManagement onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'role-component-management':
         return (
           <ComponentAccessControl
@@ -489,23 +516,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         );
       case 'notifications':
         return (
-          <div className="p-6">
-            <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" onClick={handleBackToDashboard}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
+          <AccessControl 
+            user={user} 
+            requiredPage="notifications"
+            requiredPermission={null}
+            fallbackMessage="Only administrators can manage notification settings."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notifications</CardTitle>
+                  <CardDescription>Manage system notifications and alerts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Notification settings interface coming soon...</p>
+                </CardContent>
+              </Card>
             </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-                <CardDescription>Manage system notifications and alerts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Notification settings interface coming soon...</p>
-              </CardContent>
-            </Card>
-          </div>
+          </AccessControl>
         );
       case 'help':
         return (
