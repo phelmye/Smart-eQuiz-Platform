@@ -174,7 +174,7 @@ const PlanManagement: React.FC<PlanManagementProps> = ({ onBack }) => {
     if (yearlyDiscountPercent > 0) {
       const yearlyPrice = calculateYearlyPrice(monthlyPrice, yearlyDiscountPercent);
       const yearlyFormatted = formatCurrency(yearlyPrice);
-      return `${monthlyFormatted}/mo or ${yearlyFormatted}/year`;
+      return `${monthlyFormatted}/mo • ${yearlyFormatted}/yr (save ${yearlyDiscountPercent}%)`;
     }
     
     return `${monthlyFormatted}/month`;

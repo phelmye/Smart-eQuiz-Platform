@@ -254,7 +254,6 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
                 <LogOut className="h-4 w-4" />
                 Logout
               </Button>
-              </Button>
               
               <Button onClick={saveBrandingConfig} disabled={isLoading}>
                 <Save className="h-4 w-4 mr-2" />
