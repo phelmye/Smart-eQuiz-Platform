@@ -3393,7 +3393,67 @@ export const initializeMockData = () => {
   
   // Initialize role permissions
   if (!storage.get(STORAGE_KEYS.ROLE_PERMISSIONS)) {
-    storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, defaultRolePermissions);
+    // Initialize with component-based features structure for ComponentAccessControl
+    const roleComponentFeatures = [
+      {
+        roleId: 'super_admin',
+        roleName: 'super_admin',
+        componentFeatures: ['*'] // All features
+      },
+      {
+        roleId: 'org_admin',
+        roleName: 'org_admin',
+        componentFeatures: [
+          // Question Bank features
+          'view-questions', 'create-questions', 'edit-questions', 'delete-questions',
+          'manage-categories', 'bulk-import', 'export-questions',
+          // Analytics features
+          'view-basic-analytics', 'view-advanced-analytics', 'export-reports',
+          // User Management features
+          'view-users', 'create-users', 'edit-users', 'delete-users', 'assign-roles',
+          // Tournament Builder features
+          'view-tournaments', 'create-tournaments', 'edit-tournaments', 'delete-tournaments', 'advanced-settings',
+          // Branding features (plan-dependent)
+          'view-branding', 'edit-branding', 'upload-assets',
+          // System Settings features
+          'view-settings', 'edit-settings', 'manage-integrations'
+        ]
+      },
+      {
+        roleId: 'question_manager',
+        roleName: 'question_manager',
+        componentFeatures: [
+          'view-questions', 'create-questions', 'edit-questions', 'delete-questions',
+          'manage-categories', 'bulk-import', 'export-questions',
+          'view-tournaments'
+        ]
+      },
+      {
+        roleId: 'account_officer',
+        roleName: 'account_officer',
+        componentFeatures: [
+          'view-basic-analytics'
+        ]
+      },
+      {
+        roleId: 'participant',
+        roleName: 'participant',
+        componentFeatures: []
+      },
+      {
+        roleId: 'guest',
+        roleName: 'guest',
+        componentFeatures: []
+      },
+      {
+        roleId: 'moderator',
+        roleName: 'moderator',
+        componentFeatures: [
+          'view-tournaments', 'view-users'
+        ]
+      }
+    ];
+    storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, roleComponentFeatures);
   }
   
   // Initialize audit logs
