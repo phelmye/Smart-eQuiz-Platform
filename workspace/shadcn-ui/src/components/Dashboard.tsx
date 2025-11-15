@@ -416,19 +416,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </AccessControl>
         );
       case 'billing':
-        return <BillingSelection 
-          availablePlans={defaultPlans}
-          currentSubscription={user?.tenantId ? mockBilling.find(b => b.tenantId === user.tenantId) : undefined}
-          onSelectPlan={(planId, billingCycle) => {
-            console.log('Selected plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-          onUpgrade={(planId, billingCycle) => {
-            console.log('Upgrading to plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-          onDowngrade={(planId, billingCycle) => {
-            console.log('Downgrading to plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-        />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="billing"
+            requiredPermission="billing.read"
+            fallbackMessage="You need billing access permissions to view subscription plans."
+          >
+            <BillingSelection 
+              availablePlans={defaultPlans}
+              currentSubscription={user?.tenantId ? mockBilling.find(b => b.tenantId === user.tenantId) : undefined}
+              onSelectPlan={(planId, billingCycle) => {
+                console.log('Selected plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+              onUpgrade={(planId, billingCycle) => {
+                console.log('Upgrading to plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+              onDowngrade={(planId, billingCycle) => {
+                console.log('Downgrading to plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+            />
+          </AccessControl>
+        );
       case 'payment-integration':
         return (
           <AccessControl 
