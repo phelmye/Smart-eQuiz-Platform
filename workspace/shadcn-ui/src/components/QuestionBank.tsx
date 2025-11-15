@@ -427,9 +427,9 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
+                <div className="flex items-center space-x-4">
                   <BookOpen className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
+                  <div>
                     <p className="text-2xl font-bold">{stats.totalQuestions}</p>
                     <p className="text-sm text-gray-600">Total Questions</p>
                   </div>
@@ -439,11 +439,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold">{stats.activeQuestions}</p>
-                    <p className="text-sm text-gray-600">Active Questions</p>
+                <div className="flex items-center space-x-4">
+                  <AlertCircle className="h-8 w-8 text-gray-400" />
+                  <div>
+                    <p className="text-2xl font-bold">{stats.inactiveQuestions}</p>
+                    <p className="text-sm text-gray-600">Inactive</p>
                   </div>
                 </div>
               </CardContent>
@@ -451,9 +451,9 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Filter className="h-8 w-8 text-purple-600" />
-                  <div className="ml-4">
+                <div className="flex items-center space-x-4">
+                  <BookOpen className="h-8 w-8 text-purple-600" />
+                  <div>
                     <p className="text-2xl font-bold">{stats.categories}</p>
                     <p className="text-sm text-gray-600">Categories</p>
                   </div>
