@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Calendar, DollarSign } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 
 interface TournamentEngineProps {
   onBack: () => void;

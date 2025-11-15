@@ -377,7 +377,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
     const activeQuestions = questions.filter(q => q.isActive).length;
     const categories = [...new Set(questions.map(q => q.category))].length;
     const averageUsage = questions.length > 0 
-      ? Math.round(questions.reduce((sum, q) => sum + q.usageCount, 0) / questions.length)
+      ? Math.round(questions.reduce((sum, q) => sum + (q.usageCount || 0), 0) / questions.length)
       : 0;
     
     return { totalQuestions, activeQuestions, categories, averageUsage };

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, Zap, RefreshCw, Download, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Question, BIBLE_CATEGORIES } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Question, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 
 interface AIQuestionGeneratorProps {
   onBack: () => void;
