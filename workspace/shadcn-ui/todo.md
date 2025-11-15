@@ -108,7 +108,7 @@ TOURNAMENT_ACTIVE → RECENT_TOURNAMENT → ARCHIVED
 
 **Planned Components:**
 
-1. **Enhanced AIQuestionGenerator.tsx**
+1. **Enhanced AIQuestionGenerator.tsx** ✅ COMPLETED
    - AI generation form with category/difficulty selection
    - Bible book/topic/verse range filters
    - Model selection (based on plan)
@@ -116,8 +116,18 @@ TOURNAMENT_ACTIVE → RECENT_TOURNAMENT → ARCHIVED
    - Generated questions review list
    - Approval workflow UI (Edit → Inspect → Approve/Reject)
    - Destination selector (Pool / Tournament)
+   - Plan usage display with monthly limits
+   - Pending approval notifications
 
-2. **Question Status Badges**
+**Commit a8a0364:**
+- Two-tab interface: Generate | Pending Approval
+- AI model selection dropdown
+- Complete review dialog with editing
+- Three approval actions (Approve/Needs Revision/Reject)
+- Destination selection (Pool/Tournament)
+- Status badges and visual feedback
+
+2. **Question Status Badges** (IN PROGRESS)
    - Visual indicators for all 7 status states
    - Color-coded badges
    - Tooltips with status details
