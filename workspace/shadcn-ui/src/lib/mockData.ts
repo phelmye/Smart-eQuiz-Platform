@@ -29,7 +29,11 @@ export const STORAGE_KEYS = {
   KNOCKOUT_MATCHES: 'equiz_knockout_matches',
   PARTICIPANT_JOURNEYS: 'equiz_participant_journeys',
   CUSTOM_CATEGORIES: 'equiz_custom_categories',
-  ROUND_CONFIG_TEMPLATES: 'equiz_round_config_templates'
+  ROUND_CONFIG_TEMPLATES: 'equiz_round_config_templates',
+  AI_GENERATION_CONFIGS: 'equiz_ai_generation_configs',
+  AI_GENERATION_REQUESTS: 'equiz_ai_generation_requests',
+  TOURNAMENT_QUESTION_CONFIGS: 'equiz_tournament_question_configs',
+  QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs'
 };
 
 // User roles
@@ -1181,6 +1185,169 @@ export interface RoundConfigTemplate {
   updatedAt: string;
 }
 
+// ============================================
+// AI QUESTION GENERATION SYSTEM
+// ============================================
+
+// AI Generation Configuration (Plan-based limits)
+export interface AIGenerationConfig {
+  tenantId: string;
+  planId: string;
+  
+  // Monthly limits based on plan
+  monthlyQuestionLimit: number;      // e.g., Pro: 100, Professional: 500, Enterprise: unlimited (-1)
+  questionsUsedThisMonth: number;
+  resetDate: string;                 // When monthly counter resets
+  
+  // Generation settings
+  defaultModel: 'gpt-4' | 'gpt-3.5-turbo' | 'claude-3' | 'claude-3-opus';
+  enabledModels: string[];
+  
+  // Quality settings
+  requireManualApproval: boolean;    // Must approve before use
+  autoApproveAfterReview: boolean;   // Auto-approve after editing
+  duplicateDetectionEnabled: boolean;
+  similarityThreshold: number;        // 0.85 = 85% similarity flags as duplicate
+  
+  // Metadata
+  totalQuestionsGenerated: number;
+  totalQuestionsApproved: number;
+  totalQuestionsRejected: number;
+  averageApprovalTime: number;       // Minutes
+  createdAt: string;
+  updatedAt: string;
+}
+
+// AI Generation Request
+export interface AIGenerationRequest {
+  id: string;
+  tenantId: string;
+  requestedBy: string;               // User ID
+  
+  // Generation parameters
+  count: number;                     // Number of questions to generate
+  category: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
+  bibleBooks?: string[];            // Specific books to focus on
+  topics?: string[];                 // Specific topics (e.g., 'miracles', 'parables')
+  verseRange?: {
+    book: string;
+    chapterStart: number;
+    chapterEnd: number;
+  };
+  
+  // AI settings
+  model: string;
+  temperature: number;               // 0.7 default, higher = more creative
+  customPrompt?: string;             // Additional instructions
+  
+  // Exclusions (prevent duplicates)
+  excludeQuestionIds?: string[];     // Don't generate similar to these
+  excludeVerses?: string[];          // Don't use these verses
+  
+  // Status
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;                  // 0-100
+  generatedQuestionIds: string[];
+  errorMessage?: string;
+  
+  // Timing
+  requestedAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  processingTime?: number;           // Seconds
+}
+
+// Tournament Question Configuration
+export interface TournamentQuestionConfig {
+  tournamentId: string;
+  tenantId: string;
+  
+  // Question selection mode
+  selectionMode: 'manual' | 'auto' | 'hybrid';
+  
+  // Auto-selection rules
+  autoSelectRules?: {
+    totalQuestions: number;
+    fromPool: number;                // Questions from question_pool status
+    fromRecent: number;              // Questions from recent_tournament status
+    newQuestions: number;            // Brand new questions (never used)
+    byCategory: {
+      categoryId: string;
+      categoryName: string;
+      count: number;
+      difficulty?: {
+        easy?: number;
+        medium?: number;
+        hard?: number;
+      };
+    }[];
+    
+    // Exclusion rules
+    excludeTournamentIds?: string[]; // Don't reuse from these tournaments
+    minMonthsSinceLastUse?: number;  // Minimum time before reusing questions
+  };
+  
+  // Selected questions
+  selectedQuestionIds: string[];
+  reservedAt?: string;               // When questions were locked for tournament
+  
+  // Release settings
+  practiceReleaseMode: 'immediate' | 'delayed' | 'manual';
+  delayHours?: number;               // Hours to wait after tournament ends
+  releaseScheduledFor?: string;      // Exact date/time for release
+  releasedAt?: string;               // Actual release time
+  
+  // Validation
+  validationStatus: 'pending' | 'valid' | 'invalid';
+  validationErrors?: string[];
+  minimumQuestionsPerCategory: number; // Default: 10
+  
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+// Question Lifecycle Log (audit trail)
+export interface QuestionLifecycleLog {
+  id: string;
+  questionId: string;
+  tenantId: string;
+  
+  // Status change
+  fromStatus: QuestionStatus;
+  toStatus: QuestionStatus;
+  reason: string;
+  
+  // Context
+  tournamentId?: string;
+  triggeredBy: 'user' | 'system' | 'auto_rotation';
+  userId?: string;                   // If user-triggered
+  
+  // Additional data
+  metadata?: {
+    delayHours?: number;
+    scheduledFor?: string;
+    approvalStatus?: QuestionApprovalStatus;
+    [key: string]: any;
+  };
+  
+  createdAt: string;
+}
+
+// Question Duplicate Detection Result
+export interface QuestionDuplicateCheck {
+  questionId: string;
+  isDuplicate: boolean;
+  similarQuestions: {
+    id: string;
+    text: string;
+    similarity: number;            // 0-1 (0.85 = 85% similar)
+    status: QuestionStatus;
+  }[];
+  warnings: string[];
+}
+
 // Question pool validation result
 export interface QuestionPoolValidation {
   isValid: boolean;
@@ -1468,6 +1635,25 @@ export interface LiveTournamentView {
 }
 
 // Question interface
+// Question Status Lifecycle
+export enum QuestionStatus {
+  DRAFT = 'draft',                          // Being created/edited
+  AI_PENDING_REVIEW = 'ai_pending_review',  // AI-generated, awaiting approval
+  QUESTION_POOL = 'question_pool',          // Available for practice (approved)
+  TOURNAMENT_RESERVED = 'tournament_reserved', // Locked for upcoming tournament
+  TOURNAMENT_ACTIVE = 'tournament_active',  // Currently in use in tournament
+  RECENT_TOURNAMENT = 'recent_tournament',  // Last tournament (available for practice)
+  ARCHIVED = 'archived'                     // Retired questions
+}
+
+// Question Approval Status
+export enum QuestionApprovalStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  NEEDS_REVISION = 'needs_revision'
+}
+
 export interface Question {
   id: string;
   text: string;
@@ -1479,6 +1665,34 @@ export interface Question {
   explanation: string;
   verse?: string;
   tenantId: string;
+  
+  // New lifecycle fields
+  status: QuestionStatus;
+  approvalStatus?: QuestionApprovalStatus;
+  tournamentId?: string;              // Which tournament is using/used this
+  tournamentDate?: string;            // When it was used in tournament
+  usageCount: number;                 // How many times used in tournaments
+  lastUsedDate?: string;              // Last tournament usage date
+  availableForPracticeDate?: string;  // When it becomes available (for delayed release)
+  
+  // AI generation tracking
+  aiGeneratedAt?: string;
+  aiModel?: string;                   // e.g., 'gpt-4', 'claude-3'
+  aiPrompt?: string;                  // Original prompt used
+  
+  // Approval workflow
+  createdBy: string;                  // User ID who created
+  reviewedBy?: string;                // User ID who reviewed
+  approvedBy?: string;                // User ID who approved
+  reviewedAt?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  revisionNotes?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+  tags?: string[];                    // Additional categorization
 }
 
 // XP Levels
@@ -5623,6 +5837,433 @@ export function hasEnoughQuestions(tenantId: string, requiredCount: number): boo
   const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
   const tenantQuestions = questions.filter(q => q.tenantId === tenantId);
   return tenantQuestions.length >= requiredCount;
+}
+
+// ============================================================================
+// AI QUESTION GENERATION FUNCTIONS
+// ============================================================================
+
+// Get or create AI generation config for tenant
+export function getAIGenerationConfig(tenantId: string): AIGenerationConfig {
+  const configs = storage.get<AIGenerationConfig[]>(STORAGE_KEYS.AI_GENERATION_CONFIGS) || [];
+  let config = configs.find(c => c.tenantId === tenantId);
+  
+  if (!config) {
+    const tenant = mockTenants.find(t => t.id === tenantId);
+    const plan = tenant ? getTenantPlan(tenantId) : null;
+    
+    // Set limits based on plan
+    let monthlyLimit = 50; // Default/Free
+    if (plan) {
+      if (plan.name === 'pro') monthlyLimit = 100;
+      else if (plan.name === 'professional') monthlyLimit = 500;
+      else if (plan.name === 'enterprise') monthlyLimit = -1; // Unlimited
+    }
+    
+    config = {
+      tenantId,
+      planId: plan?.id || 'plan-free',
+      monthlyQuestionLimit: monthlyLimit,
+      questionsUsedThisMonth: 0,
+      resetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+      defaultModel: 'gpt-4',
+      enabledModels: ['gpt-4', 'gpt-3.5-turbo'],
+      requireManualApproval: true,
+      autoApproveAfterReview: false,
+      duplicateDetectionEnabled: true,
+      similarityThreshold: 0.85,
+      totalQuestionsGenerated: 0,
+      totalQuestionsApproved: 0,
+      totalQuestionsRejected: 0,
+      averageApprovalTime: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    configs.push(config);
+    storage.set(STORAGE_KEYS.AI_GENERATION_CONFIGS, configs);
+  }
+  
+  return config;
+}
+
+// Check if tenant can generate more AI questions this month
+export function canGenerateAIQuestions(tenantId: string, count: number): { allowed: boolean; reason?: string } {
+  const config = getAIGenerationConfig(tenantId);
+  
+  // Check if unlimited
+  if (config.monthlyQuestionLimit === -1) {
+    return { allowed: true };
+  }
+  
+  // Check if reset needed
+  if (new Date(config.resetDate) < new Date()) {
+    config.questionsUsedThisMonth = 0;
+    config.resetDate = new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString();
+    const configs = storage.get<AIGenerationConfig[]>(STORAGE_KEYS.AI_GENERATION_CONFIGS) || [];
+    const index = configs.findIndex(c => c.tenantId === tenantId);
+    if (index !== -1) {
+      configs[index] = config;
+      storage.set(STORAGE_KEYS.AI_GENERATION_CONFIGS, configs);
+    }
+  }
+  
+  // Check limit
+  const remaining = config.monthlyQuestionLimit - config.questionsUsedThisMonth;
+  if (remaining < count) {
+    return { 
+      allowed: false, 
+      reason: `Monthly limit reached. ${remaining} questions remaining this month. Resets on ${new Date(config.resetDate).toLocaleDateString()}`
+    };
+  }
+  
+  return { allowed: true };
+}
+
+// Create AI generation request
+export function createAIGenerationRequest(
+  tenantId: string,
+  userId: string,
+  params: Omit<AIGenerationRequest, 'id' | 'tenantId' | 'requestedBy' | 'status' | 'progress' | 'generatedQuestionIds' | 'requestedAt'>
+): AIGenerationRequest | { error: string } {
+  const check = canGenerateAIQuestions(tenantId, params.count);
+  if (!check.allowed) {
+    return { error: check.reason || 'Cannot generate questions' };
+  }
+  
+  const request: AIGenerationRequest = {
+    id: `ai-req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    tenantId,
+    requestedBy: userId,
+    ...params,
+    status: 'pending',
+    progress: 0,
+    generatedQuestionIds: [],
+    requestedAt: new Date().toISOString()
+  };
+  
+  const requests = storage.get<AIGenerationRequest[]>(STORAGE_KEYS.AI_GENERATION_REQUESTS) || [];
+  requests.push(request);
+  storage.set(STORAGE_KEYS.AI_GENERATION_REQUESTS, requests);
+  
+  return request;
+}
+
+// Get AI generation requests for tenant
+export function getAIGenerationRequests(tenantId: string): AIGenerationRequest[] {
+  const requests = storage.get<AIGenerationRequest[]>(STORAGE_KEYS.AI_GENERATION_REQUESTS) || [];
+  return requests.filter(r => r.tenantId === tenantId).sort((a, b) => 
+    new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
+  );
+}
+
+// ============================================================================
+// QUESTION LIFECYCLE MANAGEMENT FUNCTIONS
+// ============================================================================
+
+// Update question status with logging
+export function updateQuestionStatus(
+  questionId: string,
+  newStatus: QuestionStatus,
+  context: {
+    reason: string;
+    userId?: string;
+    tournamentId?: string;
+    metadata?: any;
+  }
+): Question | null {
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const index = questions.findIndex(q => q.id === questionId);
+  
+  if (index === -1) return null;
+  
+  const oldStatus = questions[index].status;
+  questions[index].status = newStatus;
+  questions[index].updatedAt = new Date().toISOString();
+  
+  // Update related fields based on status
+  if (newStatus === QuestionStatus.TOURNAMENT_RESERVED || newStatus === QuestionStatus.TOURNAMENT_ACTIVE) {
+    questions[index].tournamentId = context.tournamentId;
+  }
+  
+  if (newStatus === QuestionStatus.RECENT_TOURNAMENT) {
+    questions[index].usageCount++;
+    questions[index].lastUsedDate = new Date().toISOString();
+    questions[index].tournamentDate = new Date().toISOString();
+  }
+  
+  storage.set(STORAGE_KEYS.QUESTIONS, questions);
+  
+  // Log the change
+  logQuestionLifecycle(questionId, oldStatus, newStatus, context);
+  
+  return questions[index];
+}
+
+// Log question lifecycle event
+function logQuestionLifecycle(
+  questionId: string,
+  fromStatus: QuestionStatus,
+  toStatus: QuestionStatus,
+  context: {
+    reason: string;
+    userId?: string;
+    tournamentId?: string;
+    metadata?: any;
+  }
+): void {
+  const question = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS)?.find(q => q.id === questionId);
+  if (!question) return;
+  
+  const log: QuestionLifecycleLog = {
+    id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    questionId,
+    tenantId: question.tenantId,
+    fromStatus,
+    toStatus,
+    reason: context.reason,
+    tournamentId: context.tournamentId,
+    triggeredBy: context.userId ? 'user' : 'system',
+    userId: context.userId,
+    metadata: context.metadata,
+    createdAt: new Date().toISOString()
+  };
+  
+  const logs = storage.get<QuestionLifecycleLog[]>(STORAGE_KEYS.QUESTION_LIFECYCLE_LOGS) || [];
+  logs.push(log);
+  storage.set(STORAGE_KEYS.QUESTION_LIFECYCLE_LOGS, logs);
+}
+
+// Auto-rotate questions after tournament completion
+export async function handleTournamentCompletion(tournamentId: string): Promise<void> {
+  const tournaments = storage.get<Tournament[]>(STORAGE_KEYS.TOURNAMENTS) || [];
+  const tournament = tournaments.find(t => t.id === tournamentId);
+  
+  if (!tournament) return;
+  
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const config = storage.get<TournamentQuestionConfig[]>(STORAGE_KEYS.TOURNAMENT_QUESTION_CONFIGS)?.find(
+    c => c.tournamentId === tournamentId
+  );
+  
+  // Get release mode (default to immediate)
+  const releaseMode = config?.practiceReleaseMode || 'immediate';
+  const delayHours = config?.delayHours || 0;
+  
+  // 1. Move current tournament questions to RECENT_TOURNAMENT
+  const tournamentQuestions = questions.filter(q => q.tournamentId === tournamentId);
+  
+  for (const question of tournamentQuestions) {
+    if (releaseMode === 'immediate') {
+      updateQuestionStatus(question.id, QuestionStatus.RECENT_TOURNAMENT, {
+        reason: 'Tournament completed - auto-rotation (immediate)',
+        tournamentId,
+        metadata: { releaseMode, completedAt: tournament.endDate }
+      });
+    } else if (releaseMode === 'delayed') {
+      const releaseDate = new Date();
+      releaseDate.setHours(releaseDate.getHours() + delayHours);
+      
+      // Keep as TOURNAMENT_ACTIVE but set availability date
+      const q = questions.find(qu => qu.id === question.id);
+      if (q) {
+        q.availableForPracticeDate = releaseDate.toISOString();
+        q.updatedAt = new Date().toISOString();
+      }
+      
+      logQuestionLifecycle(question.id, question.status, QuestionStatus.TOURNAMENT_ACTIVE, {
+        reason: `Tournament completed - delayed release (${delayHours}h)`,
+        tournamentId,
+        metadata: { releaseMode, delayHours, releaseDate: releaseDate.toISOString() }
+      });
+    }
+  }
+  
+  // 2. Move previous RECENT_TOURNAMENT to QUESTION_POOL
+  const previousRecentQuestions = questions.filter(q => 
+    q.status === QuestionStatus.RECENT_TOURNAMENT &&
+    q.tournamentId !== tournamentId &&
+    q.tenantId === tournament.tenantId
+  );
+  
+  for (const question of previousRecentQuestions) {
+    updateQuestionStatus(question.id, QuestionStatus.QUESTION_POOL, {
+      reason: 'Auto-rotation - moved to question pool',
+      metadata: { previousTournamentId: question.tournamentId }
+    });
+  }
+  
+  // 3. Save updated questions
+  storage.set(STORAGE_KEYS.QUESTIONS, questions);
+  
+  // 4. Update config if exists
+  if (config) {
+    config.releasedAt = releaseMode === 'immediate' ? new Date().toISOString() : undefined;
+    const configs = storage.get<TournamentQuestionConfig[]>(STORAGE_KEYS.TOURNAMENT_QUESTION_CONFIGS) || [];
+    const configIndex = configs.findIndex(c => c.tournamentId === tournamentId);
+    if (configIndex !== -1) {
+      configs[configIndex] = config;
+      storage.set(STORAGE_KEYS.TOURNAMENT_QUESTION_CONFIGS, configs);
+    }
+  }
+}
+
+// Get questions available for practice (respects delayed release)
+export function getQuestionsForPractice(
+  tenantId: string,
+  options: {
+    source?: 'pool' | 'recent' | 'both';
+    category?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
+    excludeQuestionIds?: string[];
+  } = {}
+): Question[] {
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const now = new Date();
+  
+  let filtered = questions.filter(q => q.tenantId === tenantId);
+  
+  // Filter by source
+  if (options.source === 'pool') {
+    filtered = filtered.filter(q => q.status === QuestionStatus.QUESTION_POOL);
+  } else if (options.source === 'recent') {
+    filtered = filtered.filter(q => {
+      if (q.status === QuestionStatus.RECENT_TOURNAMENT) {
+        // Check if available (no delay or delay passed)
+        if (!q.availableForPracticeDate) return true;
+        return new Date(q.availableForPracticeDate) <= now;
+      }
+      return false;
+    });
+  } else {
+    // Both pool and recent
+    filtered = filtered.filter(q => {
+      if (q.status === QuestionStatus.QUESTION_POOL) return true;
+      if (q.status === QuestionStatus.RECENT_TOURNAMENT) {
+        if (!q.availableForPracticeDate) return true;
+        return new Date(q.availableForPracticeDate) <= now;
+      }
+      return false;
+    });
+  }
+  
+  // Filter by category
+  if (options.category) {
+    filtered = filtered.filter(q => q.category === options.category);
+  }
+  
+  // Filter by difficulty
+  if (options.difficulty) {
+    filtered = filtered.filter(q => q.difficulty === options.difficulty);
+  }
+  
+  // Exclude specific questions
+  if (options.excludeQuestionIds) {
+    filtered = filtered.filter(q => !options.excludeQuestionIds!.includes(q.id));
+  }
+  
+  return filtered;
+}
+
+// Check if recent tournament questions are available yet
+export function getRecentTournamentQuestionsAvailability(tenantId: string): {
+  available: boolean;
+  availableAt?: string;
+  count: number;
+  oldTournamentQuestions?: { tournamentId: string; count: number }[];
+} {
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const recentQuestions = questions.filter(q => 
+    q.tenantId === tenantId && q.status === QuestionStatus.RECENT_TOURNAMENT
+  );
+  
+  if (recentQuestions.length === 0) {
+    // Check for old tournament questions that can be used
+    const oldTournamentQuestions = questions.filter(q =>
+      q.tenantId === tenantId && q.status === QuestionStatus.QUESTION_POOL && q.tournamentId
+    );
+    
+    const tournamentGroups = new Map<string, number>();
+    oldTournamentQuestions.forEach(q => {
+      if (q.tournamentId) {
+        tournamentGroups.set(q.tournamentId, (tournamentGroups.get(q.tournamentId) || 0) + 1);
+      }
+    });
+    
+    return {
+      available: false,
+      count: 0,
+      oldTournamentQuestions: Array.from(tournamentGroups.entries()).map(([id, count]) => ({
+        tournamentId: id,
+        count
+      }))
+    };
+  }
+  
+  // Check if any are delayed
+  const delayed = recentQuestions.filter(q => q.availableForPracticeDate);
+  if (delayed.length === 0) {
+    return { available: true, count: recentQuestions.length };
+  }
+  
+  // Find earliest availability
+  const earliest = delayed.reduce((min, q) => {
+    const date = new Date(q.availableForPracticeDate!);
+    return date < min ? date : min;
+  }, new Date(delayed[0].availableForPracticeDate!));
+  
+  const now = new Date();
+  if (earliest <= now) {
+    return { available: true, count: recentQuestions.length };
+  }
+  
+  return {
+    available: false,
+    availableAt: earliest.toISOString(),
+    count: recentQuestions.length
+  };
+}
+
+// Validate tournament has minimum questions per category
+export function validateTournamentQuestions(tournamentId: string): {
+  valid: boolean;
+  errors: string[];
+  categoryCounts: { category: string; count: number; minimum: number }[];
+} {
+  const config = storage.get<TournamentQuestionConfig[]>(STORAGE_KEYS.TOURNAMENT_QUESTION_CONFIGS)?.find(
+    c => c.tournamentId === tournamentId
+  );
+  
+  if (!config) {
+    return { valid: false, errors: ['Tournament question configuration not found'], categoryCounts: [] };
+  }
+  
+  const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+  const tournamentQuestions = questions.filter(q => config.selectedQuestionIds.includes(q.id));
+  
+  const minimum = config.minimumQuestionsPerCategory || 10;
+  const categoryCounts = new Map<string, number>();
+  
+  // Count questions per category
+  tournamentQuestions.forEach(q => {
+    categoryCounts.set(q.category, (categoryCounts.get(q.category) || 0) + 1);
+  });
+  
+  const errors: string[] = [];
+  const results: { category: string; count: number; minimum: number }[] = [];
+  
+  categoryCounts.forEach((count, category) => {
+    results.push({ category, count, minimum });
+    if (count < minimum) {
+      errors.push(`Category "${category}" has only ${count} questions (minimum: ${minimum})`);
+    }
+  });
+  
+  return {
+    valid: errors.length === 0,
+    errors,
+    categoryCounts: results
+  };
 }
 
 
