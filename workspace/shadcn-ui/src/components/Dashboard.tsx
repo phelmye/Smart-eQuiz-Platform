@@ -14,6 +14,7 @@ import TenantManagementForSuperAdmin from './TenantManagementForSuperAdmin';
 import { Analytics } from './Analytics';
 import PaymentManagementSimple from './PaymentManagementSimple';
 import { BrandingSettings } from './BrandingSettings';
+import { ThemeSettings } from './ThemeSettings';
 import { QuestionBank } from './QuestionBank';
 import { TournamentEngine } from './TournamentEngine';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
@@ -290,6 +291,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             fallbackMessage="Only organization administrators can manage branding settings."
           >
             <BrandingSettings onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+        
+      case 'theme-settings':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="theme-settings"
+            requiredPermission="branding.manage"
+            fallbackMessage="Only organization administrators can manage theme settings."
+          >
+            <ThemeSettings onBack={handleBackToDashboard} />
           </AccessControl>
         );
       case 'question-bank':

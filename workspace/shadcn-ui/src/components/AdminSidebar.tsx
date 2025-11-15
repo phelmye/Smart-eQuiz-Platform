@@ -335,6 +335,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'Branding',
           icon: Paintbrush,
           page: 'branding',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'branding.manage',
+          planFeature: 'branding'
+        },
+        {
+          id: 'theme-settings',
+          label: 'Theme',
+          icon: Palette,
+          page: 'theme-settings',
           badge: 'New',
           requiredRoles: ['super_admin', 'org_admin'],
           requiredPermission: 'branding.manage',

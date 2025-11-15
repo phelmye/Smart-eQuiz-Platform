@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   AUDIT_LOGS: 'equiz_audit_logs',
   CURRENT_USER: 'equiz_current_user',
   BRANDING: 'equiz_branding',
+  THEME_CONFIGS: 'equiz_theme_configs', // Theme/template settings per tenant
   TOURNAMENT_APPLICATIONS: 'equiz_tournament_applications',
   QUIZ_ATTEMPTS: 'equiz_quiz_attempts',
   PRACTICE_POINTS: 'equiz_practice_points',

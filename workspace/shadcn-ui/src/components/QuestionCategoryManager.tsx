@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut } from 'lucide-react';
-import { useAuth } from './AuthSystem';-react';
+import { useAuth } from './AuthSystem';
 import { 
   User, 
   Plan, 
