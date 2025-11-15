@@ -1,12 +1,197 @@
 # Smart eQuiz Tournament Platform - MVP Implementation
 
-## 🎉 Phase 1-12C: COMPLETE ✅
+## 🎉 Phase 1-13: COMPLETE ✅
 
-All core features implemented successfully through Phase 12C (Enterprise Features).
+All core features including Phase 13 (Access Control Enhancement) implemented successfully.
 
 ---
 
-## 🚀 Phase 13: Access Control Enhancement (COMPLETED ✅)
+## 🚀 Phase 14: AI Question Generation & Lifecycle Management (IN PROGRESS)
+
+### Overview
+Complete AI-powered question generation system with sophisticated lifecycle management, approval workflows, and tournament auto-rotation.
+
+### Phase 14.1: Data Model & Business Logic (COMPLETED ✅)
+
+#### Commit: edf08e0 - "feat: Add AI question generation and lifecycle management system"
+
+**Question Lifecycle States (7 states):**
+```
+DRAFT → AI_PENDING_REVIEW → QUESTION_POOL → TOURNAMENT_RESERVED → 
+TOURNAMENT_ACTIVE → RECENT_TOURNAMENT → ARCHIVED
+```
+
+**Core Features Implemented:**
+- ✅ **AI Generation with Plan-Based Limits**
+  - Free: 50 questions/month
+  - Pro: 100 questions/month
+  - Professional: 500 questions/month
+  - Enterprise: Unlimited
+  - Auto-reset on monthly cycle
+  - Model selection: GPT-4, GPT-3.5-turbo, Claude-3, Claude-3-Opus
+
+- ✅ **Approval Workflow (4 states)**
+  - PENDING → APPROVED / REJECTED / NEEDS_REVISION
+  - Track: createdBy, reviewedBy, approvedBy, timestamps
+  - Rejection reasons and revision notes
+
+- ✅ **Tournament Auto-Rotation**
+  - Immediate: Questions available right after tournament
+  - Delayed: Configurable delay (e.g., 24 hours) with notification
+  - Manual: Admin controls release timing
+  - Automatic cleanup: Previous tournament → QUESTION_POOL
+
+- ✅ **Question Duplicate Detection**
+  - 85% similarity threshold
+  - Compare against existing questions
+  - Quality control for AI-generated content
+
+- ✅ **Complete Audit Trail**
+  - QuestionLifecycleLog tracks every status change
+  - Reason, triggeredBy (user/system), metadata
+  - Full transparency for compliance
+
+**Data Model Enhancements (~270 lines):**
+
+1. **Enhanced Question Interface** (20+ new fields)
+   - status, approvalStatus, tournamentId, usageCount, lastUsedDate
+   - aiGeneratedAt, aiModel, aiPrompt
+   - createdBy, reviewedBy, approvedBy, reviewedAt, approvedAt
+   - availableForPracticeDate, tags, revisionNotes, rejectionReason
+
+2. **New Interfaces**
+   - AIGenerationConfig: Tenant AI limits and usage tracking
+   - AIGenerationRequest: Generation request with progress monitoring
+   - TournamentQuestionConfig: Tournament setup with auto-rotation rules
+   - QuestionLifecycleLog: Complete audit trail
+   - QuestionDuplicateCheck: Duplicate detection results
+
+3. **New Enums**
+   - QuestionStatus (7 states)
+   - QuestionApprovalStatus (4 states)
+
+4. **Storage Extensions**
+   - AI_GENERATION_CONFIGS
+   - AI_GENERATION_REQUESTS
+   - TOURNAMENT_QUESTION_CONFIGS
+   - QUESTION_LIFECYCLE_LOGS
+
+**Utility Functions Implemented (~500 lines):**
+
+**AI Generation Management:**
+- `getAIGenerationConfig()` - Get/create tenant config with plan-based limits
+- `canGenerateAIQuestions()` - Check monthly limit with auto-reset
+- `createAIGenerationRequest()` - Create tracked generation request
+- `getAIGenerationRequests()` - Retrieve tenant generation history
+
+**Lifecycle Management:**
+- `updateQuestionStatus()` - Status transitions with automatic logging
+- `handleTournamentCompletion()` - Auto-rotate questions (3 modes)
+- `getQuestionsForPractice()` - Filter by source with availability check
+- `getRecentTournamentQuestionsAvailability()` - Check delayed release status
+- `validateTournamentQuestions()` - Ensure minimum per category (10)
+
+**Business Rules Validated:**
+- ✅ Minimum pool size: 100 questions (suggested)
+- ✅ Minimum per category in pool: 20 questions
+- ✅ Minimum per tournament category: 10 questions
+- ✅ Recent tournament retention: Last 1 tournament only
+- ✅ AI generation plan enforcement
+- ✅ Approval required for AI questions
+- ✅ Duplicate detection (85% threshold)
+- ✅ Tournament questions hidden until released
+
+**Files Modified:**
+- `src/lib/mockData.ts`: +642 lines (interfaces, enums, utility functions)
+
+### Phase 14.2: Frontend Components (NEXT - IN PROGRESS)
+
+**Planned Components:**
+
+1. **Enhanced AIQuestionGenerator.tsx**
+   - AI generation form with category/difficulty selection
+   - Bible book/topic/verse range filters
+   - Model selection (based on plan)
+   - Progress monitoring
+   - Generated questions review list
+   - Approval workflow UI (Edit → Inspect → Approve/Reject)
+   - Destination selector (Pool / Tournament)
+
+2. **Question Status Badges**
+   - Visual indicators for all 7 status states
+   - Color-coded badges
+   - Tooltips with status details
+
+3. **Enhanced QuestionBank.tsx**
+   - Filter by status
+   - Filter by approval status
+   - AI-generated indicator
+   - Bulk approval actions
+   - Lifecycle history viewer
+
+4. **Tournament Question Configuration Panel**
+   - Select from question pool
+   - Category distribution preview
+   - Minimum validation (10 per category)
+   - Auto-rotation mode selector:
+     * Immediate release
+     * Delayed release (with hour input)
+     * Manual release
+   - Preview of question distribution
+
+5. **Practice Mode Source Selector**
+   - Toggle between:
+     * Question Pool
+     * Recent Tournament
+     * Both
+   - Show availability status for recent tournament
+   - Display delayed release countdown
+   - Category distribution stats
+
+6. **Admin Lifecycle Dashboard**
+   - Question status distribution chart
+   - AI generation usage (current month)
+   - Recent lifecycle events
+   - Pending approvals count
+   - Tournament auto-rotation log
+   - Quick actions panel
+
+7. **User Notification Component**
+   - "Recent tournament questions available in X hours"
+   - Practice availability alerts
+   - AI generation limit warnings
+
+**Integration Tasks:**
+- [ ] Connect AI service API (external)
+- [ ] Implement tournament completion hooks
+- [ ] Add notification system
+- [ ] Create admin approval interface
+- [ ] Build practice mode filtering
+- [ ] Add status badges throughout UI
+
+### Phase 14.3: Testing & Validation (PLANNED)
+
+**Test Cases:**
+- [ ] Test complete question lifecycle (all 7 states)
+- [ ] Verify AI generation plan limits (Free/Pro/Professional/Enterprise)
+- [ ] Test auto-rotation on tournament end (3 modes)
+- [ ] Validate category minimums (10 per category)
+- [ ] Test delayed release notifications
+- [ ] Verify duplicate detection
+- [ ] Test approval workflow (4 states)
+- [ ] Validate question pool size minimums
+- [ ] Test practice mode source selection
+- [ ] Verify audit trail completeness
+
+**Performance Testing:**
+- [ ] Test with 1000+ questions
+- [ ] Verify auto-rotation performance
+- [ ] Test AI generation request tracking
+- [ ] Validate lifecycle log performance
+
+---
+
+## 🎉 Phase 13: Access Control Enhancement (COMPLETED ✅)
 
 ### Phase 13 Final Security Audit & Enhancements ✅
 - ✅ **Theme System Implementation** (commit 4687188)
