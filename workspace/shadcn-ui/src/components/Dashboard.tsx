@@ -19,6 +19,8 @@ import { TournamentEngine } from './TournamentEngine';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import { TenantManagement } from './TenantManagement';
 import { SystemSettings } from './SystemSettings';
+import { CustomCategoryManager } from './CustomCategoryManager';
+import { TemplateLibrary } from './TemplateLibrary';
 import PlanManagement from './PlanManagement';
 import BillingSelection from './BillingSelection';
 import PaymentIntegrationManagement from './PaymentIntegrationManagement';
@@ -296,6 +298,57 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             fallbackMessage="You need question creation permissions to access the AI generator."
           >
             <AIQuestionGenerator onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+      case 'custom-categories':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="custom-categories"
+            requiredPermission="questions.read"
+            fallbackMessage="Custom Categories is an Enterprise feature. You need appropriate permissions."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <CustomCategoryManager 
+                tenantId={tenant?.id || ''} 
+                currentUser={user!}
+                onCategoryChange={() => {
+                  // Optional: Add notification or refresh logic
+                }}
+              />
+            </div>
+          </AccessControl>
+        );
+      case 'round-templates':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="round-templates"
+            requiredPermission="questions.read"
+            fallbackMessage="Round Templates is a Professional+ feature. You need appropriate permissions."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <TemplateLibrary 
+                tenantId={tenant?.id || ''} 
+                currentUser={user!}
+                onApplyTemplate={(configs) => {
+                  // Template applied - show notification
+                  console.log('Template applied:', configs);
+                }}
+              />
+            </div>
           </AccessControl>
         );
       case 'system-settings':

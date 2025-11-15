@@ -36,7 +36,9 @@ import {
   Paintbrush,
   Server,
   BellRing,
-  FileText
+  FileText,
+  Tags,
+  BookTemplate
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
@@ -211,6 +213,26 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           page: 'question-categories',
           requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
           requiredPermission: 'questions.read'
+        },
+        {
+          id: 'custom-categories',
+          label: 'Custom Categories',
+          icon: Tags,
+          page: 'custom-categories',
+          badge: 'Enterprise',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.read',
+          planFeature: 'tournaments.custom_categories'
+        },
+        {
+          id: 'round-templates',
+          label: 'Round Templates',
+          icon: BookTemplate,
+          page: 'round-templates',
+          badge: 'Pro',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.read',
+          planFeature: 'tournaments.round_templates'
         },
         {
           id: 'ai-generator',
