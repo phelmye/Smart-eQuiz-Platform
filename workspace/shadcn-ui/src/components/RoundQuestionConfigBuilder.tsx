@@ -14,15 +14,27 @@ import {
   List,
   Clock,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Weight
 } from 'lucide-react';
-import { RoundQuestionConfig, RoundCategoryDistribution, QuestionCategoryType } from '@/lib/mockData';
-import { useState } from 'react';
+import { 
+  RoundQuestionConfig, 
+  RoundCategoryDistribution, 
+  QuestionCategoryType,
+  CustomQuestionCategory,
+  getCustomCategories,
+  TOURNAMENT_FEATURES,
+  hasFeatureAccess,
+  type User
+} from '@/lib/mockData';
+import { useState, useEffect } from 'react';
 
 interface RoundQuestionConfigBuilderProps {
   totalRounds: number;
   onConfigsChange: (configs: RoundQuestionConfig[]) => void;
   initialConfigs?: RoundQuestionConfig[];
+  tenantId: string;
+  currentUser: User;
 }
 
 const CATEGORY_OPTIONS: Array<{ value: QuestionCategoryType; label: string; color: string }> = [
@@ -53,12 +65,25 @@ const DEFAULT_ROUND_CONFIG: RoundQuestionConfig = {
 export default function RoundQuestionConfigBuilder({
   totalRounds,
   onConfigsChange,
-  initialConfigs
+  initialConfigs,
+  tenantId,
+  currentUser
 }: RoundQuestionConfigBuilderProps) {
   const [configs, setConfigs] = useState<RoundQuestionConfig[]>(
     initialConfigs || generateDefaultConfigs(totalRounds)
   );
   const [expandedRound, setExpandedRound] = useState<number>(1);
+  const [customCategories, setCustomCategories] = useState<CustomQuestionCategory[]>([]);
+
+  const hasCustomCategories = hasFeatureAccess(currentUser, TOURNAMENT_FEATURES.CUSTOM_CATEGORIES);
+  const hasCategoryWeighting = hasFeatureAccess(currentUser, TOURNAMENT_FEATURES.CATEGORY_WEIGHTING);
+
+  useEffect(() => {
+    if (hasCustomCategories) {
+      const categories = getCustomCategories(tenantId, true);
+      setCustomCategories(categories);
+    }
+  }, [tenantId, hasCustomCategories]);
 
   function generateDefaultConfigs(rounds: number): RoundQuestionConfig[] {
     const roundNames = ['Round 1', 'Quarter Finals', 'Semi Finals', 'Finals', 'Round 5', 'Round 6'];
@@ -143,11 +168,22 @@ export default function RoundQuestionConfigBuilder({
     return config.categoryDistribution.reduce((sum, cat) => sum + cat.questionCount, 0);
   };
 
-  const getCategoryColor = (category: QuestionCategoryType): string => {
+  const getCategoryColor = (category: QuestionCategoryType, customCategoryId?: string): string => {
+    if (customCategoryId) {
+      const customCat = customCategories.find(c => c.id === customCategoryId);
+      if (customCat) return `text-white`;
+    }
     return CATEGORY_OPTIONS.find(opt => opt.value === category)?.color || 'bg-gray-100 text-gray-800';
   };
 
-  const getCategoryLabel = (category: QuestionCategoryType): string => {
+  const getCategoryLabel = (category: QuestionCategoryType, customCategoryId?: string, customCategoryName?: string): string => {
+    if (customCategoryId && customCategoryName) {
+      return customCategoryName;
+    }
+    if (customCategoryId) {
+      const customCat = customCategories.find(c => c.id === customCategoryId);
+      if (customCat) return customCat.name;
+    }
     return CATEGORY_OPTIONS.find(opt => opt.value === category)?.label || category;
   };
 
@@ -318,68 +354,102 @@ export default function RoundQuestionConfigBuilder({
 
                   <div className="space-y-3">
                     {config.categoryDistribution.map((cat, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        {/* Category Selection */}
-                        <div className="flex-1">
-                          <Select
-                            value={cat.category}
-                            onValueChange={(value: QuestionCategoryType) =>
-                              updateCategory(config.roundNumber, index, { category: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CATEGORY_OPTIONS.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  <Badge className={opt.color}>{opt.label}</Badge>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-3">
+                        <div className="flex items-center gap-3">
+                          {/* Category Selection */}
+                          <div className="flex-1">
+                            <Select
+                              value={cat.customCategoryId || cat.category}
+                              onValueChange={(value: string) => {
+                                const isCustom = value.startsWith('cat_');
+                                if (isCustom) {
+                                  const customCat = customCategories.find(c => c.id === value);
+                                  updateCategory(config.roundNumber, index, { 
+                                    category: 'custom',
+                                    customCategoryId: value,
+                                    customCategoryName: customCat?.name
+                                  });
+                                } else {
+                                  updateCategory(config.roundNumber, index, { 
+                                    category: value as QuestionCategoryType,
+                                    customCategoryId: undefined,
+                                    customCategoryName: undefined
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CATEGORY_OPTIONS.filter(opt => opt.value !== 'custom').map(opt => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    <Badge className={opt.color}>{opt.label}</Badge>
+                                  </SelectItem>
+                                ))}
+                                {hasCustomCategories && customCategories.length > 0 && (
+                                  <>
+                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                      Custom Categories
+                                    </div>
+                                    {customCategories.map(customCat => (
+                                      <SelectItem key={customCat.id} value={customCat.id}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{customCat.icon}</span>
+                                          <span
+                                            className="px-2 py-0.5 rounded text-white text-xs"
+                                            style={{ backgroundColor: customCat.color }}
+                                          >
+                                            {customCat.name}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        {/* Question Count */}
-                        <div className="w-32">
-                          <Input
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={cat.questionCount}
-                            onChange={(e) =>
-                              updateCategory(config.roundNumber, index, { 
-                                questionCount: parseInt(e.target.value) || 1 
-                              })
-                            }
-                            placeholder="Questions"
-                          />
-                        </div>
+                          {/* Question Count */}
+                          <div className="w-32">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={cat.questionCount}
+                              onChange={(e) =>
+                                updateCategory(config.roundNumber, index, { 
+                                  questionCount: parseInt(e.target.value) || 1 
+                                })
+                              }
+                              placeholder="Questions"
+                            />
+                          </div>
 
-                        {/* Difficulty (optional) */}
-                        <div className="w-32">
-                          <Select
-                            value={cat.difficulty || 'medium'}
-                            onValueChange={(value: 'easy' | 'medium' | 'hard') =>
-                              updateCategory(config.roundNumber, index, { difficulty: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="easy">Easy</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="hard">Hard</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                          {/* Difficulty (optional) */}
+                          <div className="w-32">
+                            <Select
+                              value={cat.difficulty || 'medium'}
+                              onValueChange={(value: 'easy' | 'medium' | 'hard') =>
+                                updateCategory(config.roundNumber, index, { difficulty: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="easy">Easy</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="hard">Hard</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        {/* Order Controls */}
-                        {config.questionDeliveryMode === 'staged_by_category' && (
+                          {/* Move/Delete Buttons */}
                           <div className="flex gap-1">
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
                               onClick={() => moveCategoryUp(config.roundNumber, index)}
                               disabled={index === 0}
@@ -387,25 +457,50 @@ export default function RoundQuestionConfigBuilder({
                               <MoveUp className="w-4 h-4" />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
                               onClick={() => moveCategoryDown(config.roundNumber, index)}
                               disabled={index === config.categoryDistribution.length - 1}
                             >
                               <MoveDown className="w-4 h-4" />
                             </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-red-600"
+                              onClick={() => removeCategory(config.roundNumber, index)}
+                              disabled={config.categoryDistribution.length === 1}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Category Weighting (Enterprise Feature) */}
+                        {hasCategoryWeighting && (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <Weight className="w-4 h-4 text-muted-foreground" />
+                            <Label className="text-sm">Score Multiplier:</Label>
+                            <Input
+                              type="number"
+                              min="0.5"
+                              max="3.0"
+                              step="0.1"
+                              value={cat.weight || 1.0}
+                              onChange={(e) =>
+                                updateCategory(config.roundNumber, index, { 
+                                  weight: parseFloat(e.target.value) || 1.0
+                                })
+                              }
+                              className="w-20"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {cat.weight && cat.weight !== 1.0 
+                                ? `(${((cat.weight - 1) * 100).toFixed(0)}% ${cat.weight > 1 ? 'bonus' : 'reduction'})`
+                                : '(normal)'}
+                            </span>
                           </div>
                         )}
-
-                        {/* Remove */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeCategory(config.roundNumber, index)}
-                          disabled={config.categoryDistribution.length <= 1}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
                       </div>
                     ))}
                   </div>

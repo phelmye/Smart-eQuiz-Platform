@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target, Layers } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target, Layers, BookTemplate, Tags } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { 
   storage, 
@@ -26,10 +26,13 @@ import {
   TOURNAMENT_FEATURES,
   hasTournamentFeatureAccess,
   getRequiredPlanForFeature,
-  getAllParishes
+  getAllParishes,
+  RoundQuestionConfig
 } from '@/lib/mockData';
 import { UpgradePrompt } from './UpgradePrompt';
 import RoundQuestionConfigBuilder from './RoundQuestionConfigBuilder';
+import { TemplateLibrary } from './TemplateLibrary';
+import { CustomCategoryManager } from './CustomCategoryManager';
 
 interface TournamentBuilderProps {
   onBack: () => void;
@@ -42,6 +45,8 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
   const [parishes, setParishes] = useState<any[]>([]);
   const [roundConfigDialogOpen, setRoundConfigDialogOpen] = useState(false);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
+  const [customCategoryOpen, setCustomCategoryOpen] = useState(false);
   const [tournament, setTournament] = useState({
     name: '',
     description: '',
@@ -571,7 +576,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                               </div>
 
                               {/* Round Question Configuration Button */}
-                              <div className="border-t pt-4">
+                              <div className="border-t pt-4 space-y-3">
                                 <div className="flex items-center justify-between mb-2">
                                   <div>
                                     <Label className="text-base flex items-center gap-2">
@@ -582,14 +587,37 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                                       Configure unique question categories and delivery modes for each round
                                     </p>
                                   </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setTemplateLibraryOpen(true)}
+                                    >
+                                      <BookTemplate className="w-4 h-4 mr-2" />
+                                      Templates
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setRoundConfigDialogOpen(true)}
+                                    >
+                                      <Settings className="w-4 h-4 mr-2" />
+                                      Configure Rounds
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Custom Categories Button (Enterprise) */}
+                                {hasTournamentFeatureAccess(user, TOURNAMENT_FEATURES.CUSTOM_CATEGORIES) && (
                                   <Button
                                     variant="outline"
-                                    onClick={() => setRoundConfigDialogOpen(true)}
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => setCustomCategoryOpen(true)}
                                   >
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    Configure Rounds
+                                    <Tags className="w-4 h-4 mr-2" />
+                                    Manage Custom Categories
                                   </Button>
-                                </div>
+                                )}
                                 
                                 {tournament.roundQuestionConfigs && tournament.roundQuestionConfigs.length > 0 && (
                                   <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -1452,6 +1480,8 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
                   : 5 // Default for Swiss
             }
             initialConfigs={tournament.roundQuestionConfigs}
+            tenantId={tenant?.id || ''}
+            currentUser={user!}
             onConfigsChange={(configs) => {
               setTournament(prev => ({ 
                 ...prev, 
@@ -1464,6 +1494,69 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
             <Button 
               variant="outline" 
               onClick={() => setRoundConfigDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Library Dialog */}
+      <Dialog open={templateLibraryOpen} onOpenChange={setTemplateLibraryOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Round Configuration Templates</DialogTitle>
+            <DialogDescription>
+              Browse and apply pre-built round configurations or create your own templates
+            </DialogDescription>
+          </DialogHeader>
+          
+          <TemplateLibrary
+            tenantId={tenant?.id || ''}
+            currentUser={user!}
+            onApplyTemplate={(configs: RoundQuestionConfig[]) => {
+              setTournament(prev => ({ 
+                ...prev, 
+                roundQuestionConfigs: configs 
+              }));
+              setTemplateLibraryOpen(false);
+              setRoundConfigDialogOpen(true); // Open config dialog to review
+            }}
+          />
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setTemplateLibraryOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Category Manager Dialog */}
+      <Dialog open={customCategoryOpen} onOpenChange={setCustomCategoryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Custom Question Categories</DialogTitle>
+            <DialogDescription>
+              Create and manage custom question categories for your tournaments (Enterprise Feature)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <CustomCategoryManager
+            tenantId={tenant?.id || ''}
+            currentUser={user!}
+            onCategoryChange={() => {
+              // Optionally refresh data or show notification
+            }}
+          />
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setCustomCategoryOpen(false)}
             >
               Close
             </Button>
