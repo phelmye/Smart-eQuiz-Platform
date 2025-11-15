@@ -15,7 +15,9 @@ import {
   Clock,
   AlertCircle,
   CheckCircle2,
-  Weight
+  Weight,
+  FileDown,
+  Star
 } from 'lucide-react';
 import { 
   RoundQuestionConfig, 
@@ -23,6 +25,8 @@ import {
   QuestionCategoryType,
   CustomQuestionCategory,
   getCustomCategories,
+  getRoundTemplates,
+  applyRoundTemplate,
   TOURNAMENT_FEATURES,
   hasFeatureAccess,
   type User
@@ -203,6 +207,56 @@ export default function RoundQuestionConfigBuilder({
               {totalRounds} Rounds
             </Badge>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Template Library Section */}
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold text-green-900 flex items-center gap-2">
+                <FileDown className="w-4 h-4" />
+                Quick Start with Templates
+              </CardTitle>
+              <CardDescription className="text-green-700">
+                Load pre-configured question distributions for common tournament formats
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {getRoundTemplates(tenantId, true).map((template) => (
+              <Button
+                key={template.id}
+                variant="outline"
+                size="sm"
+                className="bg-white hover:bg-green-50"
+                onClick={() => {
+                  const appliedConfigs = applyRoundTemplate(template.id);
+                  if (appliedConfigs && appliedConfigs.length > 0) {
+                    // Adjust to match current totalRounds
+                    const adjustedConfigs = appliedConfigs.slice(0, totalRounds).map((config, index) => ({
+                      ...config,
+                      roundNumber: index + 1
+                    }));
+                    setConfigs(adjustedConfigs);
+                    onConfigsChange(adjustedConfigs);
+                  }
+                }}
+              >
+                <Star className="w-3 h-3 mr-1.5" />
+                {template.name}
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {template.configurations.length} rounds
+                </Badge>
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-green-600 mt-3">
+            💡 Tip: Templates provide tested question distributions. You can customize them after applying.
+          </p>
         </CardContent>
       </Card>
 

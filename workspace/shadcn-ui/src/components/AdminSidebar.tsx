@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -394,6 +394,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       planFeature: null
     }
   ];
+
+  // Auto-expand groups with active children when currentPage changes
+  useEffect(() => {
+    menuGroups.forEach((group: any) => {
+      if (group.type === 'group' && group.children) {
+        const hasActiveChild = group.children.some((child: any) => currentPage === child.page);
+        if (hasActiveChild && !expandedGroups.includes(group.id)) {
+          setExpandedGroups(prev => [...prev, group.id]);
+        }
+      }
+    });
+  }, [currentPage]);
 
   // Helper function to check if menu item/group should be visible
   const isItemVisible = (item: any) => {

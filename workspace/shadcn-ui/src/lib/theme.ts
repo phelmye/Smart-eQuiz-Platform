@@ -267,6 +267,40 @@ export function applyTheme(colors: ThemeColors) {
 }
 
 /**
+ * Load and apply saved theme for current tenant
+ * Should be called on app initialization
+ */
+export function loadSavedTheme(tenantId: string | null) {
+  if (!tenantId) return;
+
+  // Import storage dynamically to avoid circular dependency
+  const STORAGE_KEYS = { THEME_CONFIGS: 'theme_configs' };
+  const configs = JSON.parse(localStorage.getItem(STORAGE_KEYS.THEME_CONFIGS) || '[]');
+  const config = configs.find((c: any) => c.tenantId === tenantId);
+
+  if (config) {
+    if (config.isCustom && config.customColors) {
+      const customTheme = createCustomTheme(
+        'Custom Theme',
+        config.customColors.primary,
+        config.customColors.secondary,
+        config.customColors.accent
+      );
+      applyTheme(customTheme.colors);
+    } else {
+      const template = getThemeById(config.templateId);
+      if (template) {
+        applyTheme(template.colors);
+      }
+    }
+  } else {
+    // Apply default theme if no config found
+    const defaultTheme = getDefaultTheme();
+    applyTheme(defaultTheme.colors);
+  }
+}
+
+/**
  * Convert hex color to RGB values
  */
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
