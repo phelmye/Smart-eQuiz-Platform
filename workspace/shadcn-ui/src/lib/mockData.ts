@@ -5243,7 +5243,6 @@ export function generateTournamentBracket(
   }
   
   // Save bracket
-  const storage = new LocalStorage();
   const brackets = storage.get<TournamentBracket[]>(STORAGE_KEYS.KNOCKOUT_BRACKETS) || [];
   brackets.push(bracket);
   storage.set(STORAGE_KEYS.KNOCKOUT_BRACKETS, brackets);
@@ -5287,7 +5286,6 @@ function generateSingleEliminationMatches(
   config: KnockoutTournamentConfig,
   byesNeeded: number
 ): void {
-  const storage = new LocalStorage();
   const matches: KnockoutMatch[] = [];
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(participantIds.length)));
   const totalRounds = Math.log2(bracketSize);
@@ -5510,21 +5508,18 @@ function getRoundName(roundNumber: number, totalRounds: number): string {
 
 // Get tournament bracket
 export function getTournamentBracket(tournamentId: string): TournamentBracket | null {
-  const storage = new LocalStorage();
   const brackets = storage.get<TournamentBracket[]>(STORAGE_KEYS.KNOCKOUT_BRACKETS) || [];
   return brackets.find(b => b.tournamentId === tournamentId) || null;
 }
 
 // Get match by ID
 export function getMatch(matchId: string): KnockoutMatch | null {
-  const storage = new LocalStorage();
   const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
   return matches.find(m => m.id === matchId) || null;
 }
 
 // Get matches for a tournament
 export function getTournamentMatches(tournamentId: string): KnockoutMatch[] {
-  const storage = new LocalStorage();
   const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
   return matches.filter(m => m.tournamentId === tournamentId);
 }
@@ -5543,7 +5538,6 @@ export function updateMatchResult(
   participant1Details?: { correctAnswers: number; timeTaken: number; answers: Record<string, number> },
   participant2Details?: { correctAnswers: number; timeTaken: number; answers: Record<string, number> }
 ): boolean {
-  const storage = new LocalStorage();
   const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
   const matchIndex = matches.findIndex(m => m.id === matchId);
   
@@ -5584,7 +5578,6 @@ export function updateMatchResult(
 function advanceWinnerToNextMatch(completedMatch: KnockoutMatch): void {
   if (!completedMatch.winnerId || !completedMatch.nextMatchId) return;
   
-  const storage = new LocalStorage();
   const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
   const nextMatch = matches.find(m => m.id === completedMatch.nextMatchId);
   
@@ -5615,7 +5608,6 @@ function advanceWinnerToNextMatch(completedMatch: KnockoutMatch): void {
 function updateParticipantJourney(match: KnockoutMatch): void {
   if (!match.participant1Id || !match.participant2Id) return;
   
-  const storage = new LocalStorage();
   const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
   
   // Update both participants
@@ -5678,7 +5670,6 @@ function updateParticipantJourney(match: KnockoutMatch): void {
 
 // Get participant journey
 export function getParticipantJourney(participantId: string, tournamentId: string): ParticipantBracketJourney | null {
-  const storage = new LocalStorage();
   const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
   return journeys.find(j => j.participantId === participantId && j.tournamentId === tournamentId) || null;
 }
@@ -5690,7 +5681,6 @@ export function getActiveMatches(tournamentId: string): KnockoutMatch[] {
 
 // Start a match
 export function startMatch(matchId: string): boolean {
-  const storage = new LocalStorage();
   const matches = storage.get<KnockoutMatch[]>(STORAGE_KEYS.KNOCKOUT_MATCHES) || [];
   const match = matches.find(m => m.id === matchId);
   
@@ -5717,7 +5707,6 @@ export function getBracketStandings(tournamentId: string): {
     isEliminated: boolean;
   }>;
 } {
-  const storage = new LocalStorage();
   const journeys = storage.get<ParticipantBracketJourney[]>(STORAGE_KEYS.PARTICIPANT_JOURNEYS) || [];
   const bracket = getTournamentBracket(tournamentId);
   
@@ -5754,7 +5743,6 @@ export function createCustomCategory(
   tenantId: string,
   categoryData: Omit<CustomQuestionCategory, 'id' | 'createdAt'>
 ): CustomQuestionCategory {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   
   const newCategory: CustomQuestionCategory = {
@@ -5771,7 +5759,6 @@ export function createCustomCategory(
 
 // Get all custom categories for a tenant
 export function getCustomCategories(tenantId: string, activeOnly: boolean = true): CustomQuestionCategory[] {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   
   let filtered = categories.filter(c => c.tenantId === tenantId);
@@ -5784,7 +5771,6 @@ export function getCustomCategories(tenantId: string, activeOnly: boolean = true
 
 // Get custom category by ID
 export function getCustomCategory(categoryId: string): CustomQuestionCategory | null {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   return categories.find(c => c.id === categoryId) || null;
 }
@@ -5794,7 +5780,6 @@ export function updateCustomCategory(
   categoryId: string,
   updates: Partial<Omit<CustomQuestionCategory, 'id' | 'tenantId' | 'createdAt' | 'createdBy'>>
 ): CustomQuestionCategory | null {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   
   const index = categories.findIndex(c => c.id === categoryId);
@@ -5811,7 +5796,6 @@ export function updateCustomCategory(
 
 // Delete custom category
 export function deleteCustomCategory(categoryId: string): boolean {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   
   const index = categories.findIndex(c => c.id === categoryId);
@@ -5825,7 +5809,6 @@ export function deleteCustomCategory(categoryId: string): boolean {
 
 // Toggle category active status
 export function toggleCustomCategory(categoryId: string): CustomQuestionCategory | null {
-  const storage = new LocalStorage();
   const categories = storage.get<CustomQuestionCategory[]>(STORAGE_KEYS.CUSTOM_CATEGORIES) || [];
   
   const index = categories.findIndex(c => c.id === categoryId);
@@ -5846,7 +5829,6 @@ export function createRoundTemplate(
   tenantId: string,
   templateData: Omit<RoundConfigTemplate, 'id' | 'createdAt' | 'updatedAt' | 'usageCount'>
 ): RoundConfigTemplate {
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   
   const newTemplate: RoundConfigTemplate = {
@@ -5865,7 +5847,6 @@ export function createRoundTemplate(
 
 // Get all templates for a tenant (including public templates)
 export function getRoundTemplates(tenantId: string, includePublic: boolean = true): RoundConfigTemplate[] {
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   
   let filtered = templates.filter(t => t.tenantId === tenantId);
@@ -5886,7 +5867,6 @@ export function getRoundTemplates(tenantId: string, includePublic: boolean = tru
 
 // Get template by ID
 export function getRoundTemplate(templateId: string): RoundConfigTemplate | null {
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   return templates.find(t => t.id === templateId) || null;
 }
@@ -5897,7 +5877,6 @@ export function applyRoundTemplate(templateId: string): RoundQuestionConfig[] {
   if (!template) return [];
   
   // Increment usage count
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   const index = templates.findIndex(t => t.id === templateId);
   if (index !== -1) {
@@ -5930,7 +5909,6 @@ export function updateRoundTemplate(
   templateId: string,
   updates: Partial<Omit<RoundConfigTemplate, 'id' | 'tenantId' | 'createdAt' | 'createdBy' | 'usageCount'>>
 ): RoundConfigTemplate | null {
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   
   const index = templates.findIndex(t => t.id === templateId);
@@ -5950,7 +5928,6 @@ export function updateRoundTemplate(
 export function rateRoundTemplate(templateId: string, rating: number): RoundConfigTemplate | null {
   if (rating < 1 || rating > 5) return null;
   
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   
   const index = templates.findIndex(t => t.id === templateId);
@@ -5971,7 +5948,6 @@ export function rateRoundTemplate(templateId: string, rating: number): RoundConf
 
 // Delete template
 export function deleteRoundTemplate(templateId: string): boolean {
-  const storage = new LocalStorage();
   const templates = storage.get<RoundConfigTemplate[]>(STORAGE_KEYS.ROUND_CONFIG_TEMPLATES) || [];
   
   const index = templates.findIndex(t => t.id === templateId);
@@ -6010,7 +5986,6 @@ export function validateQuestionPool(
   tenantId: string,
   roundConfigs: RoundQuestionConfig[]
 ): QuestionPoolValidation {
-  const storage = new LocalStorage();
   const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
   const tenantQuestions = questions.filter(q => q.tenantId === tenantId);
   
@@ -6138,7 +6113,6 @@ export function validateQuestionPool(
 
 // Quick check if tenant has enough questions
 export function hasEnoughQuestions(tenantId: string, requiredCount: number): boolean {
-  const storage = new LocalStorage();
   const questions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
   const tenantQuestions = questions.filter(q => q.tenantId === tenantId);
   return tenantQuestions.length >= requiredCount;
