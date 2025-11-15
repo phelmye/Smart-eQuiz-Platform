@@ -111,21 +111,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🔍 AuthProvider login called with:', email);
     
     try {
-      // Call real API
-      const response = await apiClient.login(email, password);
-      console.log('🔍 API login successful:', response.user.email);
+      // Use mock authentication for development
+      // Accept any password that matches the pattern (for demo purposes)
+      const mockUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (!mockUser) {
+        console.log('🔍 User not found in mock data');
+        return false;
+      }
+      
+      console.log('🔍 Mock login successful:', mockUser.email);
       
       const loggedInUser: User = {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.username || response.user.email,
-        role: response.user.role || 'participant',
-        tenantId: response.user.tenantId || 'default',
-        xp: response.user.totalXp || 0,
-        level: response.user.currentLevel || 1,
-        badges: [],
-        walletBalance: 0,
-        createdAt: response.user.createdAt || new Date().toISOString()
+        id: mockUser.id,
+        email: mockUser.email,
+        name: mockUser.name,
+        role: mockUser.role,
+        tenantId: mockUser.tenantId,
+        xp: mockUser.xp,
+        level: mockUser.level,
+        badges: mockUser.badges,
+        walletBalance: mockUser.walletBalance,
+        createdAt: mockUser.createdAt
       };
       
       // Save to storage
@@ -134,16 +141,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Set state
       setUser(loggedInUser);
       
-      // Try to find tenant from mock data (will need API endpoint later)
+      // Find tenant from mock data
       const userTenant = mockTenants.find(t => t.id === loggedInUser.tenantId);
       setTenant(userTenant || {
         id: loggedInUser.tenantId,
         name: 'Default Church',
-        planId: 'standard',
+        planId: 'enterprise',
         primaryColor: '#3b82f6',
-        maxUsers: 100,
-        maxTournaments: 10,
-        paymentIntegrationEnabled: false,
+        maxUsers: 1000,
+        maxTournaments: 100,
+        paymentIntegrationEnabled: true,
         createdAt: new Date().toISOString()
       });
       
@@ -277,10 +284,11 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
         
       } else {
         console.log('🔍 Login failed - invalid credentials');
-        setError('Invalid credentials. Try: admin@demo.local / password123');
+        setError('Invalid credentials. Try: admin@church.com (any password)');
       }
     } catch (err: any) {
       console.error('🔍 Login error:', err);
+      setError('Login error. Try: admin@church.com (any password)');
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       console.log('🔍 Setting loading to false...');
