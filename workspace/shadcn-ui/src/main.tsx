@@ -2,6 +2,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Import debug utilities (exposes functions to window object)
+import './lib/debugUtils';
+
 // Vercel Speed Insights component (React entrypoint)
 // Use the package's React entrypoint
 import { SpeedInsights } from '@vercel/speed-insights/react';
