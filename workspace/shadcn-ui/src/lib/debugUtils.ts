@@ -35,6 +35,8 @@ declare global {
     listTemplates: () => void;
     listCategories: () => void;
     validatePool: (tenantId: string, rounds: any[]) => void;
+    makeAdmin: () => void;
+    showCurrentUser: () => void;
     showDebugInfo: () => void;
   }
 }
@@ -207,6 +209,8 @@ window.showDebugInfo = () => {
   console.log('  window.listTemplates()      - List all templates');
   console.log('  window.listCategories()     - List all custom categories');
   console.log('  window.validatePool()       - Validate question pool');
+  console.log('  window.makeAdmin()          - Grant current user admin access');
+  console.log('  window.showCurrentUser()    - Show logged in user details');
   console.log('  window.showDebugInfo()      - Show this help\n');
   
   // Show current data counts
@@ -225,7 +229,61 @@ window.showDebugInfo = () => {
   console.log('  window.initSampleData()');
   console.log('  window.listTemplates()');
   console.log('  window.listCategories()');
+  console.log('  window.makeAdmin()');
   console.log('\n');
+};
+
+// Make current user an admin
+window.makeAdmin = () => {
+  try {
+    const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+    if (!currentUser) {
+      console.error('❌ No user is currently logged in');
+      return;
+    }
+    
+    console.log('Current user role:', currentUser.role);
+    
+    // Update user role to super_admin
+    currentUser.role = 'super_admin';
+    storage.set(STORAGE_KEYS.CURRENT_USER, currentUser);
+    
+    console.log('✅ User role updated to super_admin');
+    console.log('🔄 Refreshing page to apply changes...');
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  } catch (error) {
+    console.error('❌ Error updating user role:', error);
+  }
+};
+
+// Show current user
+window.showCurrentUser = () => {
+  try {
+    const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+    if (!currentUser) {
+      console.log('❌ No user is currently logged in');
+      return;
+    }
+    
+    console.log('\n👤 Current User:');
+    console.table({
+      'ID': currentUser.id,
+      'Name': currentUser.name,
+      'Email': currentUser.email,
+      'Role': currentUser.role,
+      'Tenant ID': currentUser.tenantId,
+      'Level': currentUser.level,
+      'XP': currentUser.xp
+    });
+    
+    console.log('\n💡 Tip: Run window.makeAdmin() to grant admin access');
+    return currentUser;
+  } catch (error) {
+    console.error('❌ Error fetching current user:', error);
+  }
 };
 
 // Show welcome message on load
