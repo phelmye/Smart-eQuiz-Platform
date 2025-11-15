@@ -3393,6 +3393,7 @@ export const initializeMockData = () => {
   
   // Initialize role permissions
   if (!storage.get(STORAGE_KEYS.ROLE_PERMISSIONS)) {
+    console.log('🔧 Initializing ROLE_PERMISSIONS for the first time...');
     // Initialize with component-based features structure for ComponentAccessControl
     const roleComponentFeatures = [
       {
@@ -3454,6 +3455,13 @@ export const initializeMockData = () => {
       }
     ];
     storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, roleComponentFeatures);
+    console.log('✅ ROLE_PERMISSIONS initialized successfully');
+    console.log('ORG_ADMIN features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
+  } else {
+    console.log('✓ ROLE_PERMISSIONS already exists in storage');
+    const existing = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS);
+    const orgAdmin = existing?.find((r: any) => r.roleName?.toLowerCase() === 'org_admin');
+    console.log('ORG_ADMIN features from storage:', orgAdmin?.componentFeatures);
   }
   
   // Initialize audit logs
@@ -7649,6 +7657,77 @@ export function approveBonusQuestions(
   
   return { success: true };
 }
+
+/**
+ * Force reinitialize role permissions - useful for fixing permission issues
+ * Call this if users are experiencing "Access Restricted" errors
+ */
+export function forceReinitializeRolePermissions() {
+  console.log('🔄 Force reinitializing ROLE_PERMISSIONS...');
+  
+  const roleComponentFeatures = [
+    {
+      roleId: 'super_admin',
+      roleName: 'super_admin',
+      componentFeatures: ['*'] // All features
+    },
+    {
+      roleId: 'org_admin',
+      roleName: 'org_admin',
+      componentFeatures: [
+        // Question Bank features
+        'view-questions', 'create-questions', 'edit-questions', 'delete-questions',
+        'manage-categories', 'bulk-import', 'export-questions',
+        // Analytics features
+        'view-basic-analytics', 'view-advanced-analytics', 'export-reports',
+        // User Management features
+        'view-users', 'create-users', 'edit-users', 'delete-users', 'assign-roles',
+        // Tournament Builder features
+        'view-tournaments', 'create-tournaments', 'edit-tournaments', 'delete-tournaments', 'advanced-settings',
+        // Branding features
+        'view-branding', 'edit-branding', 'upload-assets',
+        // System Settings features
+        'view-settings', 'edit-settings', 'manage-integrations'
+      ]
+    },
+    {
+      roleId: 'question_manager',
+      roleName: 'question_manager',
+      componentFeatures: [
+        'view-questions', 'create-questions', 'edit-questions', 'delete-questions',
+        'manage-categories', 'bulk-import', 'export-questions',
+        'view-tournaments'
+      ]
+    },
+    {
+      roleId: 'account_officer',
+      roleName: 'account_officer',
+      componentFeatures: ['view-basic-analytics']
+    },
+    {
+      roleId: 'participant',
+      roleName: 'participant',
+      componentFeatures: []
+    },
+    {
+      roleId: 'guest',
+      roleName: 'guest',
+      componentFeatures: []
+    },
+    {
+      roleId: 'moderator',
+      roleName: 'moderator',
+      componentFeatures: ['view-tournaments', 'view-users']
+    }
+  ];
+  
+  storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, roleComponentFeatures);
+  console.log('✅ ROLE_PERMISSIONS reinitialized successfully');
+  console.log('ORG_ADMIN now has features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
+  
+  return roleComponentFeatures;
+}
+
 
 
 

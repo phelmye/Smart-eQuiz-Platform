@@ -49,6 +49,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     initializeMockData();
     console.log('🔍 Mock data initialized including plans');
+    
+    // Verify role permissions are initialized correctly
+    const rolePerms = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS);
+    const orgAdmin = rolePerms?.find((r: any) => r.roleName?.toLowerCase() === 'org_admin');
+    if (orgAdmin) {
+      console.log('✓ ORG_ADMIN permissions verified:', orgAdmin.componentFeatures.length, 'features');
+      if (!orgAdmin.componentFeatures.includes('manage-categories')) {
+        console.error('⚠️ ORG_ADMIN missing manage-categories feature! Fixing...');
+        // Force re-init
+        const { forceReinitializeRolePermissions } = require('@/lib/mockData');
+        forceReinitializeRolePermissions();
+      }
+    }
   }, []);
   
   // Initialize user from storage (with global state fallback) immediately to prevent flash

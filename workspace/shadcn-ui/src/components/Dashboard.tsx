@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft } from 'lucide-react';
+import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft, Shield } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { AdminSidebar } from './AdminSidebar';
 import UserManagement from './UserManagement';
@@ -487,10 +488,69 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <Card>
                 <CardHeader>
                   <CardTitle>Access Control</CardTitle>
-                  <CardDescription>Manage user permissions and access rights</CardDescription>
+                  <CardDescription>Manage user permissions and access rights for your organization</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">Access control interface coming soon...</p>
+                  <Tabs defaultValue="overview" className="w-full">
+                    <TabsList>
+                      <TabsTrigger value="overview">Overview</TabsTrigger>
+                      <TabsTrigger value="roles">Role Permissions</TabsTrigger>
+                      <TabsTrigger value="components">Component Features</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="overview" className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Total Roles</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">7</div>
+                            <p className="text-xs text-muted-foreground">Active role configurations</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Components</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">8</div>
+                            <p className="text-xs text-muted-foreground">Protected components</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Features</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">45+</div>
+                            <p className="text-xs text-muted-foreground">Granular permissions</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <Alert>
+                        <Shield className="h-4 w-4" />
+                        <AlertDescription>
+                          Use <strong>Role Management</strong> to configure permissions or <strong>Component Features</strong> to manage feature access. Changes apply immediately to all users with the affected roles.
+                        </AlertDescription>
+                      </Alert>
+                    </TabsContent>
+                    <TabsContent value="roles">
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Configure role permissions</p>
+                        <Button onClick={() => setCurrentPage('role-management')}>
+                          Go to Role Management
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="components">
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Manage component-level features</p>
+                        <Button onClick={() => setCurrentPage('role-component-management')}>
+                          Go to Component Features
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
             </div>

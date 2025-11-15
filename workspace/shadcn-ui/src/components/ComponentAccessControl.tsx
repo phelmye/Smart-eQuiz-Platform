@@ -123,12 +123,29 @@ function checkComponentAccess(user: User, componentId: string, featureId?: strin
   const roleFeatures = getRoleFeatures(user.role);
   
   if (!roleFeatures) {
-    return false; // No features configured for this role
+    console.warn(`⚠️ No features found for role: ${user.role}. Available roles:`, 
+      (storage.get(STORAGE_KEYS.ROLE_PERMISSIONS) || []).map((r: any) => r.roleName));
+    
+    // Fallback: ORG_ADMIN should have access to all features
+    if (user.role?.toLowerCase() === 'org_admin') {
+      console.log('✅ Granting access to ORG_ADMIN via fallback');
+      return true;
+    }
+    return false;
+  }
+
+  // Wildcard check for super_admin
+  if (roleFeatures.componentFeatures.includes('*')) {
+    return true;
   }
 
   if (featureId) {
     // Check specific feature access
-    return roleFeatures.componentFeatures.includes(featureId);
+    const hasAccess = roleFeatures.componentFeatures.includes(featureId);
+    if (!hasAccess && user.role?.toLowerCase() === 'org_admin') {
+      console.warn(`⚠️ ORG_ADMIN missing feature: ${featureId}. Current features:`, roleFeatures.componentFeatures);
+    }
+    return hasAccess;
   }
 
   // Check if role has any features for this component
@@ -148,7 +165,9 @@ function checkFeatureAccess(user: User, featureId: string): boolean {
 
 function getRoleFeatures(roleName: string): RoleComponentFeatures | null {
   const allRoleFeatures = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS) || [];
-  return allRoleFeatures.find(rf => rf.roleName === roleName) || null;
+  // Case-insensitive comparison to handle role name variations
+  const normalizedRoleName = roleName?.toLowerCase();
+  return allRoleFeatures.find(rf => rf.roleName?.toLowerCase() === normalizedRoleName) || null;
 }
 
 function getComponentFeatureIds(componentId: string): string[] {
