@@ -1,4 +1,11 @@
-import { type CurrencyCode } from '@smart-equiz/types';
+/**
+ * Live Currency Exchange Rate Service
+ * Integrates with exchangerate-api.io for real-time rates
+ */
+
+export type CurrencyCode = 
+  | 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'JPY' 
+  | 'INR' | 'BRL' | 'MXN' | 'ZAR' | 'NGN' | 'KES';
 
 /**
  * Exchange rate cache

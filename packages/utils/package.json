@@ -1,6 +1,7 @@
 {
   "name": "@smart-equiz/utils",
   "version": "1.0.0",
+  "type": "module",
   "description": "Shared utility functions for Smart eQuiz Platform",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

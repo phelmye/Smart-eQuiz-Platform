@@ -233,6 +233,23 @@ export function throttle<T extends (...args: any[]) => any>(
   };
 }
 
+// Re-export currency types
+export type { CurrencyCode } from './currency-live.js';
+
 // Export live currency functions
-export * from './currency-live';
-export * from './currency-config';
+export {
+  fetchExchangeRates,
+  getExchangeRates,
+  convertCurrencyLive,
+  formatCurrencyLive,
+  getExchangeRateLive,
+  clearExchangeRateCache,
+  getCacheInfo,
+  validateApiKey,
+  getApiQuota
+} from './currency-live.js';
+
+export {
+  getExchangeRateApiKey,
+  hasExchangeRateApiKey
+} from './currency-config.js';

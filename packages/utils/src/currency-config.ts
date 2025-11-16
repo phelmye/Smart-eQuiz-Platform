@@ -28,7 +28,9 @@ export function getExchangeRateApiKey(): string {
   }
 
   // Vite environment (client-side)
+  // @ts-ignore - import.meta.env is available in Vite
   if (typeof import.meta !== 'undefined' && import.meta.env) {
+    // @ts-ignore
     const viteKey = import.meta.env.VITE_EXCHANGERATE_API_KEY;
     if (viteKey) return viteKey;
   }
