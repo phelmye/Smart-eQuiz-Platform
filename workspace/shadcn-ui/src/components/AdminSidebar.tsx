@@ -359,11 +359,39 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         },
         {
           id: 'security',
-          label: 'Security',
+          label: 'Security Center',
           icon: Shield,
           page: 'security',
-          requiredRoles: ['super_admin'],
-          requiredPermission: 'tenant.manage'
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
+          id: 'subscription-management',
+          label: 'Subscription',
+          icon: CreditCard,
+          page: 'subscription-management',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
+          id: 'team-management',
+          label: 'Team Management',
+          icon: Users,
+          page: 'team-management',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
+        },
+        {
+          id: 'reporting-exports',
+          label: 'Reports & Exports',
+          icon: FileText,
+          page: 'reporting-exports',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: null
         },
         {
           id: 'notifications',

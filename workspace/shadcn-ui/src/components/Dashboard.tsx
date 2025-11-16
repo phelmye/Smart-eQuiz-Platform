@@ -693,6 +693,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             onSuccess={() => handleBackToDashboard()}
           />
         );
+      case 'subscription-management':
+        return (
+          <SubscriptionManagement 
+            user={user}
+            tenant={tenant}
+            onNavigate={handleSidebarNavigate}
+            onBack={handleBackToDashboard}
+          />
+        );
+      case 'team-management':
+        return (
+          <TeamManagement 
+            user={user}
+            tenant={tenant}
+            onBack={handleBackToDashboard}
+          />
+        );
+      case 'reporting-exports':
+        return (
+          <ReportingExports 
+            user={user}
+            tenant={tenant}
+            onBack={handleBackToDashboard}
+          />
+        );
       default:
         return null;
     }
