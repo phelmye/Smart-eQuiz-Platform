@@ -199,11 +199,33 @@ export const EmailTemplateManager: React.FC = () => {
   };
 
   const renderPreview = (template: EmailTemplate) => {
+    // Sample data for preview
+    const sampleData: Record<string, string> = {
+      userName: 'John Doe',
+      dashboardUrl: 'https://example.com/dashboard',
+      supportEmail: 'support@example.com',
+      tournamentName: 'Spring Championship 2025',
+      startDate: 'March 15, 2025',
+      entryFee: '25.00',
+      participantCount: '50',
+      tournamentUrl: 'https://example.com/tournament/123',
+      amount: '99.00',
+      paymentDate: 'November 16, 2025',
+      transactionId: 'TXN-123456',
+      paymentMethod: 'Credit Card',
+      description: 'Monthly subscription payment',
+      invoiceUrl: 'https://example.com/invoice/123',
+      planName: 'Pro Plan',
+      resetUrl: 'https://example.com/reset-password',
+      supportLink: 'https://example.com/support'
+    };
+
     let content = template.htmlContent;
     template.variables.forEach(variable => {
+      const value = sampleData[variable] || `[${variable}]`;
       content = content.replace(
         new RegExp(`{{${variable}}}`, 'g'),
-        `<span style="background: #fef3c7; padding: 2px 6px; border-radius: 4px;">${variable}</span>`
+        `<strong style="background: #fef3c7; padding: 2px 6px; border-radius: 4px;">${value}</strong>`
       );
     });
     return { __html: content };
