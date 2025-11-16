@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 // Type definitions for environment variables
 
 declare global {
