@@ -42,16 +42,11 @@ import OnboardingWizard from './OnboardingWizard';
 import NotificationCenter from './NotificationCenter';
 import EmailTemplateManager from './EmailTemplateManager';
 import HelpCenter from './HelpCenter';
+import SecurityCenter from './SecurityCenter';
+import SubscriptionManagement from './SubscriptionManagement';
+import TeamManagement from './TeamManagement';
+import ReportingExports from './ReportingExports';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
-import TermsOfService from './TermsOfService';
-import PrivacyPolicy from './PrivacyPolicy';
-import SubscriptionCheckout from './SubscriptionCheckout';
-import TournamentCheckout from './TournamentCheckout';
-import FeatureGateModal from './FeatureGateModal';
-import OnboardingWizard from './OnboardingWizard';
-import NotificationCenter from './NotificationCenter';
-import EmailTemplateManager from './EmailTemplateManager';
-import HelpCenter from './HelpCenter';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
