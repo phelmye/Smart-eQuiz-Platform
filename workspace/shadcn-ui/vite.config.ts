@@ -70,6 +70,6 @@ export default defineConfig(({ mode }) => ({
   // Optimize dev server
   server: {
     open: true,
-    port: 3000,
+    port: 5173,
   },
 }));

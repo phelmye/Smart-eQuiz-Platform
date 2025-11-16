@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData } from '@/lib/mockData';
+import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData, getFieldLabels } from '@/lib/mockData';
+import { apiClient } from '@/lib/apiClient';
 
 interface AuthContextType {
   user: User | null;
@@ -24,7 +25,7 @@ interface RegisterData {
   password: string;
   name: string;
   tenantId: string;
-  role: 'org_admin' | 'participant' | 'spectator';
+  role: 'org_admin' | 'inspector';
 }
 
 interface AuthSystemProps {
@@ -48,6 +49,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     initializeMockData();
     console.log('🔍 Mock data initialized including plans');
+    
+    // Verify role permissions are initialized correctly
+    const rolePerms = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS);
+    const orgAdmin = rolePerms?.find((r: any) => r.roleName?.toLowerCase() === 'org_admin');
+    if (orgAdmin) {
+      console.log('✓ ORG_ADMIN permissions verified:', orgAdmin.componentFeatures.length, 'features');
+      if (!orgAdmin.componentFeatures.includes('manage-categories')) {
+        console.error('⚠️ ORG_ADMIN missing manage-categories feature! Fixing...');
+        // Force re-init
+        import('@/lib/mockData').then(({ forceReinitializeRolePermissions }) => {
+          forceReinitializeRolePermissions();
+        });
+      }
+    }
   }, []);
   
   // Initialize user from storage (with global state fallback) immediately to prevent flash
@@ -55,34 +70,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔍 AuthProvider initializing - checking storage...');
       
-      // Add a small delay for hash-based recovery after component remounting
-      const urlHash = window.location.hash;
-      if (urlHash.includes('user=') && !localStorage.getItem(STORAGE_KEYS.CURRENT_USER)) {
-        console.log('Detected URL hash with user but no localStorage - waiting briefly for initialization');
-        // Force a quick re-check after component mounts
-        setTimeout(() => {
-          const hashUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-          if (hashUser) {
-            console.log('Hash user recovered on delayed check:', hashUser.email);
-            setUser(hashUser);
-          }
-        }, 50);
+      // Clean up any URL hash that might be present
+      if (window.location.hash) {
+        console.log('🔍 Cleaning up URL hash:', window.location.hash);
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
       
       const savedUser = storage.get(STORAGE_KEYS.CURRENT_USER);
       console.log('AuthProvider initializing with saved user:', savedUser?.email || 'none');
-      
-      // If we got a basic user from URL hash, upgrade to full user details
-      if (savedUser?.email && !savedUser.name) {
-        const allUsers = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-        const fullUser = allUsers.find((u: User) => u.email === savedUser.email);
-        if (fullUser) {
-          console.log('Upgraded URL hash user to full user:', fullUser.email);
-          // Save the full user details back to storage
-          storage.set(STORAGE_KEYS.CURRENT_USER, fullUser);
-          return fullUser;
-        }
-      }
       
       return savedUser;
     } catch (error) {
@@ -111,15 +106,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('AuthProvider mounted, current user:', user?.email);
     
-    // Check URL hash on every mount as a fallback
-    const urlHash = window.location.hash;
-    if (urlHash.includes('user=') && !user) {
-      console.log('AuthProvider mounted with URL hash but no user - attempting recovery');
-      const hashUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-      if (hashUser && hashUser.email) {
-        console.log('Recovered user from hash on mount:', hashUser.email);
-        setUser(hashUser);
-      }
+    // Clean up any URL hash that might be present
+    if (window.location.hash) {
+      console.log('🔍 Cleaning up URL hash on mount:', window.location.hash);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     
     // Give a brief moment for storage to be checked and state to settle
@@ -133,46 +123,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('🔍 AuthProvider login called with:', email);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-    console.log('🔍 Available users:', users.map(u => u.email));
-    const foundUser = users.find((u: User) => u.email === email);
-    
-    // Simple password validation for demo (in real app, would hash and compare)
-    const isValidPassword = password === 'password';
-    console.log('🔍 Password valid:', isValidPassword);
-    
-    if (foundUser && isValidPassword) {
-      console.log('🔍 User found, setting auth state:', foundUser.email);
+    try {
+      // Use mock authentication for development
+      // Accept any password that matches the pattern (for demo purposes)
+      const mockUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
-      // Save to storage with multiple redundancy
-      storage.set(STORAGE_KEYS.CURRENT_USER, foundUser);
+      if (!mockUser) {
+        console.log('🔍 User not found in mock data');
+        return false;
+      }
       
-      // Force immediate reload from storage to ensure it's working
-      const savedCheck = storage.get(STORAGE_KEYS.CURRENT_USER);
-      console.log('🔍 Verification - user saved to storage:', savedCheck?.email);
+      console.log('🔍 Mock login successful:', mockUser.email);
       
-      // Set state and trigger re-render
-      console.log('🔍 Setting user state to trigger re-render...');
-      setUser(foundUser);
-      const userTenant = mockTenants.find(t => t.id === foundUser.tenantId);
-      setTenant(userTenant || null);
+      const loggedInUser: User = {
+        id: mockUser.id,
+        email: mockUser.email,
+        name: mockUser.name,
+        role: mockUser.role,
+        tenantId: mockUser.tenantId,
+        xp: mockUser.xp,
+        level: mockUser.level,
+        badges: mockUser.badges,
+        walletBalance: mockUser.walletBalance,
+        createdAt: mockUser.createdAt
+      };
       
-      // Ensure initialization is complete
+      // Save to storage
+      storage.set(STORAGE_KEYS.CURRENT_USER, loggedInUser);
+      
+      // Set state
+      setUser(loggedInUser);
+      
+      // Find tenant from mock data
+      const userTenant = mockTenants.find(t => t.id === loggedInUser.tenantId);
+      setTenant(userTenant || {
+        id: loggedInUser.tenantId,
+        name: 'Default Church',
+        planId: 'enterprise',
+        primaryColor: '#3b82f6',
+        maxUsers: 1000,
+        maxTournaments: 100,
+        paymentIntegrationEnabled: true,
+        createdAt: new Date().toISOString()
+      });
+      
       setIsInitializing(false);
       
-      // Force a small delay to ensure state propagates
-      setTimeout(() => {
-        console.log('🔍 Login state set, user should be authenticated. isAuthenticated should be:', !!foundUser);
-        console.log('🔍 Current user in state:', foundUser.email);
-      }, 50);
-      
+      console.log('🔍 Login successful, user state set');
       return true;
+    } catch (error: any) {
+      console.error('🔍 Login error:', error.response?.data || error.message);
+      return false;
     }
-    console.log('🔍 Login failed - user not found or invalid password');
-    return false;
   };
 
   const register = async (userData: RegisterData): Promise<boolean> => {
@@ -190,13 +193,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `user_${Date.now()}`,
       email: userData.email,
       name: userData.name,
-      role: userData.role,
+      role: 'inspector', // Always start as inspector
       tenantId: userData.tenantId,
       xp: 0,
       level: 1,
       badges: [],
       walletBalance: 0,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      practiceAccessStatus: 'none', // No practice access yet
+      qualificationStatus: 'not_qualified' // Not qualified for tournaments
     };
 
     users.push(newUser);
@@ -211,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    apiClient.logout().catch(err => console.error('Logout error:', err));
     setUser(null);
     setTenant(null);
     storage.remove(STORAGE_KEYS.CURRENT_USER);
@@ -247,7 +253,11 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
   const { login, register, user } = useAuth();
+  
+  // Get custom field labels for selected tenant
+  const fieldLabels = getFieldLabels(selectedTenantId || undefined);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     console.log('🔍 FORM SUBMISSION STARTED!');
@@ -288,11 +298,12 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
         
       } else {
         console.log('🔍 Login failed - invalid credentials');
-        setError('Invalid credentials. Try: admin@church.com / password');
+        setError('Invalid credentials. Try: admin@church.com (any password)');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('🔍 Login error:', err);
-      setError('Login failed. Please try again.');
+      setError('Login error. Try: admin@church.com (any password)');
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       console.log('🔍 Setting loading to false...');
       setIsLoading(false);
@@ -313,7 +324,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
         password: formData.get('password') as string,
         name: formData.get('name') as string,
         tenantId: formData.get('tenantId') as string,
-        role: formData.get('role') as 'org_admin' | 'participant' | 'spectator'
+        role: formData.get('role') as 'org_admin' | 'participant'
       };
       
       console.log('🔍 Registration data:', userData);
@@ -368,7 +379,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                     name="email"
                     type="email"
                     placeholder="Enter your email"
-                    defaultValue="admin@church.com"
+                    defaultValue="admin@demo.local"
                     autoComplete="email"
                     required
                   />
@@ -381,7 +392,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                     name="password"
                     type="password"
                     placeholder="Enter your password"
-                    defaultValue="password"
+                    defaultValue="password123"
                     autoComplete="current-password"
                     required
                   />
@@ -525,10 +536,14 @@ Check browser console (F12) for detailed debug info.`;
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="tenantId">Organization</Label>
-                  <Select name="tenantId" required>
+                  <Label htmlFor="tenantId">{fieldLabels.parishSingular}</Label>
+                  <Select 
+                    name="tenantId" 
+                    required
+                    onValueChange={(value) => setSelectedTenantId(value)}
+                  >
                     <SelectTrigger id="tenantId">
-                      <SelectValue placeholder="Select your organization" />
+                      <SelectValue placeholder={`Select your ${fieldLabels.parishSingular.toLowerCase()}`} />
                     </SelectTrigger>
                     <SelectContent>
                       {mockTenants.map(tenant => {
@@ -546,19 +561,13 @@ Check browser console (F12) for detailed debug info.`;
                   </Select>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select name="role" required>
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="participant">Participant</SelectItem>
-                      <SelectItem value="spectator">Spectator</SelectItem>
-                      <SelectItem value="org_admin">Organization Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertDescription className="text-sm text-blue-800">
+                    <strong>New users start as Inspectors.</strong><br/>
+                    After registration, you can apply for Practice Mode access to train for tournaments.
+                    Once qualified, you'll be approved to participate in championships.
+                  </AlertDescription>
+                </Alert>
                 
                 {error && (
                   <Alert variant="destructive">

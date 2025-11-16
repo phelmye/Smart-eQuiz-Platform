@@ -105,7 +105,7 @@ export const BillingSelection: React.FC<BillingSelectionProps> = ({
         className="w-full"
         variant={isUpgrade ? "default" : "secondary"}
       >
-        {isUpgrade ? 'Upgrade' : 'Downgrade'} to {plan.name}
+        {isUpgrade ? 'Upgrade' : 'Downgrade'} to {plan.displayName}
       </Button>
     );
   };
@@ -137,7 +137,7 @@ export const BillingSelection: React.FC<BillingSelectionProps> = ({
         {selectedBillingCycle === 'yearly' && (
           <Badge variant="secondary" className="ml-2">
             <TrendingUp className="h-3 w-3 mr-1" />
-            Save up to 25%
+            Save up to {Math.max(...availablePlans.map(p => p.yearlyDiscountPercent))}%
           </Badge>
         )}
       </div>
@@ -169,7 +169,7 @@ export const BillingSelection: React.FC<BillingSelectionProps> = ({
               )}
               
               <CardHeader className="text-center">
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
+                <CardTitle className="text-xl">{plan.displayName}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
                 
                 <div className="space-y-2">
@@ -240,7 +240,7 @@ export const BillingSelection: React.FC<BillingSelectionProps> = ({
             <div className="flex justify-between">
               <span>Plan:</span>
               <span className="font-medium">
-                {availablePlans.find(p => p.id === currentSubscription.planId)?.name}
+                {availablePlans.find(p => p.id === currentSubscription.planId)?.displayName}
               </span>
             </div>
             <div className="flex justify-between">

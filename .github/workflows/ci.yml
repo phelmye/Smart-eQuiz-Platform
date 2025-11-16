@@ -25,6 +25,10 @@ jobs:
           corepack enable
           corepack prepare pnpm@8.10.0 --activate
 
+      - name: Install pnpm globally (ensure pnpm executable available)
+        run: |
+          npm install -g pnpm@8.10.0
+
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:

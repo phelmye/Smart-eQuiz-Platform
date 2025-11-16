@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft } from 'lucide-react';
+import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft, Shield } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { AdminSidebar } from './AdminSidebar';
 import UserManagement from './UserManagement';
@@ -14,11 +15,14 @@ import TenantManagementForSuperAdmin from './TenantManagementForSuperAdmin';
 import { Analytics } from './Analytics';
 import PaymentManagementSimple from './PaymentManagementSimple';
 import { BrandingSettings } from './BrandingSettings';
+import { ThemeSettings } from './ThemeSettings';
 import { QuestionBank } from './QuestionBank';
 import { TournamentEngine } from './TournamentEngine';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import { TenantManagement } from './TenantManagement';
 import { SystemSettings } from './SystemSettings';
+import { CustomCategoryManager } from './CustomCategoryManager';
+import { TemplateLibrary } from './TemplateLibrary';
 import PlanManagement from './PlanManagement';
 import BillingSelection from './BillingSelection';
 import PaymentIntegrationManagement from './PaymentIntegrationManagement';
@@ -28,6 +32,20 @@ import QuestionCategoryManager from './QuestionCategoryManager';
 import AccessControl from './AccessControl';
 import ComponentAccessControl from './ComponentAccessControl';
 import AuditLogViewer from './AuditLogViewer';
+import TenantRoleCustomization from './TenantRoleCustomization';
+import TermsOfService from './TermsOfService';
+import PrivacyPolicy from './PrivacyPolicy';
+import SubscriptionCheckout from './SubscriptionCheckout';
+import TournamentCheckout from './TournamentCheckout';
+import FeatureGateModal from './FeatureGateModal';
+import OnboardingWizard from './OnboardingWizard';
+import NotificationCenter from './NotificationCenter';
+import EmailTemplateManager from './EmailTemplateManager';
+import HelpCenter from './HelpCenter';
+import SecurityCenter from './SecurityCenter';
+import SubscriptionManagement from './SubscriptionManagement';
+import TeamManagement from './TeamManagement';
+import ReportingExports from './ReportingExports';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
 
 interface DashboardProps {
@@ -38,7 +56,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user, tenant, logout } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentAction, setCurrentAction] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkoutData, setCheckoutData] = useState<any>(null);
   const [userStats, setUserStats] = useState({
     totalQuizzes: 0,
     averageScore: 0,
@@ -46,7 +67,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     currentStreak: 0
   });
 
-  const isAdmin = user?.role === 'org_admin' || user?.role === 'super_admin';
+  const isAdmin = user?.role?.toLowerCase() === 'org_admin' || user?.role?.toLowerCase() === 'super_admin';
 
   useEffect(() => {
     // Load tournaments
@@ -91,16 +112,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return AVAILABLE_BADGES.filter(badge => user.badges.includes(badge.name));
   };
 
-  const handleSidebarNavigate = (page: string) => {
+  const handleSidebarNavigate = (page: string, action?: string) => {
     if (['practice', 'tournament-builder', 'live-match'].includes(page)) {
       onNavigate(page);
     } else {
       setCurrentPage(page);
+      setCurrentAction(action);
     }
   };
 
   const handleBackToDashboard = () => {
     setCurrentPage('dashboard');
+    setCurrentAction(undefined);
   };
 
   const handleLoginAsTenant = (tenantId: string) => {
@@ -148,18 +171,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       'dashboard': 'Dashboard',
       'user-management': 'User Management',
       'role-management': 'Role Management',
+      'role-component-management': 'Component Features',
+      'access-control': 'Access Control',
       'tenant-management': 'Tenant Management',
       'audit-logs': 'Audit Logs',
       'analytics': 'Analytics', 
       'payments': 'Payments',
       'branding': 'Branding Settings',
       'question-bank': 'Question Bank',
+      'question-categories': 'Question Categories',
+      'custom-categories': 'Custom Categories',
+      'round-templates': 'Round Templates',
       'tournaments': 'Tournaments',
       'ai-generator': 'AI Generator',
       'system-settings': 'System Settings',
       'plan-management': 'Plan Management',
       'billing': 'Billing & Plans',
-      'payment-integration': 'Payment Integration'
+      'payment-integration': 'Payment Integration',
+      'security': 'Security',
+      'notifications': 'Notifications',
+      'help': 'Help & Support'
     };
 
     if (currentPage === 'dashboard') {
@@ -187,9 +218,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 user={user}
                 onLoginAs={handleLoginAsUser}
                 onLogoutFromUser={handleLogoutFromUser}
+                initialAction={currentAction}
               />
             ) : (
-              <UserManagement onBack={handleBackToDashboard} />
+              <UserManagement onBack={handleBackToDashboard} initialAction={currentAction} />
             )}
           </AccessControl>
         );
@@ -202,6 +234,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             fallbackMessage="Only organization administrators can manage user roles and permissions."
           >
             <RoleManagement user={user} />
+          </AccessControl>
+        );
+      case 'role-customization':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="role-customization"
+            requiredPermission="roles.manage"
+            fallbackMessage="Only organization administrators can customize role permissions."
+          >
+            <TenantRoleCustomization 
+              tenantId={tenant?.id || user.tenantId} 
+              currentUser={user}
+              onBack={handleBackToDashboard}
+            />
           </AccessControl>
         );
       case 'tenant-management':
@@ -262,6 +309,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <BrandingSettings onBack={handleBackToDashboard} />
           </AccessControl>
         );
+        
+      case 'theme-settings':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="theme-settings"
+            requiredPermission="branding.manage"
+            fallbackMessage="Only organization administrators can manage theme settings."
+          >
+            <ThemeSettings onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'question-bank':
         return (
           <AccessControl 
@@ -273,6 +332,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <QuestionBank 
               onBack={handleBackToDashboard} 
               onNavigateToCategories={() => setCurrentPage('question-categories')}
+              initialAction={currentAction}
             />
           </AccessControl>
         );
@@ -284,7 +344,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             requiredPermission="tournaments.read"
             fallbackMessage="You need tournament access permissions to view this page."
           >
-            <TournamentEngine onBack={handleBackToDashboard} />
+            <TournamentEngine onBack={handleBackToDashboard} initialAction={currentAction} />
           </AccessControl>
         );
       case 'ai-generator':
@@ -298,26 +358,113 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <AIQuestionGenerator onBack={handleBackToDashboard} />
           </AccessControl>
         );
+      case 'custom-categories':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="custom-categories"
+            requiredPermission="questions.read"
+            fallbackMessage="Custom Categories is an Enterprise feature. You need appropriate permissions."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <CustomCategoryManager 
+                tenantId={tenant?.id || ''} 
+                currentUser={user!}
+                onCategoryChange={() => {
+                  // Optional: Add notification or refresh logic
+                }}
+              />
+            </div>
+          </AccessControl>
+        );
+      case 'round-templates':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="round-templates"
+            requiredPermission="questions.read"
+            fallbackMessage="Round Templates is a Professional+ feature. You need appropriate permissions."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <TemplateLibrary 
+                tenantId={tenant?.id || ''} 
+                currentUser={user!}
+                onApplyTemplate={(configs) => {
+                  // Template applied - show notification
+                  console.log('Template applied:', configs);
+                }}
+              />
+            </div>
+          </AccessControl>
+        );
       case 'system-settings':
-        return <SystemSettings onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="system-settings"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can access system settings."
+          >
+            <SystemSettings onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'plan-management':
-        return <PlanManagement onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="plan-management"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage subscription plans."
+          >
+            <PlanManagement onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'billing':
-        return <BillingSelection 
-          availablePlans={defaultPlans}
-          currentSubscription={user?.tenantId ? mockBilling.find(b => b.tenantId === user.tenantId) : undefined}
-          onSelectPlan={(planId, billingCycle) => {
-            console.log('Selected plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-          onUpgrade={(planId, billingCycle) => {
-            console.log('Upgrading to plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-          onDowngrade={(planId, billingCycle) => {
-            console.log('Downgrading to plan:', planId, 'with billing cycle:', billingCycle);
-          }}
-        />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="billing"
+            requiredPermission="billing.read"
+            fallbackMessage="You need billing access permissions to view subscription plans."
+          >
+            <BillingSelection 
+              availablePlans={defaultPlans}
+              currentSubscription={user?.tenantId ? mockBilling.find(b => b.tenantId === user.tenantId) : undefined}
+              onSelectPlan={(planId, billingCycle) => {
+                console.log('Selected plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+              onUpgrade={(planId, billingCycle) => {
+                console.log('Upgrading to plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+              onDowngrade={(planId, billingCycle) => {
+                console.log('Downgrading to plan:', planId, 'with billing cycle:', billingCycle);
+              }}
+            />
+          </AccessControl>
+        );
       case 'payment-integration':
-        return <PaymentIntegrationManagement onBack={handleBackToDashboard} />;
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="payment-integration"
+            requiredPermission="billing.read"
+            fallbackMessage="You need billing management permissions to access payment integration settings."
+          >
+            <PaymentIntegrationManagement onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
       case 'role-component-management':
         return (
           <ComponentAccessControl
@@ -337,6 +484,234 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           >
             <QuestionCategoryManager user={user} onBack={handleBackToDashboard} />
           </ComponentAccessControl>
+        );
+      case 'access-control':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="access-control"
+            requiredPermission="users.read"
+            fallbackMessage="Only administrators can manage access control."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Access Control</CardTitle>
+                  <CardDescription>Manage user permissions and access rights for your organization</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="overview" className="w-full">
+                    <TabsList>
+                      <TabsTrigger value="overview">Overview</TabsTrigger>
+                      <TabsTrigger value="roles">Role Permissions</TabsTrigger>
+                      <TabsTrigger value="components">Component Features</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="overview" className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Total Roles</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">7</div>
+                            <p className="text-xs text-muted-foreground">Active role configurations</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Components</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">8</div>
+                            <p className="text-xs text-muted-foreground">Protected components</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium">Features</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="text-2xl font-bold">45+</div>
+                            <p className="text-xs text-muted-foreground">Granular permissions</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <Alert>
+                        <Shield className="h-4 w-4" />
+                        <AlertDescription>
+                          Use <strong>Role Management</strong> to configure permissions or <strong>Component Features</strong> to manage feature access. Changes apply immediately to all users with the affected roles.
+                        </AlertDescription>
+                      </Alert>
+                    </TabsContent>
+                    <TabsContent value="roles">
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Configure role permissions</p>
+                        <Button onClick={() => setCurrentPage('role-management')}>
+                          Go to Role Management
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="components">
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground mb-4">Manage component-level features</p>
+                        <Button onClick={() => setCurrentPage('role-component-management')}>
+                          Go to Component Features
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+          </AccessControl>
+        );
+      case 'security':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="security"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage security settings."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Settings</CardTitle>
+                  <CardDescription>Configure security and authentication settings</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Security settings interface coming soon...</p>
+                </CardContent>
+              </Card>
+            </div>
+          </AccessControl>
+        );
+      case 'onboarding':
+        return (
+          <div className="p-6">
+            <OnboardingWizard 
+              user={user}
+              tenant={tenant}
+              onComplete={() => {
+                setShowOnboarding(false);
+                setCurrentPage('dashboard');
+              }}
+              onSkip={() => {
+                setShowOnboarding(false);
+                setCurrentPage('dashboard');
+              }}
+            />
+          </div>
+        );
+      case 'notifications':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <NotificationCenter />
+          </div>
+        );
+      case 'email-templates':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="email-templates"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only administrators can manage email templates."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <EmailTemplateManager />
+            </div>
+          </AccessControl>
+        );
+      case 'help':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <HelpCenter />
+          </div>
+        );
+      case 'terms':
+        return (
+          <TermsOfService onBack={handleBackToDashboard} />
+        );
+      case 'privacy':
+        return (
+          <PrivacyPolicy onBack={handleBackToDashboard} />
+        );
+      case 'subscription-checkout':
+        return (
+          <SubscriptionCheckout 
+            selectedPlanId={currentAction || 'plan-starter'}
+            billingCycle="monthly"
+            onBack={handleBackToDashboard}
+            onSuccess={handleBackToDashboard}
+          />
+        );
+      case 'tournament-checkout':
+        return (
+          <TournamentCheckout 
+            tournamentId="tournament-1"
+            tournamentName="Spring Championship 2025"
+            entryFee={25}
+            startDate={new Date().toISOString()}
+            maxParticipants={100}
+            currentParticipants={67}
+            onBack={handleBackToDashboard}
+            onSuccess={() => handleBackToDashboard()}
+          />
+        );
+      case 'subscription-management':
+        return (
+          <SubscriptionManagement 
+            user={user}
+            tenant={tenant}
+            onNavigate={handleSidebarNavigate}
+            onBack={handleBackToDashboard}
+          />
+        );
+      case 'team-management':
+        return (
+          <TeamManagement 
+            user={user}
+            tenant={tenant}
+            onBack={handleBackToDashboard}
+          />
+        );
+      case 'reporting-exports':
+        return (
+          <ReportingExports 
+            user={user}
+            tenant={tenant}
+            onBack={handleBackToDashboard}
+          />
         );
       default:
         return null;
@@ -425,9 +800,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               {/* Right Section - User Info */}
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-gray-600">
-                  <span className="font-medium">{user.name}</span>
+                  <span className="font-medium">{user.name || user.email}</span>
                   <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                    {user.role.replace('_', ' ').toUpperCase()}
+                    {user.role?.replace('_', ' ').toUpperCase() || 'USER'}
                   </span>
                 </div>
               </div>
@@ -510,16 +885,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Coins className="h-4 w-4 text-yellow-600" />
-                  <span className="font-medium">${user.walletBalance.toFixed(2)}</span>
+                  <span className="font-medium">${(user.walletBalance || 0).toFixed(2)}</span>
                 </div>
                 
                 <Avatar>
-                  <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  <AvatarFallback>{user.name?.split(' ').map(n => n[0]).join('') || user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 
                 <div className="text-sm">
-                  <p className="font-medium">{user.name}</p>
-                  <p className="text-gray-500 capitalize">{user.role.replace('_', ' ')}</p>
+                  <p className="font-medium">{user.name || user.email}</p>
+                  <p className="text-gray-500 capitalize">{user.role?.replace('_', ' ') || 'User'}</p>
                 </div>
                 
                 <Button variant="ghost" size="sm" onClick={logout}>
@@ -768,7 +1143,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm text-gray-600">Name</p>
-                            <p className="font-medium">{user.name}</p>
+                            <p className="font-medium">{user.name || user.email}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Email</p>
@@ -776,11 +1151,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Role</p>
-                            <p className="font-medium capitalize">{user.role.replace('_', ' ')}</p>
+                            <p className="font-medium capitalize">{user.role?.replace('_', ' ') || 'User'}</p>
                           </div>
                           <div>
                             <p className="text-sm text-gray-600">Organization</p>
-                            <p className="font-medium">{tenant?.name}</p>
+                            <p className="font-medium">{tenant?.name || 'Default'}</p>
                           </div>
                         </div>
                       </CardContent>

@@ -7,20 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, User, Tenant, UserRole, mockUsers, getAvailableRolesForTenant, canCreateMoreUsers, defaultPlans, hasPermission, getAssignableRoles, canAssignRole, logAuditEvent } from '@/lib/mockData';
 
 interface UserManagementProps {
   onBack: () => void;
+  initialAction?: string;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
-  const { user: currentUser, tenant } = useAuth();
+const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }) => {
+  const { user: currentUser, tenant, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'add');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
@@ -336,10 +337,16 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
               </div>
             </div>
 
-            <Button onClick={() => openCreateDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => openCreateDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Plan Information for org_admin */}
@@ -404,7 +411,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack }) => {
                   <SelectItem value="account_officer">Account Officer</SelectItem>
                   <SelectItem value="inspector">Quiz Inspector</SelectItem>
                   <SelectItem value="org_admin">Organization Admin</SelectItem>
-                  {currentUser.role === 'super_admin' && (
+                  {currentUser.role?.toLowerCase() === 'super_admin' && (
                     <SelectItem value="super_admin">Super Admin</SelectItem>
                   )}
                 </SelectContent>

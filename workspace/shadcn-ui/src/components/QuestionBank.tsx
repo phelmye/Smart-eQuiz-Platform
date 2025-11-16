@@ -10,13 +10,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 
 interface QuestionBankProps {
   onBack: () => void;
   onNavigateToCategories?: () => void;
+  initialAction?: string;
 }
 
 interface Question {
@@ -62,11 +63,11 @@ const BIBLE_CATEGORIES = [
   'Revelation'
 ];
 
-export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories }) => {
-  const { user } = useAuth();
+export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories, initialAction }) => {
+  const { user, logout } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(initialAction === 'add');
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [previewQuestion, setPreviewQuestion] = useState<Question | null>(null);
@@ -377,7 +378,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
     const activeQuestions = questions.filter(q => q.isActive).length;
     const categories = [...new Set(questions.map(q => q.category))].length;
     const averageUsage = questions.length > 0 
-      ? Math.round(questions.reduce((sum, q) => sum + q.usageCount, 0) / questions.length)
+      ? Math.round(questions.reduce((sum, q) => sum + (q.usageCount || 0), 0) / questions.length)
       : 0;
     
     return { totalQuestions, activeQuestions, categories, averageUsage };
@@ -385,7 +386,7 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const stats = getQuestionStats();
 
-  if (!user || !['org_admin', 'super_admin'].includes(user.role)) {
+  if (!user || !hasPermission(user, 'questions.read')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
@@ -414,21 +415,27 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
                 <p className="text-gray-600">Manage quiz questions and categories</p>
               </div>
             </div>
-            {onNavigateToCategories && (
-              <Button variant="outline" onClick={onNavigateToCategories}>
-                <BookOpen className="h-4 w-4 mr-2" />
-                Manage Categories
+            <div className="flex items-center gap-2">
+              {onNavigateToCategories && (
+                <Button variant="outline" onClick={onNavigateToCategories}>
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Manage Categories
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
               </Button>
-            )}
+            </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
+                <div className="flex items-center space-x-4">
                   <BookOpen className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
+                  <div>
                     <p className="text-2xl font-bold">{stats.totalQuestions}</p>
                     <p className="text-sm text-gray-600">Total Questions</p>
                   </div>
@@ -438,11 +445,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold">{stats.activeQuestions}</p>
-                    <p className="text-sm text-gray-600">Active Questions</p>
+                <div className="flex items-center space-x-4">
+                  <AlertCircle className="h-8 w-8 text-gray-400" />
+                  <div>
+                    <p className="text-2xl font-bold">{stats.inactiveQuestions}</p>
+                    <p className="text-sm text-gray-600">Inactive</p>
                   </div>
                 </div>
               </CardContent>
@@ -450,9 +457,9 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Filter className="h-8 w-8 text-purple-600" />
-                  <div className="ml-4">
+                <div className="flex items-center space-x-4">
+                  <BookOpen className="h-8 w-8 text-purple-600" />
+                  <div>
                     <p className="text-2xl font-bold">{stats.categories}</p>
                     <p className="text-sm text-gray-600">Categories</p>
                   </div>

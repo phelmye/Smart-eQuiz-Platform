@@ -16,13 +16,30 @@ export class AuthController {
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) return { error: 'invalid_credentials' };
     const tokens = await this.authService.login(user);
+    
+    // Fetch full user details for response
+    const fullUser = await this.authService.getUserById(user.id);
+    
     // set refresh token as httpOnly cookie
     res.cookie('refresh_token', tokens.refresh_token, { httpOnly: true, sameSite: 'lax' });
+    
+    // Return user info along with access token
+    const userResponse = {
+      id: fullUser.id,
+      email: fullUser.email,
+      username: fullUser.email.split('@')[0], // Use email prefix as username
+      role: fullUser.role,
+      tenantId: null, // Will need to fetch from UserTenant relation if needed
+      totalXp: 0, // XP is tracked in PracticeProgress, not User model
+      currentLevel: 1, // Level calculated from practice progress
+      createdAt: fullUser.createdAt,
+    };
+    
     // Return refresh token in body only when explicitly enabled for dev/test flows
     if (process.env.RETURN_REFRESH_IN_BODY === 'true') {
-      return { access_token: tokens.access_token, refresh_token: tokens.refresh_token };
+      return { access_token: tokens.access_token, refresh_token: tokens.refresh_token, user: userResponse };
     }
-    return { access_token: tokens.access_token };
+    return { access_token: tokens.access_token, user: userResponse };
   }
 
   @Post('refresh')
