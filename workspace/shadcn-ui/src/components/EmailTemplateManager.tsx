@@ -65,7 +65,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <p><strong>Tournament Details:</strong></p>
       <ul>
         <li>Start Date: {{startDate}}</li>
-        <li>Entry Fee: ` + '$' + `{{entryFee}}</li>
+        <li>Entry Fee: {{entryFee}}</li>
         <li>Participants: {{participantCount}}</li>
       </ul>
       <a href="{{tournamentUrl}}">Register Now</a>
@@ -86,7 +86,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <p>Thank you for your payment!</p>
       <p><strong>Payment Details:</strong></p>
       <ul>
-        <li>Amount: \${{amount}}</li>
+        <li>Amount: {{amount}}</li>
         <li>Date: {{paymentDate}}</li>
         <li>Transaction ID: {{transactionId}}</li>
         <li>Payment Method: {{paymentMethod}}</li>
@@ -113,7 +113,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
         <li>Plan: {{planName}}</li>
         <li>Billing: {{billingCycle}}</li>
         <li>Next billing date: {{nextBillingDate}}</li>
-        <li>Amount: ` + '$' + `{{amount}}</li>
+        <li>Amount: {{amount}}</li>
       </ul>
       <p>You now have access to all premium features!</p>
       <a href="{{dashboardUrl}}">Explore Features</a>
@@ -206,10 +206,10 @@ export const EmailTemplateManager: React.FC = () => {
       supportEmail: 'support@example.com',
       tournamentName: 'Spring Championship 2025',
       startDate: 'March 15, 2025',
-      entryFee: '25.00',
+      entryFee: '$25.00',
       participantCount: '50',
       tournamentUrl: 'https://example.com/tournament/123',
-      amount: '99.00',
+      amount: '$99.00',
       paymentDate: 'November 16, 2025',
       transactionId: 'TXN-123456',
       paymentMethod: 'Credit Card',
