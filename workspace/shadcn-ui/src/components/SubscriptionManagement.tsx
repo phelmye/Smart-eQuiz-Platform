@@ -97,9 +97,9 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
 
     // Load usage metrics (mock data)
     setUsageMetrics({
-      tournaments: { used: 23, limit: plan?.features.maxTournaments || 0 },
-      users: { used: 147, limit: plan?.features.maxParticipants || 0 },
-      questions: { used: 1250, limit: plan?.features.maxQuestions || 0 },
+      tournaments: { used: 23, limit: plan?.maxTournaments || 0 },
+      users: { used: 147, limit: plan?.maxUsers || 0 },
+      questions: { used: 1250, limit: plan?.maxQuestionsPerTournament || 0 },
       storage: { used: 2.3, limit: 10 } // GB
     });
 
@@ -430,9 +430,9 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                       .map(plan => (
                         <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
                           <div>
-                            <h4 className="font-semibold">{plan.name}</h4>
+                            <h4 className="font-semibold">{plan.displayName}</h4>
                             <p className="text-sm text-gray-600">
-                              {formatCurrency(plan.pricing.monthly)}/month
+                              {formatCurrency(plan.monthlyPrice)}/month
                             </p>
                           </div>
                           <Button 
@@ -440,7 +440,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                             variant="outline"
                             onClick={() => handleUpgrade(plan.id)}
                           >
-                            {plan.pricing.monthly > (currentPlan?.pricing.monthly || 0) ? 'Upgrade' : 'Switch'}
+                            {plan.monthlyPrice > (currentPlan?.monthlyPrice || 0) ? 'Upgrade' : 'Switch'}
                           </Button>
                         </div>
                       ))}
