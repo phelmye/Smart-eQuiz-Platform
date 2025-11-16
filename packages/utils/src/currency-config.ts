@@ -4,6 +4,8 @@
  * Add your exchangerate-api.io API key to your environment variables
  */
 
+/// <reference path="./env.d.ts" />
+
 // For Next.js (apps/marketing-site/.env.local)
 // NEXT_PUBLIC_EXCHANGERATE_API_KEY=your_api_key_here
 
@@ -19,21 +21,16 @@
  */
 export function getExchangeRateApiKey(): string {
   // Next.js environment
-  // @ts-ignore - process.env is available in Node.js
   if (typeof process !== 'undefined' && process.env) {
-    // @ts-ignore
     const nextKey = process.env.NEXT_PUBLIC_EXCHANGERATE_API_KEY;
     if (nextKey) return nextKey;
 
-    // @ts-ignore
     const serverKey = process.env.EXCHANGERATE_API_KEY;
     if (serverKey) return serverKey;
   }
 
   // Vite environment (client-side)
-  // @ts-ignore - import.meta.env is available in Vite
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    // @ts-ignore
     const viteKey = import.meta.env.VITE_EXCHANGERATE_API_KEY;
     if (viteKey) return viteKey;
   }
