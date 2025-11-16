@@ -1,356 +1,100 @@
-# Tenant Application - Smart eQuiz
+# Shadcn-UI Template Usage Instructions
 
-Multi-tenant quiz platform where each organization runs their own isolated instance.
+## technology stack
 
-## 🎯 Purpose
+This project is built with:
 
-Complete quiz tournament platform for individual tenants (churches/organizations):
-- Tournament management
-- Question bank
-- User management (team + participants)
-- Practice mode
-- Live competitions
-- Billing & payments
-- Custom branding
-- Mobile app API
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-## 🌐 Multi-Tenancy
+All shadcn/ui components have been downloaded under `@/components/ui`.
 
-Each tenant is completely isolated:
-- **Subdomain:** `{tenant}.smartequiz.com`
-- **Custom Domain:** `quiz.firstbaptist.org` (optional)
-- **Data Isolation:** All queries filtered by `tenant_id`
-- **Independent Billing:** Each tenant manages their own payments
+## File Structure
 
-## 🚀 Tech Stack
+- `index.html` - HTML entry point
+- `vite.config.ts` - Vite configuration file
+- `tailwind.config.js` - Tailwind CSS configuration file
+- `package.json` - NPM dependencies and scripts
+- `src/app.tsx` - Root component of the project
+- `src/main.tsx` - Project entry point
+- `src/index.css` - Existing CSS configuration
+- `src/pages/Index.tsx` - Home page logic
 
-- **Framework:** React 18+ with Vite
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **UI Components:** shadcn/ui
-- **State Management:** React Context + hooks
-- **Real-time:** WebSockets for live tournaments
+## Components
 
-## 📦 Project Structure
+- All shadcn/ui components are pre-downloaded and available at `@/components/ui`
 
-```
-tenant-app/
-├── src/
-│   ├── middleware/
-│   │   └── tenantDetection.ts      # Detect tenant from subdomain
-│   ├── components/
-│   │   ├── Dashboard.tsx            # Tenant dashboard
-│   │   ├── TournamentBuilder.tsx    # Create tournaments
-│   │   ├── TournamentEngine.tsx     # Run live tournaments
-│   │   ├── QuestionBank.tsx         # Manage questions
-│   │   ├── UserManagement.tsx       # Team + participants
-│   │   ├── PracticeMode.tsx         # Training mode
-│   │   ├── Analytics.tsx            # Tenant analytics
-│   │   ├── BrandingSettings.tsx     # Logo, colors
-│   │   ├── PaymentManagement.tsx    # Billing
-│   │   └── ui/                      # shadcn/ui components
-│   ├── contexts/
-│   │   ├── TenantContext.tsx        # Current tenant data
-│   │   └── AuthContext.tsx          # Tenant-specific auth
-│   ├── lib/
-│   │   ├── api.ts                   # API client with tenant context
-│   │   ├── tenantUtils.ts           # Tenant helpers
-│   │   └── mockData.ts              # Mock data (filtered by tenant)
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-├── public/
-├── .env.example
-├── vite.config.ts
-└── package.json
+## Styling
+
+- Add global styles to `src/index.css` or create new CSS files as needed
+- Use Tailwind classes for styling components
+
+## Development
+
+- Import components from `@/components/ui` in your React components
+- Customize the UI by modifying the Tailwind configuration
+
+## Note
+
+- The `@/` path alias points to the `src/` directory
+- In your typescript code, don't re-export types that you're already importing
+
+# Commands
+
+**Install Dependencies**
+
+```shell
+pnpm i
 ```
 
-## 🔧 Setup Instructions
+**Add Dependencies**
 
-### Installation
+```shell
+pnpm add some_new_dependency
 
-```bash
-# Navigate to tenant-app directory
-cd apps/tenant-app
+**Start Preview**
 
-# Install dependencies
-pnpm install
-
-# Copy environment variables
-cp .env.example .env.local
-
-# Start development server
-pnpm dev
+```shell
+pnpm run dev
 ```
 
-### Environment Variables
+**To build**
 
-```bash
-# .env.local
-VITE_API_URL=http://localhost:4000/api
-VITE_APP_TYPE=tenant
-VITE_ENABLE_SUBDOMAIN_DETECTION=true
-
-# For local testing with subdomains
-VITE_DEV_TENANT=firstbaptist  # Override tenant for localhost
-
-# Production
-VITE_API_URL=https://api.smartequiz.com
-VITE_APP_TYPE=tenant
-VITE_ENABLE_SUBDOMAIN_DETECTION=true
+```shell
+pnpm run build
 ```
 
-## 🏢 Tenant Detection
+## Supabase (optional)
 
-### Subdomain Detection
+This project can connect to a Supabase Postgres backend for auth, storage and database features. A quick setup:
 
-```typescript
-// middleware/tenantDetection.ts
-export async function detectTenant(): Promise<Tenant | null> {
-  const hostname = window.location.hostname;
-  
-  // Local development override
-  if (hostname === 'localhost' || hostname.includes('127.0.0.1')) {
-    const devTenant = import.meta.env.VITE_DEV_TENANT;
-    if (devTenant) {
-      return await fetchTenantBySubdomain(devTenant);
-    }
-  }
-  
-  // Remove port and parse domain
-  const domain = hostname.split(':')[0];
-  
-  // Check if custom domain
-  let tenant = await fetchTenantByCustomDomain(domain);
-  
-  // Fallback to subdomain
-  if (!tenant) {
-    const subdomain = domain.split('.')[0];
-    tenant = await fetchTenantBySubdomain(subdomain);
-  }
-  
-  if (!tenant) {
-    throw new Error('Tenant not found');
-  }
-  
-  return tenant;
-}
+1. Create a Supabase project at https://app.supabase.com and create your tables.
+2. Copy `.env.example` to `.env` and fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+3. Add the same env vars to your Vercel project (Vite expects VITE_ prefixed variables for client-side access).
+4. Use the client exported from `src/lib/supabaseClient.ts` anywhere in the app.
+
+Example usage:
+
+```ts
+import { supabase } from '@/lib/supabaseClient';
+
+const { data, error } = await supabase.from('tournaments').select('*');
 ```
+Seeding and schema
+------------------
 
-### TenantContext Provider
+1. Run the SQL schema in `db/supabase_schema.sql` from the Supabase SQL editor to create the initial tables.
+2. If you want to seed demo data from the server, deploy the serverless function `api/seed-supabase.ts` (Vercel) and set the following server envs:
 
-```typescript
-// contexts/TenantContext.tsx
-export const TenantProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [tenant, setTenant] = useState<Tenant | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    detectTenant()
-      .then(setTenant)
-      .catch(error => {
-        console.error('Tenant detection failed:', error);
-        // Redirect to marketing site or show error
-        window.location.href = 'https://www.smartequiz.com';
-      })
-      .finally(() => setLoading(false));
-  }, []);
-  
-  return (
-    <TenantContext.Provider value={{ tenant, loading }}>
-      {loading ? <LoadingScreen /> : children}
-    </TenantContext.Provider>
-  );
-};
-```
+	- `SUPABASE_URL` (same as VITE_SUPABASE_URL)
+	- `SUPABASE_SERVICE_ROLE` (service role key — keep this secret)
 
-## 🔐 Authentication
+	Then call the endpoint `/api/seed-supabase` once to insert demo records.
 
-### Tenant-Specific Login
+Security note: never commit `SUPABASE_SERVICE_ROLE` to source or store it in client envs. Use the hosting provider's secret environment variables for server-only keys.
 
-```typescript
-// No tenant selection - tenant is determined by subdomain
-async function login(email: string, password: string) {
-  const tenant = useTenant(); // From TenantContext
-  
-  const response = await api.post('/auth/login', {
-    email,
-    password,
-    tenantId: tenant.id  // Included automatically
-  });
-  
-  // JWT contains tenant_id
-  const token = response.data.token;
-  localStorage.setItem('auth_token', token);
-}
-```
+Security note: never commit service_role keys or expose them to the browser. Use serverless functions for privileged operations.
 
-### User Roles (Tenant-Level)
-
-```typescript
-type TenantRole = 
-  | 'org_admin'         // Full access to tenant
-  | 'question_manager'  // Manage questions
-  | 'account_officer'   // Billing & payments
-  | 'inspector'         // Monitor tournaments
-  | 'moderator'         // Manage participants
-  | 'participant'       // Compete in tournaments
-  | 'spectator';        // View only
-```
-
-## 📱 Mobile App Integration
-
-### API Endpoints for Mobile
-
-```typescript
-// Mobile app makes requests with tenant context
-GET    /api/v1/tournaments       # Tenant's tournaments
-GET    /api/v1/questions         # Tenant's questions
-POST   /api/v1/practice/session  # Start practice
-GET    /api/v1/leaderboard       # Tenant leaderboard
-
-// All endpoints automatically filtered by tenant_id from JWT
-```
-
-### White-Label Configuration
-
-```typescript
-// Mobile app config fetched on launch
-GET /api/v1/tenant/config
-
-Response:
-{
-  "tenantId": "tenant_firstbaptist",
-  "name": "First Baptist Church",
-  "branding": {
-    "logoUrl": "https://cdn.smartequiz.com/tenants/firstbaptist/logo.png",
-    "primaryColor": "#2563eb",
-    "accentColor": "#10b981"
-  },
-  "features": {
-    "practiceMode": true,
-    "tournaments": true,
-    "leaderboard": true
-  }
-}
-```
-
-## 🎨 Custom Branding
-
-### Branding Settings
-
-```typescript
-interface TenantBranding {
-  logoUrl?: string;
-  primaryColor: string;    // Hex color
-  accentColor?: string;
-  fontFamily?: string;
-  customCSS?: string;      // Advanced customization
-}
-
-// Applied dynamically
-function applyBranding(branding: TenantBranding) {
-  document.documentElement.style.setProperty('--primary', branding.primaryColor);
-  if (branding.accentColor) {
-    document.documentElement.style.setProperty('--accent', branding.accentColor);
-  }
-}
-```
-
-## 📊 Data Isolation
-
-### Automatic Tenant Filtering
-
-```typescript
-// API client middleware
-api.interceptors.request.use(config => {
-  const tenant = getTenantFromContext();
-  
-  // Add tenant_id to all requests
-  config.headers['X-Tenant-Id'] = tenant.id;
-  
-  return config;
-});
-
-// Backend ensures all queries include tenant_id
-// Example: SELECT * FROM tournaments WHERE tenant_id = ?
-```
-
-### Storage Isolation
-
-```typescript
-// LocalStorage with tenant prefix
-function storageKey(key: string): string {
-  const tenant = useTenant();
-  return `${tenant.id}:${key}`;
-}
-
-// Usage
-localStorage.setItem(storageKey('user_prefs'), JSON.stringify(prefs));
-```
-
-## 🚀 Deployment
-
-### Vercel with Wildcard Domain
-
-```bash
-# Build command
-pnpm build
-
-# Output directory
-dist
-
-# Custom domains in Vercel dashboard
-*.smartequiz.com → tenant-app deployment
-
-# Tenant-specific custom domains
-quiz.firstbaptist.org → tenant-app (routed by subdomain detection)
-```
-
-### Environment Variables (Production)
-
-```
-VITE_API_URL=https://api.smartequiz.com
-VITE_APP_TYPE=tenant
-VITE_ENABLE_SUBDOMAIN_DETECTION=true
-```
-
-## 🔧 Migration from Current Codebase
-
-### What Changes
-
-1. **Remove Tenant Selection**
-   - Delete tenant dropdown from login/registration
-   - Remove "Select Organization" UI
-   - Tenant determined by subdomain automatically
-
-2. **Add Tenant Detection**
-   - Implement subdomain parsing
-   - Add TenantContext provider
-   - Handle custom domain mapping
-
-3. **Update API Calls**
-   - All requests include tenant context
-   - Filter mockData by tenant_id
-   - Prevent cross-tenant data access
-
-4. **Refactor AuthSystem**
-   - Remove tenant selection from registration
-   - Users invited by tenant admin
-   - Or public registration (if enabled)
-
-### What Stays the Same
-
-- All existing components (Dashboard, TournamentBuilder, etc.)
-- UI/UX design
-- Business logic
-- Database schema (with tenant_id filtering)
-
-## 📚 Documentation
-
-See main [ARCHITECTURE.md](../../ARCHITECTURE.md) for overall system architecture.
-
----
-
-**Maintained By:** Smart eQuiz Platform Team  
-**Last Updated:** November 16, 2025
