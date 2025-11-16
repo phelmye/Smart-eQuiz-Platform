@@ -167,7 +167,7 @@ function CurrencySelector() {
   const supportedCurrencies = getSupportedCurrencies();
 
   return {
-    currencies: supportedCurrencies.map(code => ({
+    currencies: supportedCurrencies.map((code: CurrencyCode) => ({
       code,
       name: getCurrencyName(code),
       symbol: getCurrencySymbol(code)

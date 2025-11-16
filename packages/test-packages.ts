@@ -96,24 +96,23 @@ console.log('\n\n📝 Testing Type Definitions\n');
 
 const testTenant: Tenant = {
   id: 'tenant_123',
-  organizationName: 'First Baptist Church',
+  name: 'First Baptist Church',
   subdomain: 'firstbaptist',
   customDomain: 'quiz.firstbaptist.org',
   customDomainVerified: true,
   planId: 'plan_professional',
   status: 'active',
-  logo: null,
   primaryColor: '#1E40AF',
+  sslEnabled: true,
+  paymentIntegrationEnabled: true,
   maxUsers: 100,
   maxTournaments: 50,
   createdAt: '2025-01-01T00:00:00Z',
-  updatedAt: '2025-11-16T00:00:00Z',
-  contactEmail: 'admin@firstbaptist.org',
-  contactName: 'John Doe'
+  updatedAt: '2025-11-16T00:00:00Z'
 };
 
 console.log('✅ Tenant type definition works');
-console.log(`   Organization: ${testTenant.organizationName}`);
+console.log(`   Organization: ${testTenant.name}`);
 console.log(`   Subdomain: ${testTenant.subdomain}.smartequiz.com`);
 console.log(`   Custom Domain: ${testTenant.customDomain}`);
 

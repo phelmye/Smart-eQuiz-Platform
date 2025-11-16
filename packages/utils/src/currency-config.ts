@@ -19,10 +19,13 @@
  */
 export function getExchangeRateApiKey(): string {
   // Next.js environment
+  // @ts-ignore - process.env is available in Node.js
   if (typeof process !== 'undefined' && process.env) {
+    // @ts-ignore
     const nextKey = process.env.NEXT_PUBLIC_EXCHANGERATE_API_KEY;
     if (nextKey) return nextKey;
 
+    // @ts-ignore
     const serverKey = process.env.EXCHANGERATE_API_KEY;
     if (serverKey) return serverKey;
   }

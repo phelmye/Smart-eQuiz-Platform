@@ -37,13 +37,13 @@ jobs:
         working-directory: workspace/shadcn-ui
 
       - name: Deploy to Vercel
-        if: secrets.VERCEL_TOKEN != ''
+        if: ${{ secrets.VERCEL_TOKEN != '' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: npx vercel --prod --token $VERCEL_TOKEN --cwd workspace/shadcn-ui --confirm
 
       - name: Fail if no VERCEL_TOKEN
-        if: secrets.VERCEL_TOKEN == ''
+        if: ${{ secrets.VERCEL_TOKEN == '' }}
         run: |
           echo "VERCEL_TOKEN not set. Add a repository secret named VERCEL_TOKEN to enable automatic deploys to Vercel." 
           exit 1
