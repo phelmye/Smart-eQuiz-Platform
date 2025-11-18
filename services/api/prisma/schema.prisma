@@ -246,3 +246,35 @@ model UserBadge {
   @@unique([userId, badgeId])
   @@index([userId])
 }
+
+// Marketing content management
+model MarketingContent {
+  id            String   @id @default(cuid())
+  contentJson   String   @db.Text  // Stores full MarketingContent JSON
+  version       Int      @default(1)
+  isActive      Boolean  @default(true)
+  updatedBy     String   // User ID who made the update
+  updatedByEmail String  // Email for audit trail
+  changeNotes   String?  // Optional notes about the change
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  auditLogs     MarketingContentAuditLog[]
+  @@index([isActive, version])
+  @@index([createdAt])
+}
+
+// Marketing content audit log
+model MarketingContentAuditLog {
+  id                  String            @id @default(cuid())
+  marketingContentId  String
+  action              String            // create, update, rollback
+  changes             String            @db.Text
+  userId              String
+  userEmail           String
+  previousVersion     Int?
+  newVersion          Int
+  createdAt           DateTime          @default(now())
+  marketingContent    MarketingContent  @relation(fields: [marketingContentId], references: [id], onDelete: Cascade)
+  @@index([marketingContentId])
+  @@index([createdAt])
+}

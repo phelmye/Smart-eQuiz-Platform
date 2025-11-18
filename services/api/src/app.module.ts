@@ -7,6 +7,7 @@ import { TournamentsModule } from './tournaments/tournaments.module';
 import { QuestionsModule } from './questions/questions.module';
 import { PracticeModule } from './practice/practice.module';
 import { MatchesModule } from './matches/matches.module';
+import { MarketingModule } from './marketing/marketing.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -20,6 +21,7 @@ import { PrismaModule } from './prisma.module';
     QuestionsModule,
     PracticeModule,
     MatchesModule,
+    MarketingModule,
   ],
   controllers: [AppController],
 })

@@ -1,214 +1,497 @@
-import { useState } from 'react';
-import {
-  Save,
-  Eye,
-  Globe,
-  Mail,
-  Phone
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { MarketingContent } from '@repo/types/marketing';
 
-interface MarketingContent {
-  hero: {
-    headline: string;
-    subheadline: string;
-  };
-  socialProof: {
-    activeUsers: string;
-    churchesServed: string;
-  };
-  contactInfo: {
-    email: string;
-    phone: string;
-  };
+interface MarketingContentManagerProps {
+  className?: string;
 }
 
-const defaultContent: MarketingContent = {
-  hero: {
-    headline: 'The Ultimate Bible Quiz Platform',
-    subheadline: 'Empower your church community with engaging Bible quizzes'
-  },
-  socialProof: {
-    activeUsers: '2,500+',
-    churchesServed: '500+'
-  },
-  contactInfo: {
-    email: 'support@smartequiz.com',
-    phone: '+1 (555) 123-4567'
-  }
-};
-
-export default function MarketingContentManager() {
-  const [content, setContent] = useState<MarketingContent>(defaultContent);
+export function MarketingContentManager({ className }: MarketingContentManagerProps) {
   const [activeTab, setActiveTab] = useState('hero');
-  const [saved, setSaved] = useState(false);
+  const [content, setContent] = useState<MarketingContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [changeNotes, setChangeNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSave = () => {
-    console.log('Saving marketing content:', content);
-    localStorage.setItem('marketingContent', JSON.stringify(content));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // Fetch current marketing content from API
+  useEffect(() => {
+    fetchContent();
+  }, []);
+
+  const fetchContent = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/marketing/content', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch marketing content');
+      }
+
+      const data = await response.json();
+      setContent(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load content');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleSave = async () => {
+    if (!content) return;
+
+    try {
+      setSaving(true);
+      setError(null);
+      setSuccessMessage(null);
+
+      const response = await fetch('/api/marketing/content', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          content,
+          changeNotes: changeNotes || 'Content updated via CMS',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save marketing content');
+      }
+
+      const updatedContent = await response.json();
+      setContent(updatedContent);
+      setSuccessMessage('Marketing content saved successfully!');
+      setChangeNotes('');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save content');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateHero = (field: string, value: string) => {
+    if (!content) return;
+    setContent({
+      ...content,
+      hero: { ...content.hero, [field]: value },
+    });
+  };
+
+  const updateSocialProof = (field: string, value: number) => {
+    if (!content) return;
+    setContent({
+      ...content,
+      socialProof: { ...content.socialProof, [field]: value },
+    });
+  };
+
+  const updateContact = (field: string, value: string) => {
+    if (!content) return;
+    setContent({
+      ...content,
+      contact: { ...content.contact, [field]: value },
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className={className}>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '1.2rem', color: '#666' }}>Loading marketing content...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className={className}>
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626' }}>
+          Failed to load marketing content. Please try again.
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Marketing Content Manager</h1>
-            <p className="text-gray-600 mt-2">
-              Manage all content displayed on the marketing website
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              Preview
-            </button>
-            <button 
-              onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Save Changes
-            </button>
+    <div className={className}>
+      <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+        <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+          Marketing Content Manager
+        </h1>
+        <p style={{ color: '#6b7280' }}>
+          Control all aspects of your marketing website content. Changes take effect immediately.
+        </p>
+      </div>
+
+      {error && (
+        <div style={{
+          margin: '1rem',
+          padding: '1rem',
+          backgroundColor: '#fee2e2',
+          border: '1px solid #dc2626',
+          borderRadius: '0.375rem',
+          color: '#dc2626'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div style={{
+          margin: '1rem',
+          padding: '1rem',
+          backgroundColor: '#d1fae5',
+          border: '1px solid #10b981',
+          borderRadius: '0.375rem',
+          color: '#065f46'
+        }}>
+          {successMessage}
+        </div>
+      )}
+
+      <div style={{ padding: '1.5rem' }}>
+        {/* Tabs */}
+        <div style={{ borderBottom: '1px solid #e5e7eb', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {['hero', 'features', 'testimonials', 'pricing', 'social', 'contact', 'blog', 'legal'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  border: 'none',
+                  borderBottom: activeTab === tab ? '2px solid #3b82f6' : '2px solid transparent',
+                  background: 'none',
+                  color: activeTab === tab ? '#3b82f6' : '#6b7280',
+                  fontWeight: activeTab === tab ? '600' : '400',
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                  transition: 'all 0.2s',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
         </div>
 
-        {saved && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-            ✓ Marketing content saved successfully!
+        {/* Hero Section */}
+        {activeTab === 'hero' && (
+          <div style={{ maxWidth: '800px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
+              Hero Section
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Headline
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.headline}
+                  onChange={(e) => updateHero('headline', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Subheadline
+                </label>
+                <textarea
+                  value={content.hero.subheadline}
+                  onChange={(e) => updateHero('subheadline', e.target.value)}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  CTA Text
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.ctaText}
+                  onChange={(e) => updateHero('ctaText', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  CTA Link
+                </label>
+                <input
+                  type="text"
+                  value={content.hero.ctaLink}
+                  onChange={(e) => updateHero('ctaLink', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="border-b">
-            <nav className="flex gap-4 px-6">
-              {['hero', 'social', 'contact'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-2 border-b-2 font-medium text-sm ${
-                    activeTab === tab
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </nav>
+        {/* Social Proof */}
+        {activeTab === 'social' && (
+          <div style={{ maxWidth: '800px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
+              Social Proof Statistics
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Total Users
+                </label>
+                <input
+                  type="number"
+                  value={content.socialProof.totalUsers}
+                  onChange={(e) => updateSocialProof('totalUsers', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Churches Served
+                </label>
+                <input
+                  type="number"
+                  value={content.socialProof.totalChurches}
+                  onChange={(e) => updateSocialProof('totalChurches', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Questions Generated
+                </label>
+                <input
+                  type="number"
+                  value={content.socialProof.totalQuestions}
+                  onChange={(e) => updateSocialProof('totalQuestions', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Tournaments Hosted
+                </label>
+                <input
+                  type="number"
+                  value={content.socialProof.totalTournaments}
+                  onChange={(e) => updateSocialProof('totalTournaments', parseInt(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+            </div>
           </div>
+        )}
 
-          <div className="p-6">
-            {activeTab === 'hero' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Hero Section</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Headline</label>
-                  <input
-                    type="text"
-                    value={content.hero.headline}
-                    onChange={(e) => setContent({
-                      ...content,
-                      hero: { ...content.hero, headline: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">Subheadline</label>
-                  <textarea
-                    value={content.hero.subheadline}
-                    onChange={(e) => setContent({
-                      ...content,
-                      hero: { ...content.hero, subheadline: e.target.value }
-                    })}
-                    rows={3}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
+        {/* Contact Info */}
+        {activeTab === 'contact' && (
+          <div style={{ maxWidth: '800px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
+              Contact Information
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={content.contact.email}
+                  onChange={(e) => updateContact('email', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
               </div>
-            )}
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={content.contact.phone}
+                  onChange={(e) => updateContact('phone', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+                  Address
+                </label>
+                <textarea
+                  value={content.contact.address}
+                  onChange={(e) => updateContact('address', e.target.value)}
+                  rows={2}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '0.375rem',
+                    fontSize: '1rem',
+                    resize: 'vertical',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
-            {activeTab === 'social' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Social Proof Statistics</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Active Users</label>
-                    <input
-                      type="text"
-                      value={content.socialProof.activeUsers}
-                      onChange={(e) => setContent({
-                        ...content,
-                        socialProof: { ...content.socialProof, activeUsers: e.target.value }
-                      })}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Churches Served</label>
-                    <input
-                      type="text"
-                      value={content.socialProof.churchesServed}
-                      onChange={(e) => setContent({
-                        ...content,
-                        socialProof: { ...content.socialProof, churchesServed: e.target.value }
-                      })}
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* Other tabs */}
+        {['features', 'testimonials', 'pricing', 'blog', 'legal'].includes(activeTab) && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: '#6b7280' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'capitalize' }}>
+              {activeTab} Editor
+            </h2>
+            <p>Advanced {activeTab} management coming soon. Full CRUD interface with drag-and-drop ordering.</p>
+          </div>
+        )}
 
-            {activeTab === 'contact' && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Contact Information</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={content.contactInfo.email}
-                    onChange={(e) => setContent({
-                      ...content,
-                      contactInfo: { ...content.contactInfo, email: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    value={content.contactInfo.phone}
-                    onChange={(e) => setContent({
-                      ...content,
-                      contactInfo: { ...content.contactInfo, phone: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 border rounded-lg"
-                  />
-                </div>
-              </div>
-            )}
+        {/* Change Notes */}
+        <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid #e5e7eb' }}>
+          <div style={{ maxWidth: '800px' }}>
+            <label style={{ display: 'block', fontWeight: '500', marginBottom: '0.5rem' }}>
+              Change Notes (Optional)
+            </label>
+            <textarea
+              value={changeNotes}
+              onChange={(e) => setChangeNotes(e.target.value)}
+              placeholder="Describe what you changed and why..."
+              rows={2}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '0.375rem',
+                fontSize: '1rem',
+                resize: 'vertical',
+                marginBottom: '1rem',
+              }}
+            />
           </div>
         </div>
 
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-            <Globe className="w-5 h-5" />
-            Marketing Site Sync
-          </h3>
-          <p className="text-sm text-blue-800">
-            Changes made here will be synchronized to the marketing website via API.
-            Full implementation connects to a CMS backend that the marketing site reads from.
-          </p>
+        {/* Save Button */}
+        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: saving ? '#9ca3af' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseOver={(e) => {
+              if (!saving) e.currentTarget.style.backgroundColor = '#2563eb';
+            }}
+            onMouseOut={(e) => {
+              if (!saving) e.currentTarget.style.backgroundColor = '#3b82f6';
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+          <button
+            onClick={fetchContent}
+            disabled={saving || loading}
+            style={{
+              padding: '0.75rem 1.5rem',
+              backgroundColor: 'white',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem',
+              fontWeight: '500',
+              cursor: (saving || loading) ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s',
+            }}
+            onMouseOver={(e) => {
+              if (!saving && !loading) e.currentTarget.style.backgroundColor = '#f3f4f6';
+            }}
+            onMouseOut={(e) => {
+              if (!saving && !loading) e.currentTarget.style.backgroundColor = 'white';
+            }}
+          >
+            Reload
+          </button>
         </div>
       </div>
     </div>
