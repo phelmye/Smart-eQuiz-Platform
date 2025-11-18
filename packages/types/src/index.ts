@@ -528,3 +528,6 @@ export const TOURNAMENT_STATUSES: readonly TournamentStatus[] = [
 
 // Export all types
 export type * from './index';
+
+// Export marketing types
+export * from './marketing';
