@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData, getFieldLabels } from '@/lib/mockData';
+import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KEYS, initializeMockData, getFieldLabels, getCustomText, getParishesByTenant, searchParishes, Parish } from '@/lib/mockData';
 import { apiClient } from '@/lib/apiClient';
+import { AddParishForm } from '@/components/AddParishForm';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +27,7 @@ interface RegisterData {
   password: string;
   name: string;
   tenantId: string;
+  parishId?: string;
   role: 'org_admin' | 'inspector';
 }
 
@@ -195,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: userData.name,
       role: 'inspector', // Always start as inspector
       tenantId: userData.tenantId,
+      parishId: userData.parishId, // Store the selected parish
       xp: 0,
       level: 1,
       badges: [],
@@ -253,11 +257,22 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [selectedTenantId, setSelectedTenantId] = useState<string>('');
+  const [selectedParishId, setSelectedParishId] = useState<string>('');
+  const [parishSearchQuery, setParishSearchQuery] = useState('');
+  const [showAddParishForm, setShowAddParishForm] = useState(false);
   const { login, register, user } = useAuth();
+  const { tenant } = useTenant(); // Get current tenant from subdomain
   
-  // Get custom field labels for selected tenant
-  const fieldLabels = getFieldLabels(selectedTenantId || undefined);
+  // Get custom field labels for current tenant
+  const fieldLabels = getFieldLabels(tenant?.id);
+  
+  // Get custom text for current tenant
+  const customText = getCustomText(tenant?.id);
+  
+  // Get parishes filtered by current tenant (tenant isolation)
+  const parishes = tenant?.id && parishSearchQuery
+    ? searchParishes(parishSearchQuery, tenant.id)
+    : [];
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     console.log('🔍 FORM SUBMISSION STARTED!');
@@ -317,15 +332,29 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
     setError('');
     setSuccess('');
     
+    if (!tenant?.id) {
+      setError('Tenant information not available. Please refresh the page.');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const formData = new FormData(e.currentTarget);
       const userData: RegisterData = {
         email: formData.get('email') as string,
         password: formData.get('password') as string,
         name: formData.get('name') as string,
-        tenantId: formData.get('tenantId') as string,
+        tenantId: tenant.id, // Use current tenant from subdomain
+        parishId: selectedParishId || undefined,
         role: formData.get('role') as 'org_admin' | 'participant'
       };
+      
+      // Validate parish selection
+      if (!selectedParishId) {
+        setError(`Please select your ${fieldLabels.parishSingular.toLowerCase()} or register a new one.`);
+        setIsLoading(false);
+        return;
+      }
       
       console.log('🔍 Registration data:', userData);
 
@@ -356,7 +385,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-background, #f9fafb)' }}>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-blue-900">Smart eQuiz Platform</CardTitle>
@@ -499,97 +528,166 @@ Check browser console (F12) for detailed debug info.`;
             </TabsContent>
             
             <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-name">Full Name</Label>
-                  <Input
-                    id="reg-name"
-                    name="name"
-                    placeholder="Enter your full name"
-                    autoComplete="name"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input
-                    id="reg-email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password</Label>
-                  <Input
-                    id="reg-password"
-                    name="password"
-                    type="password"
-                    placeholder="Create a password"
-                    autoComplete="new-password"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="tenantId">{fieldLabels.parishSingular}</Label>
-                  <Select 
-                    name="tenantId" 
-                    required
-                    onValueChange={(value) => setSelectedTenantId(value)}
+              {showAddParishForm ? (
+                <div className="space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowAddParishForm(false)}
+                    className="mb-2"
                   >
-                    <SelectTrigger id="tenantId">
-                      <SelectValue placeholder={`Select your ${fieldLabels.parishSingular.toLowerCase()}`} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockTenants.map(tenant => {
-                        const plan = defaultPlans.find(p => p.id === tenant.planId);
-                        return (
-                          <SelectItem key={tenant.id} value={tenant.id}>
-                            {tenant.name}
-                            <Badge variant="outline" className="ml-2">
-                              {plan?.displayName || 'Unknown Plan'}
-                            </Badge>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                    ← Back to Registration
+                  </Button>
+                  <AddParishForm
+                    tenantId={tenant?.id}
+                    onSuccess={(parishId) => {
+                      setSelectedParishId(parishId);
+                      setShowAddParishForm(false);
+                      setSuccess(`${fieldLabels.parishSingular} registered successfully! Please complete your registration.`);
+                    }}
+                    onCancel={() => setShowAddParishForm(false)}
+                  />
                 </div>
-                
-                <Alert className="bg-blue-50 border-blue-200">
-                  <AlertDescription className="text-sm text-blue-800">
-                    <strong>New users start as Inspectors.</strong><br/>
-                    After registration, you can apply for Practice Mode access to train for tournaments.
-                    Once qualified, you'll be approved to participate in championships.
-                  </AlertDescription>
-                </Alert>
-                
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                {success && (
-                  <Alert>
-                    <AlertDescription>{success}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isLoading}
-                  onClick={() => console.log('🔍 Create Account button clicked!')}
-                >
-                  {isLoading ? 'Creating Account...' : 'Create Account'}
-                </Button>
-              </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-4">
+                  {tenant && (
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <AlertDescription className="text-sm text-blue-800">
+                        <strong>Registering under:</strong> {tenant.name}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-name">Full Name</Label>
+                    <Input
+                      id="reg-name"
+                      name="name"
+                      placeholder="Enter your full name"
+                      autoComplete="name"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-email">Email</Label>
+                    <Input
+                      id="reg-email"
+                      name="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password">Password</Label>
+                    <Input
+                      id="reg-password"
+                      name="password"
+                      type="password"
+                      placeholder="Create a password"
+                      autoComplete="new-password"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="parishSearch">
+                      {fieldLabels.parishSingular} *
+                    </Label>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {customText.registration.parishSearchHelper}
+                    </p>
+                    <Input
+                      id="parishSearch"
+                      placeholder={customText.registration.parishSearchPlaceholder}
+                      value={parishSearchQuery}
+                      onChange={(e) => setParishSearchQuery(e.target.value)}
+                      className="mb-2"
+                    />
+                    
+                    {parishes.length > 0 ? (
+                      <div className="border rounded-md max-h-48 overflow-y-auto">
+                        {parishes.map((parish) => (
+                          <div
+                            key={parish.id}
+                            onClick={() => {
+                              setSelectedParishId(parish.id);
+                              setParishSearchQuery(parish.name);
+                            }}
+                            className={`p-3 cursor-pointer hover:bg-gray-100 border-b last:border-b-0 ${
+                              selectedParishId === parish.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{parish.name}</div>
+                                <div className="text-sm text-gray-600">{parish.location.address}</div>
+                              </div>
+                              {parish.isVerified && (
+                                <Badge variant="secondary" className="ml-2">
+                                  Verified
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : parishSearchQuery ? (
+                      <Alert className="bg-amber-50 border-amber-200">
+                        <AlertDescription className="text-sm text-amber-800">
+                          No {fieldLabels.parishSingular.toLowerCase()} found matching "{parishSearchQuery}".
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <AlertDescription className="text-sm text-blue-800">
+                          Start typing to search for your {fieldLabels.parishSingular.toLowerCase()}, or register it if not found.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    
+                    <div className="flex items-center justify-between pt-2">
+                      <p className="text-sm text-gray-600">
+                        {selectedParishId 
+                          ? `Selected: ${parishes.find(p => p.id === selectedParishId)?.name}` 
+                          : `Can't find your ${fieldLabels.parishSingular.toLowerCase()}?`
+                        }
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddParishForm(true)}
+                      >
+                        + {customText.registration.buttonRegisterParish}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {success && (
+                    <Alert>
+                      <AlertDescription>{success}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full" 
+                    disabled={isLoading || !selectedParishId}
+                    onClick={() => console.log('🔍 Create Account button clicked!')}
+                  >
+                    {isLoading ? 'Creating Account...' : customText.registration.buttonRegister}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>

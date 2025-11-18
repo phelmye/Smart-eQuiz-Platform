@@ -285,3 +285,5 @@ export function CustomCategoryManager({ tenantId, currentUser, onCategoryChange 
     </div>
   );
 }
+
+export default CustomCategoryManager;

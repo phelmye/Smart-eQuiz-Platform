@@ -37,6 +37,7 @@ interface BonusQuestionManagerProps {
   userId: string;
   tournamentId?: string;
   onQuestionsAdded?: (questions: Question[]) => void;
+  onBack?: () => void;
 }
 
 const tierIcons = {

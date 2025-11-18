@@ -38,6 +38,7 @@ interface MatchManagementProps {
   tournamentId: string;
   tenantId: string;
   onMatchUpdated?: () => void;
+  onBack?: () => void;
 }
 
 interface MatchResultDialogProps {

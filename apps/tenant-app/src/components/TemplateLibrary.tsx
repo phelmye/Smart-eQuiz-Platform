@@ -259,3 +259,5 @@ export function TemplateLibrary({ tenantId, currentUser, onApplyTemplate, onClos
     </div>
   );
 }
+
+export default TemplateLibrary;

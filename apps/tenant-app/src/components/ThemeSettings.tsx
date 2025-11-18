@@ -130,7 +130,7 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({ onBack }) => {
     
     storage.set(STORAGE_KEYS.THEME_CONFIGS, configs);
 
-    // Apply theme
+    // Apply theme immediately
     if (isCustomMode) {
       const customTheme = createCustomTheme(
         'Custom Theme',
@@ -142,6 +142,9 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({ onBack }) => {
     } else {
       applyTheme(selectedTemplate.colors);
     }
+
+    // Dispatch custom event to notify all components
+    window.dispatchEvent(new Event('themeChanged'));
 
     setSaveMessage('Theme saved successfully!');
     setTimeout(() => setSaveMessage(''), 3000);
@@ -448,3 +451,5 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({ onBack }) => {
     </div>
   );
 };
+
+export default ThemeSettings;

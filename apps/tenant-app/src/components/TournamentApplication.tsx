@@ -569,3 +569,5 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
     </div>
   );
 };
+
+export default TournamentApplication;

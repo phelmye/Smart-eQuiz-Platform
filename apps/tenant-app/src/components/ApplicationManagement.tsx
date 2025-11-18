@@ -558,3 +558,5 @@ export const ApplicationManagement: React.FC<ApplicationManagementProps> = ({
     </div>
   );
 };
+
+export default ApplicationManagement;

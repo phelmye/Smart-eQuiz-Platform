@@ -726,7 +726,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const pageContent = renderPageContent();
   if (pageContent) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-background, #f9fafb)' }}>
         {/* Persistent Sidebar */}
         {isAdmin && (
           <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ease-in-out`}>
@@ -819,7 +819,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--color-background, #f9fafb)' }}>
       {/* Admin Sidebar */}
       {isAdmin && (
         <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ease-in-out`}>
@@ -906,7 +906,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto" style={{ backgroundColor: 'var(--color-background, #f9fafb)' }}>
           {currentPage === 'dashboard' && (
             <div className="max-w-7xl mx-auto">
               <Tabs defaultValue="overview" className="space-y-6">

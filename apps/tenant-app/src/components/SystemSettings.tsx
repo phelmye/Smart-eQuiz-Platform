@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Save, RefreshCw, Shield, Globe, Bell, Database, Zap } from 'lucide-react';
 import { useAuth } from './AuthSystem';
+import { TenantTextCustomization } from './TenantTextCustomization';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 
 interface SystemSettingsProps {
@@ -201,12 +202,13 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onBack }) => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="platform">Platform</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
             <TabsTrigger value="limits">Limits</TabsTrigger>
+            <TabsTrigger value="customization">Text</TabsTrigger>
           </TabsList>
 
           <TabsContent value="platform" className="space-y-6">
@@ -600,6 +602,10 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onBack }) => {
                 </Alert>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="customization" className="space-y-6">
+            <TenantTextCustomization />
           </TabsContent>
         </Tabs>
       </div>

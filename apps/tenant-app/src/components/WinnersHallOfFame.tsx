@@ -332,3 +332,5 @@ export const WinnersHallOfFame: React.FC<WinnersHallOfFameProps> = ({
     </div>
   );
 };
+
+export default WinnersHallOfFame;

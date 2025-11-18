@@ -27,6 +27,10 @@ interface HelpArticle {
   helpful: number;
 }
 
+interface HelpCenterProps {
+  onBack?: () => void;
+}
+
 const HELP_ARTICLES: HelpArticle[] = [
   {
     id: '1',
@@ -91,7 +95,7 @@ const VIDEO_TUTORIALS = [
   { id: '4', title: 'Analytics Deep Dive', duration: '15:20', views: 987 }
 ];
 
-export const HelpCenter: React.FC = () => {
+export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
 

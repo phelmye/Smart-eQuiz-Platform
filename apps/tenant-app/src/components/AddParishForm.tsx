@@ -16,21 +16,29 @@ import {
   ParishContactPerson,
   ParishLocation,
   addParish,
-  getFieldLabels
+  getFieldLabels,
+  getCustomText
 } from '@/lib/mockData';
 
 interface AddParishFormProps {
   onSuccess?: (parishId: string) => void;
   onCancel?: () => void;
+  tenantId?: string; // Optional: for use during registration when user is not yet authenticated
 }
 
-export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCancel }) => {
+export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCancel, tenantId: propTenantId }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
+  // Use provided tenantId (during registration) or user's tenantId (when authenticated)
+  const tenantId = propTenantId || user?.tenantId;
+  
   // Get custom field labels
-  const fieldLabels = getFieldLabels(user?.tenantId);
+  const fieldLabels = getFieldLabels(tenantId);
+  
+  // Get custom text
+  const customText = getCustomText(tenantId);
   
   const [formData, setFormData] = useState({
     parishName: '',
@@ -85,7 +93,10 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!tenantId) {
+      setSubmitMessage({ type: 'error', text: 'Organization/Diocese not selected' });
+      return;
+    }
 
     if (!validateForm()) {
       setSubmitMessage({ type: 'error', text: 'Please fill in all required fields' });
@@ -118,7 +129,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
 
       const result = addParish({
         name: formData.parishName,
-        tenantId: user.tenantId,
+        tenantId: tenantId,
         authority,
         contactPerson,
         parishPhoneNumber: formData.parishPhoneNumber,
@@ -126,13 +137,13 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
         location,
         parishImage: formData.parishImage || undefined,
         isActive: true,
-        createdBy: user.id
+        createdBy: user?.id || 'registration_user'
       });
 
       if (result.success) {
         setSubmitMessage({ 
           type: 'success', 
-          text: 'Parish submitted successfully! It will be reviewed and verified by an admin.' 
+          text: customText.parishForm.successMessage
         });
         
         setTimeout(() => {
@@ -141,10 +152,10 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           }
         }, 2000);
       } else {
-        setSubmitMessage({ type: 'error', text: result.message || 'Failed to submit parish' });
+        setSubmitMessage({ type: 'error', text: result.message || customText.parishForm.errorMessage });
       }
     } catch (error) {
-      setSubmitMessage({ type: 'error', text: 'An error occurred. Please try again.' });
+      setSubmitMessage({ type: 'error', text: customText.parishForm.errorMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -174,14 +185,14 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
     alert('Map integration coming soon! Please enter coordinates manually or paste map URL.');
   };
 
-  if (!user) {
+  if (!tenantId) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-red-600 mb-4">Authentication Required</h2>
-            <p className="text-gray-600">Please log in to add a parish.</p>
+            <h2 className="text-xl font-bold text-red-600 mb-4">Organization Not Selected</h2>
+            <p className="text-gray-600">Please select an organization/diocese first. The parish will be registered under this organization.</p>
           </CardContent>
         </Card>
       </div>
@@ -196,10 +207,10 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Building className="h-6 w-6" />
-              Add New {fieldLabels.parishSingular}
+              {customText.parishForm.title}
             </CardTitle>
             <CardDescription>
-              Please provide complete information about the {fieldLabels.parishSingular.toLowerCase()}. All fields marked with * are required.
+              {customText.parishForm.subtitle}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -221,7 +232,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
         {/* Parish Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{fieldLabels.parishSingular} Information</CardTitle>
+            <CardTitle className="text-lg">{customText.parishForm.basicInfoSection}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -303,7 +314,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
-              {fieldLabels.parishLeader} *
+              {customText.parishForm.authoritySection}
             </CardTitle>
             <CardDescription>Information about the {fieldLabels.parishLeader.toLowerCase()}</CardDescription>
           </CardHeader>
@@ -366,7 +377,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
-              Contact Person *
+              {customText.parishForm.contactSection}
             </CardTitle>
             <CardDescription>Primary contact for parish communications</CardDescription>
           </CardHeader>
@@ -416,7 +427,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              {fieldLabels.parishSingular} Location *
+              {customText.parishForm.locationSection}
             </CardTitle>
             <CardDescription>Physical location of the {fieldLabels.parishSingular.toLowerCase()}</CardDescription>
           </CardHeader>
@@ -480,30 +491,28 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
         {/* Action Buttons */}
         <Card>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                <p className="font-medium mb-1">Important Notes:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs">
-                  <li>All information will be verified by an admin before approval</li>
-                  <li>Ensure contact details are accurate and reachable</li>
-                  <li>Upload a clear, landscape photo of the parish/organization</li>
-                </ul>
-              </div>
-              <div className="flex gap-3">
-                {onCancel && (
-                  <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
-                    Cancel
-                  </Button>
-                )}
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  size="lg"
-                  className="px-8"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit for Review'}
+            <div className="text-sm text-gray-600 mb-4">
+              <p className="font-medium mb-2">Important Notes:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>All information will be verified by an admin before approval</li>
+                <li>Ensure contact details are accurate and reachable</li>
+                <li>Upload a clear, landscape photo of the parish/organization</li>
+              </ul>
+            </div>
+            <div className="flex gap-3 justify-end">
+              {onCancel && (
+                <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                  {customText.parishForm.buttonCancel}
                 </Button>
-              </div>
+              )}
+              <Button 
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                size="lg"
+                className="px-8"
+              >
+                {isSubmitting ? customText.common.saving : customText.parishForm.buttonSubmit}
+              </Button>
             </div>
           </CardContent>
         </Card>

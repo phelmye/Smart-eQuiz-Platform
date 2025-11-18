@@ -874,3 +874,5 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
     </div>
   );
 };
+
+export default BrandingSettings;

@@ -49,6 +49,27 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Theme system colors - these will be overridden by applyTheme() */
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-primary-light: #dbeafe;
+    --color-primary-dark: #1e40af;
+    --color-secondary: #8b5cf6;
+    --color-secondary-hover: #7c3aed;
+    --color-secondary-light: #ede9fe;
+    --color-accent: #10b981;
+    --color-accent-hover: #059669;
+    --color-accent-light: #d1fae5;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+    --color-background: #f9fafb;
+    --color-surface: #ffffff;
+    --color-text: #111827;
+    --color-text-secondary: #6b7280;
+    --color-border: #e5e7eb;
   }
 
   .dark {
@@ -97,5 +118,12 @@
 
   body {
     @apply bg-background text-foreground;
+    background-color: var(--color-background, #f9fafb);
+    color: var(--color-text, #111827);
+  }
+  
+  #root {
+    background-color: var(--color-background, #f9fafb);
+    min-height: 100vh;
   }
 }

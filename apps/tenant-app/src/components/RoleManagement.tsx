@@ -40,6 +40,7 @@ import {
 
 interface RoleManagementProps {
   user: User;
+  onBack?: () => void;
 }
 
 export default function RoleManagement({ user }: RoleManagementProps) {

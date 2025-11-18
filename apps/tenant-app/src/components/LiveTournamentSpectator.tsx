@@ -517,3 +517,5 @@ export const LiveTournamentSpectator: React.FC<LiveTournamentSpectatorProps> = (
     </div>
   );
 };
+
+export default LiveTournamentSpectator;

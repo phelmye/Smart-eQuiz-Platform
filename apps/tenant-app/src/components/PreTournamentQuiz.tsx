@@ -15,9 +15,12 @@ import {
   TournamentApplication,
   QuizAttempt,
   Question,
+  Tournament,
   getApplicationById,
   getQuestionsForAttempt,
-  calculateFinalScore
+  calculateFinalScore,
+  storage,
+  STORAGE_KEYS
 } from '@/lib/mockData';
 
 interface PreTournamentQuizProps {
@@ -33,9 +36,11 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
 }) => {
   const { user } = useAuth();
   const [application, setApplication] = useState<TournamentApplication | null>(null);
+  const [tournament, setTournament] = useState<Tournament | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [answerShuffles, setAnswerShuffles] = useState<Array<{ questionId: string; originalOrder: number[]; shuffledOrder: number[] }>>([]);
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
@@ -52,6 +57,10 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
     const app = getApplicationById(applicationId);
     if (app) {
       setApplication(app);
+      // Load tournament to get qualification config
+      const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
+      const tourn = tournaments.find((t: Tournament) => t.id === app.tournamentId);
+      setTournament(tourn || null);
     }
   }, [applicationId]);
 
@@ -78,8 +87,20 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
     }
 
     setQuestions(questionResult.questions);
-    // TODO: Get time limit from tournament config (placeholder: 30 minutes)
-    setTimeRemaining(30 * 60);
+    // Get time limit from tournament qualification config
+    const timeLimitMinutes = tournament?.qualificationConfig?.quizSettings?.timeLimitMinutes || 30;
+    setTimeRemaining(timeLimitMinutes * 60);
+    
+    // Track answer shuffles for each question
+    const shuffles = questionResult.questions.map(q => {
+      const originalOrder = q.options.map((_, idx) => idx);
+      return {
+        questionId: q.id,
+        originalOrder,
+        shuffledOrder: [...originalOrder] // In real implementation, this would be shuffled
+      };
+    });
+    setAnswerShuffles(shuffles);
     setQuizStarted(true);
   };
 
@@ -104,11 +125,17 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
       });
 
       const scorePercentage = (correctAnswers / questions.length) * 100;
-      const passed = scorePercentage >= 70; // TODO: Get pass percentage from config
+      // Get pass percentage from tournament qualification config
+      const passPercentage = tournament?.qualificationConfig?.quizSettings?.passPercentage || 70;
+      const passed = scorePercentage >= passPercentage;
 
       const attemptNumber = (application?.quizAttempts?.length || 0) + 1;
       const attemptsUsed = attemptNumber;
       const attemptsRemaining = (application?.attemptsRemaining || 0) - 1;
+
+      // Get time limit from config
+      const timeLimitMinutes = tournament?.qualificationConfig?.quizSettings?.timeLimitMinutes || 30;
+      const timeLimitSeconds = timeLimitMinutes * 60;
 
       // Create quiz attempt record
       const attempt: QuizAttempt = {
@@ -118,23 +145,45 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
         applicationId: application!.id,
         attemptNumber,
         questionsShown: questions.map(q => q.id),
-        answerShuffles: [], // TODO: Track actual shuffles
+        answerShuffles, // Track actual answer shuffles
         answers,
         score: scorePercentage,
         passed,
-        timeTaken: (30 * 60) - timeRemaining,
-        startedAt: new Date(Date.now() - ((30 * 60) - timeRemaining) * 1000).toISOString(),
+        timeTaken: timeLimitSeconds - timeRemaining,
+        startedAt: new Date(Date.now() - ((timeLimitSeconds - timeRemaining) * 1000)).toISOString(),
         completedAt: new Date().toISOString(),
         randomizationSeed: `${user!.id}_${application!.tournamentId}_${attemptNumber}`
       };
 
-      // TODO: Save attempt to storage and update application
+      // Save attempt to storage
+      const allAttempts = storage.get(STORAGE_KEYS.QUIZ_ATTEMPTS) || [];
+      allAttempts.push(attempt);
+      storage.set(STORAGE_KEYS.QUIZ_ATTEMPTS, allAttempts);
+
+      // Update application with new attempt
+      const applications = storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+      const updatedApplications = applications.map((app: TournamentApplication) => {
+        if (app.id === application!.id) {
+          return {
+            ...app,
+            quizAttempts: [...(app.quizAttempts || []), attempt],
+            attemptsRemaining: attemptsRemaining,
+            lastAttemptDate: new Date().toISOString(),
+            status: passed ? 'qualified' : attemptsRemaining > 0 ? 'pending_qualification' : 'rejected'
+          };
+        }
+        return app;
+      });
+      storage.set(STORAGE_KEYS.TOURNAMENT_APPLICATIONS, updatedApplications);
+      setApplication(updatedApplications.find((a: TournamentApplication) => a.id === application!.id));
 
       // Calculate final score if this is the last attempt or they passed
       let finalScore: number | undefined;
       if (passed || attemptsRemaining === 0) {
-        const allAttempts = [...(application?.quizAttempts || []), attempt];
-        finalScore = calculateFinalScore(allAttempts, 'average'); // TODO: Get from config
+        const allUserAttempts = [...(application?.quizAttempts || []), attempt];
+        // Get scoring method from tournament config
+        const scoringMethod = tournament?.qualificationConfig?.quizSettings?.scoringMethod || 'average';
+        finalScore = calculateFinalScore(allUserAttempts, scoringMethod);
       }
 
       setResult({
@@ -383,19 +432,19 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Questions</p>
-                  <p className="text-2xl font-bold text-gray-900">10</p>
+                  <p className="text-2xl font-bold text-gray-900">{tournament?.qualificationConfig?.quizSettings?.questionsCount || 10}</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Time Limit</p>
-                  <p className="text-2xl font-bold text-gray-900">30 min</p>
+                  <p className="text-2xl font-bold text-gray-900">{tournament?.qualificationConfig?.quizSettings?.timeLimitMinutes || 30} min</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Pass Mark</p>
-                  <p className="text-2xl font-bold text-gray-900">70%</p>
+                  <p className="text-2xl font-bold text-gray-900">{tournament?.qualificationConfig?.quizSettings?.passPercentage || 70}%</p>
                 </div>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600">Scoring</p>
-                  <p className="text-xl font-bold text-gray-900">Average</p>
+                  <p className="text-xl font-bold text-gray-900 capitalize">{tournament?.qualificationConfig?.quizSettings?.scoringMethod || 'average'}</p>
                 </div>
               </div>
 

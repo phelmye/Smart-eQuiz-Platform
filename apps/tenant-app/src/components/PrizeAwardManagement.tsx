@@ -413,3 +413,5 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
     </div>
   );
 };
+
+export default PrizeAwardManagement;

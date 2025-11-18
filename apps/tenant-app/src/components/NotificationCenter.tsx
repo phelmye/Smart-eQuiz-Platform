@@ -31,7 +31,11 @@ interface Notification {
   actionLabel?: string;
 }
 
-export const NotificationCenter: React.FC = () => {
+interface NotificationCenterProps {
+  onBack?: () => void;
+}
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onBack }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
 

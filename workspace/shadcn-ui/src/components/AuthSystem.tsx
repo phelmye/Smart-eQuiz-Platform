@@ -134,6 +134,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
+      // Find tenant and check if it's suspended
+      const userTenant = mockTenants.find(t => t.id === mockUser.tenantId);
+      
+      // Check tenant status (skip for super_admin)
+      if (mockUser.role !== 'super_admin' && userTenant) {
+        const tenantStatus = userTenant.status || 'active';
+        if (tenantStatus === 'suspended') {
+          console.log('🔍 Login blocked: Tenant is suspended');
+          throw new Error('Your account has been suspended. Please contact support for assistance.');
+        }
+        if (tenantStatus === 'deactivated') {
+          console.log('🔍 Login blocked: Tenant is deactivated');
+          throw new Error('Your account has been deactivated. Please contact support for assistance.');
+        }
+      }
+      
       console.log('🔍 Mock login successful:', mockUser.email);
       
       const loggedInUser: User = {
@@ -155,8 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Set state
       setUser(loggedInUser);
       
-      // Find tenant from mock data
-      const userTenant = mockTenants.find(t => t.id === loggedInUser.tenantId);
+      // Set tenant (fallback to default if not found)
       setTenant(userTenant || {
         id: loggedInUser.tenantId,
         name: 'Default Church',
@@ -174,7 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error: any) {
       console.error('🔍 Login error:', error.response?.data || error.message);
-      return false;
+      throw error; // Re-throw to show error message to user
     }
   };
 
@@ -260,11 +275,7 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
   const fieldLabels = getFieldLabels(selectedTenantId || undefined);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('🔍 FORM SUBMISSION STARTED!');
-    console.log('🔍 Event object:', e);
     e.preventDefault();
-    console.log('🔍 preventDefault called, setting loading state...');
-    
     setIsLoading(true);
     setError('');
     setSuccess('');
@@ -273,39 +284,26 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
       const formData = new FormData(e.currentTarget);
       const email = formData.get('email') as string;
       const password = formData.get('password') as string;
-      console.log('🔍 Form data extracted:', { email, password });
 
       if (!email || !password) {
-        console.log('🔍 ERROR: Missing email or password');
         setError('Please enter both email and password');
         return;
       }
 
-      console.log('🔍 About to call login function...');
-      
       const success = await login(email, password);
-      console.log('🔍 Login function returned:', success);
       
       if (success) {
-        console.log('🔍 LOGIN SUCCESS! Setting success message and forcing navigation...');
         setSuccess('Login successful! Redirecting...');
-        
-        // Force navigation after a short delay to ensure state propagates
         setTimeout(() => {
-          console.log('🔍 Attempting to force navigation...');
-          window.location.reload(); // Force reload as a fallback
-        }, 1500);
-        
+          if (onAuthSuccess) onAuthSuccess();
+        }, 100);
       } else {
-        console.log('🔍 Login failed - invalid credentials');
-        setError('Invalid credentials. Try: admin@church.com (any password)');
+        setError('Invalid email or password');
       }
-    } catch (err: any) {
-      console.error('🔍 Login error:', err);
-      setError('Login error. Try: admin@church.com (any password)');
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } catch (error: any) {
+      // Display the error message from tenant suspension check
+      setError(error.message || 'Login failed. Please try again.');
     } finally {
-      console.log('🔍 Setting loading to false...');
       setIsLoading(false);
     }
   };

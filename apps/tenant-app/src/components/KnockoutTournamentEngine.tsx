@@ -28,6 +28,7 @@ import { useState, useEffect } from 'react';
 interface KnockoutTournamentEngineProps {
   tournament: Tournament;
   tenantId: string;
+  onBack?: () => void;
 }
 
 export default function KnockoutTournamentEngine({ 

@@ -36,7 +36,9 @@ export const STORAGE_KEYS = {
   QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs',
   BONUS_QUESTION_CONFIGS: 'equiz_bonus_question_configs',
   BONUS_QUESTION_REQUESTS: 'equiz_bonus_question_requests',
-  NOTIFICATIONS: 'equiz_notifications'
+  NOTIFICATIONS: 'equiz_notifications',
+  PRE_TOURNAMENT_QUESTIONS: 'equiz_pre_tournament_questions', // Isolated question bank for pre-tests
+  QUESTION_VARIATIONS: 'equiz_question_variations' // Twisted versions of questions
 };
 
 // User roles
@@ -73,11 +75,13 @@ export interface ParishLocation {
 }
 
 // Parish/Organization interface
+// NOTE: Parishes are TENANT-ISOLATED - only accessible to users within the same tenant
+// Each tenant (Diocese/Organization) manages their own parishes
 export interface Parish {
   id: string;
   name: string;
   displayName?: string; // Custom display name set by tenant admin
-  tenantId: string;
+  tenantId: string; // Organization this parish belongs to (enforces tenant isolation)
   
   // Authority (Person in charge)
   authority: ParishAuthority;
@@ -173,6 +177,7 @@ export interface User {
   email: string;
   role: UserRole;
   tenantId: string;
+  parishId?: string; // Parish/Organization the user belongs to
   xp: number;
   level: number;
   badges: string[];
@@ -537,6 +542,43 @@ export interface Tenant {
     parishMember?: string; // e.g., "Member", "Parishioner", "Team Member"
     parishLeader?: string; // e.g., "Parish Priest", "Pastor", "Team Leader"
   };
+  // Customizable text/messages for tenant-specific branding
+  customText?: {
+    // Registration page
+    registration?: {
+      welcomeText?: string;
+      successMessage?: string;
+      parishSearchPlaceholder?: string;
+      parishSearchHelper?: string;
+      buttonRegister?: string;
+      buttonRegisterParish?: string;
+    };
+    // Parish registration form
+    parishForm?: {
+      title?: string;
+      subtitle?: string;
+      basicInfoSection?: string;
+      authoritySection?: string;
+      contactSection?: string;
+      locationSection?: string;
+      notesSection?: string;
+      buttonSubmit?: string;
+      buttonCancel?: string;
+      successMessage?: string;
+      errorMessage?: string;
+    };
+    // Common UI elements
+    common?: {
+      loading?: string;
+      saving?: string;
+      cancel?: string;
+      save?: string;
+      edit?: string;
+      delete?: string;
+      confirm?: string;
+      search?: string;
+    };
+  };
 }
 
 // Tournament interface
@@ -631,8 +673,79 @@ export interface PreTournamentQuizConfig {
   randomizeQuestionOrder: boolean; // Default: true
   randomizeAnswerOptions: boolean; // Default: true
   
+  // Question variation/twisting
+  enableQuestionVariation: boolean; // Enable AI-based question twisting
+  variationIntensity: 'low' | 'medium' | 'high'; // How much to twist questions
+  
   // Scoring method
   scoringMethod: 'average' | 'highest' | 'latest'; // Default: average
+}
+
+// Pre-tournament Question (Isolated from main question bank)
+export interface PreTournamentQuestion {
+  id: string;
+  tournamentId: string;
+  tenantId: string;
+  
+  // Source tracking
+  sourceQuestionId?: string; // If copied from main bank
+  isVariation: boolean; // Is this a twisted version?
+  variationOf?: string; // Original question ID if twisted
+  variationSeed?: string; // For reproducibility
+  
+  // Question content
+  text: string;
+  options: string[];
+  correctAnswer: number;
+  category: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  explanation: string;
+  verse?: string;
+  tags?: string[];
+  
+  // Isolation metadata
+  isolatedAt: string; // When added to pre-tournament bank
+  isolatedBy: string; // User who added it
+  status: 'isolated' | 'released'; // Released after tournament starts
+  releasedAt?: string;
+  
+  // Usage tracking (per user to prevent reuse)
+  usedByUsers: string[]; // User IDs who have seen this question
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Question Variation record
+export interface QuestionVariation {
+  id: string;
+  originalQuestionId: string;
+  tournamentId: string;
+  tenantId: string;
+  
+  // Variation details
+  variationType: 'rephrased' | 'context_changed' | 'answer_order' | 'mixed';
+  intensityUsed: 'low' | 'medium' | 'high';
+  
+  // Generated content
+  originalText: string;
+  twistedText: string;
+  originalOptions: string[];
+  twistedOptions: string[];
+  correctAnswer: number;
+  
+  // Validation
+  maintainsContext: boolean; // AI validation that meaning is preserved
+  difficultyMatch: boolean; // Same difficulty level
+  
+  // Metadata
+  generatedAt: string;
+  generatedBy: string;
+  generationMethod: 'ai' | 'manual';
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  approvedBy?: string;
+  
+  createdAt: string;
 }
 
 // Quiz attempt record
@@ -4049,18 +4162,18 @@ export function getParishById(parishId: string): Parish | null {
   return parishes.find(p => p.id === parishId) || null;
 }
 
-// Add new parish
+// Add new parish (tenant-isolated)
 export function addParish(parishData: Omit<Parish, 'id' | 'createdAt' | 'isVerified' | 'verifiedBy' | 'verifiedAt'>): { success: boolean; parishId?: string; message?: string } {
   const parishes = getAllParishes();
   
-  // Check for duplicate name in same tenant
+  // Check for duplicate name within the same tenant
   const duplicate = parishes.find(p => 
-    p.name.toLowerCase() === parishData.name.toLowerCase() && 
+    p.name.toLowerCase() === parishData.name.toLowerCase() &&
     p.tenantId === parishData.tenantId
   );
   
   if (duplicate) {
-    return { success: false, message: 'A parish with this name already exists' };
+    return { success: false, message: 'A parish with this name already exists in your organization' };
   }
   
   const newParish: Parish = {
@@ -4293,6 +4406,113 @@ export function getFieldLabels(tenantId?: string): {
     parishMember: branding.customFieldLabels.parishMember || defaultLabels.parishMember,
     parishLeader: branding.customFieldLabels.parishLeader || defaultLabels.parishLeader
   };
+}
+
+// Get custom text for tenant UI
+export function getCustomText(tenantId?: string) {
+  const defaultText = {
+    registration: {
+      welcomeText: 'Create your account',
+      successMessage: 'Account created successfully! Please check your email to verify your account.',
+      parishSearchPlaceholder: 'Search for your parish/organization...',
+      parishSearchHelper: 'Select your parish to participate in tournaments and track your progress',
+      buttonRegister: 'Create Account',
+      buttonRegisterParish: 'Register New Parish'
+    },
+    parishForm: {
+      title: 'Register New Parish',
+      subtitle: 'Add your parish information to participate in tournaments',
+      basicInfoSection: 'Basic Information',
+      authoritySection: 'Authority Information',
+      contactSection: 'Contact Person',
+      locationSection: 'Location Details',
+      notesSection: 'Important Notes',
+      buttonSubmit: 'Submit for Review',
+      buttonCancel: 'Cancel',
+      successMessage: 'Parish registration submitted successfully!',
+      errorMessage: 'Failed to register parish. Please try again.'
+    },
+    common: {
+      loading: 'Loading...',
+      saving: 'Saving...',
+      cancel: 'Cancel',
+      save: 'Save',
+      edit: 'Edit',
+      delete: 'Delete',
+      confirm: 'Confirm',
+      search: 'Search'
+    }
+  };
+
+  if (!tenantId) return defaultText;
+
+  // Get branding config for tenant
+  const brandingKey = `${STORAGE_KEYS.BRANDING}_${tenantId}`;
+  const branding = storage.get(brandingKey);
+
+  if (!branding || !branding.customText) {
+    return defaultText;
+  }
+
+  // Deep merge custom text with defaults
+  return {
+    registration: {
+      ...defaultText.registration,
+      ...(branding.customText.registration || {})
+    },
+    parishForm: {
+      ...defaultText.parishForm,
+      ...(branding.customText.parishForm || {})
+    },
+    common: {
+      ...defaultText.common,
+      ...(branding.customText.common || {})
+    }
+  };
+}
+
+// Update tenant custom text
+export function updateTenantCustomText(
+  tenantId: string, 
+  customText: Partial<{
+    registration: Record<string, string>;
+    parishForm: Record<string, string>;
+    common: Record<string, string>;
+  }>
+): boolean {
+  try {
+    const brandingKey = `${STORAGE_KEYS.BRANDING}_${tenantId}`;
+    let branding = storage.get(brandingKey) || {
+      tenantId,
+      primaryColor: '#3b82f6',
+      logoUrl: '',
+      customFieldLabels: {},
+      customText: {}
+    };
+
+    // Update custom text
+    branding.customText = {
+      ...branding.customText,
+      registration: {
+        ...(branding.customText.registration || {}),
+        ...(customText.registration || {})
+      },
+      parishForm: {
+        ...(branding.customText.parishForm || {}),
+        ...(customText.parishForm || {})
+      },
+      common: {
+        ...(branding.customText.common || {}),
+        ...(customText.common || {})
+      }
+    };
+
+    storage.set(brandingKey, branding);
+    return true;
+  } catch (error) {
+    console.error('Failed to update custom text:', error);
+    return false;
+  }
 }
 
 // ============================================================================
@@ -7836,6 +8056,382 @@ export function clearAllNotifications(userId: string): void {
 export function getUnreadNotificationCount(userId: string): number {
   const notifications = getNotifications(userId);
   return notifications.filter(n => !n.read).length;
+}
+
+// ========================================
+// PRE-TOURNAMENT QUESTION MANAGEMENT
+// ========================================
+
+/**
+ * Copy question from main bank to pre-tournament bank (isolated)
+ */
+export function copyQuestionToPreTournament(
+  questionId: string,
+  tournamentId: string,
+  userId: string,
+  createVariation: boolean = false,
+  variationIntensity: 'low' | 'medium' | 'high' = 'medium'
+): { success: boolean; message?: string; questionId?: string } {
+  const questions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
+  const sourceQuestion = questions.find((q: Question) => q.id === questionId);
+  
+  if (!sourceQuestion) {
+    return { success: false, message: 'Source question not found' };
+  }
+  
+  const preTournamentQuestions = storage.get(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS) || [];
+  
+  // Check if already copied
+  const exists = preTournamentQuestions.some(
+    (q: PreTournamentQuestion) => 
+      q.tournamentId === tournamentId && 
+      q.sourceQuestionId === questionId &&
+      !q.isVariation
+  );
+  
+  if (exists && !createVariation) {
+    return { success: false, message: 'Question already in pre-tournament bank' };
+  }
+  
+  let newQuestion: PreTournamentQuestion;
+  
+  if (createVariation) {
+    // Generate twisted version
+    const variation = generateQuestionVariation(sourceQuestion, tournamentId, variationIntensity, userId);
+    
+    newQuestion = {
+      id: `pt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      tournamentId,
+      tenantId: sourceQuestion.tenantId,
+      sourceQuestionId: questionId,
+      isVariation: true,
+      variationOf: questionId,
+      variationSeed: variation.id,
+      text: variation.twistedText,
+      options: variation.twistedOptions,
+      correctAnswer: variation.correctAnswer,
+      category: sourceQuestion.category,
+      difficulty: sourceQuestion.difficulty,
+      explanation: sourceQuestion.explanation,
+      verse: sourceQuestion.verse,
+      tags: sourceQuestion.tags,
+      isolatedAt: new Date().toISOString(),
+      isolatedBy: userId,
+      status: 'isolated',
+      usedByUsers: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  } else {
+    // Direct copy
+    newQuestion = {
+      id: `pt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      tournamentId,
+      tenantId: sourceQuestion.tenantId,
+      sourceQuestionId: questionId,
+      isVariation: false,
+      text: sourceQuestion.text,
+      options: sourceQuestion.options,
+      correctAnswer: sourceQuestion.correctAnswer,
+      category: sourceQuestion.category,
+      difficulty: sourceQuestion.difficulty,
+      explanation: sourceQuestion.explanation,
+      verse: sourceQuestion.verse,
+      tags: sourceQuestion.tags,
+      isolatedAt: new Date().toISOString(),
+      isolatedBy: userId,
+      status: 'isolated',
+      usedByUsers: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+  
+  preTournamentQuestions.push(newQuestion);
+  storage.set(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS, preTournamentQuestions);
+  
+  return { success: true, message: 'Question added to pre-tournament bank', questionId: newQuestion.id };
+}
+
+/**
+ * Generate a twisted/varied version of a question
+ */
+function generateQuestionVariation(
+  originalQuestion: Question,
+  tournamentId: string,
+  intensity: 'low' | 'medium' | 'high',
+  userId: string
+): QuestionVariation {
+  // This is a mock implementation. In production, use AI API
+  const variations = storage.get(STORAGE_KEYS.QUESTION_VARIATIONS) || [];
+  
+  let twistedText = originalQuestion.text;
+  let twistedOptions = [...originalQuestion.options];
+  
+  // Apply twisting based on intensity
+  switch (intensity) {
+    case 'low':
+      // Minor rephrasing - change a few words
+      twistedText = rephraseMinor(originalQuestion.text);
+      break;
+      
+    case 'medium':
+      // Moderate changes - rephrase sentence structure
+      twistedText = rephraseMedium(originalQuestion.text);
+      twistedOptions = twistedOptions.map(opt => rephraseMinor(opt));
+      break;
+      
+    case 'high':
+      // Significant changes - change context but keep meaning
+      twistedText = rephraseHigh(originalQuestion.text);
+      twistedOptions = twistedOptions.map(opt => rephraseMedium(opt));
+      break;
+  }
+  
+  const variation: QuestionVariation = {
+    id: `var_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    originalQuestionId: originalQuestion.id,
+    tournamentId,
+    tenantId: originalQuestion.tenantId,
+    variationType: 'mixed',
+    intensityUsed: intensity,
+    originalText: originalQuestion.text,
+    twistedText,
+    originalOptions: originalQuestion.options,
+    twistedOptions,
+    correctAnswer: originalQuestion.correctAnswer,
+    maintainsContext: true,
+    difficultyMatch: true,
+    generatedAt: new Date().toISOString(),
+    generatedBy: userId,
+    generationMethod: 'ai',
+    approvalStatus: 'approved',
+    createdAt: new Date().toISOString()
+  };
+  
+  variations.push(variation);
+  storage.set(STORAGE_KEYS.QUESTION_VARIATIONS, variations);
+  
+  return variation;
+}
+
+// Helper functions for question twisting
+function rephraseMinor(text: string): string {
+  // Simple word substitutions
+  return text
+    .replace(/\bwho\b/gi, 'which person')
+    .replace(/\bwhat\b/gi, 'which')
+    .replace(/\bfirst\b/gi, 'initial')
+    .replace(/\bcreated\b/gi, 'made')
+    .replace(/\bGod\b/g, 'the Lord');
+}
+
+function rephraseMedium(text: string): string {
+  // Sentence structure changes
+  const patterns = [
+    { from: /^Who was (.+)\?$/i, to: 'Can you identify $1?' },
+    { from: /^What (.+)\?$/i, to: 'Do you know what $1?' },
+    { from: /^Where (.+)\?$/i, to: 'In which place $1?' },
+    { from: /^When (.+)\?$/i, to: 'At what time $1?' }
+  ];
+  
+  let result = text;
+  for (const pattern of patterns) {
+    result = result.replace(pattern.from, pattern.to);
+  }
+  
+  return result || rephraseMinor(text);
+}
+
+function rephraseHigh(text: string): string {
+  // Contextual changes - more dramatic rephrasing
+  // In production, this would use AI API
+  return rephraseMedium(text)
+    .replace(/\?$/, ' according to Scripture?')
+    .replace(/^/, 'In biblical history, ');
+}
+
+/**
+ * Get pre-tournament questions for a tournament
+ */
+export function getPreTournamentQuestions(
+  tournamentId: string,
+  includeReleased: boolean = false
+): PreTournamentQuestion[] {
+  const allQuestions = storage.get(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS) || [];
+  
+  return allQuestions.filter((q: PreTournamentQuestion) => 
+    q.tournamentId === tournamentId &&
+    (includeReleased || q.status === 'isolated')
+  );
+}
+
+/**
+ * Get personalized quiz questions for a user (shuffled and unique)
+ */
+export function getPersonalizedQuizQuestions(
+  tournamentId: string,
+  userId: string,
+  questionsCount: number
+): PreTournamentQuestion[] {
+  const preTournamentQuestions = getPreTournamentQuestions(tournamentId, false);
+  
+  // Filter out questions already used by this user
+  const availableQuestions = preTournamentQuestions.filter(
+    (q: PreTournamentQuestion) => !q.usedByUsers.includes(userId)
+  );
+  
+  if (availableQuestions.length < questionsCount) {
+    throw new Error(
+      `Not enough unique questions. Need ${questionsCount}, have ${availableQuestions.length}`
+    );
+  }
+  
+  // Shuffle and select random questions
+  const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, questionsCount);
+  
+  // Mark questions as used by this user
+  const allQuestions = storage.get(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS) || [];
+  selected.forEach((selectedQ: PreTournamentQuestion) => {
+    const question = allQuestions.find((q: PreTournamentQuestion) => q.id === selectedQ.id);
+    if (question && !question.usedByUsers.includes(userId)) {
+      question.usedByUsers.push(userId);
+    }
+  });
+  
+  storage.set(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS, allQuestions);
+  
+  return selected;
+}
+
+/**
+ * Release pre-tournament questions to main bank after tournament starts
+ */
+export function releasePreTournamentQuestions(
+  tournamentId: string,
+  userId: string
+): { success: boolean; message?: string; releasedCount?: number } {
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
+  
+  if (!tournament) {
+    return { success: false, message: 'Tournament not found' };
+  }
+  
+  if (tournament.status !== 'active' && tournament.status !== 'completed') {
+    return { success: false, message: 'Tournament must be active or completed to release questions' };
+  }
+  
+  const preTournamentQuestions = storage.get(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS) || [];
+  const questions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
+  
+  let releasedCount = 0;
+  
+  preTournamentQuestions.forEach((ptq: PreTournamentQuestion) => {
+    if (ptq.tournamentId === tournamentId && ptq.status === 'isolated') {
+      // Mark as released
+      ptq.status = 'released';
+      ptq.releasedAt = new Date().toISOString();
+      
+      // Copy to main question bank (only variations or new questions)
+      if (ptq.isVariation || !ptq.sourceQuestionId) {
+        const newQuestion: Question = {
+          id: `q_released_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          text: ptq.text,
+          options: ptq.options,
+          correctAnswer: ptq.correctAnswer,
+          category: ptq.category,
+          difficulty: ptq.difficulty,
+          source: 'manual',
+          explanation: ptq.explanation,
+          verse: ptq.verse,
+          tenantId: ptq.tenantId,
+          tags: ptq.tags,
+          isActive: true,
+          usageCount: 0,
+          createdAt: ptq.createdAt,
+          createdBy: ptq.isolatedBy
+        };
+        
+        questions.push(newQuestion);
+        releasedCount++;
+      }
+    }
+  });
+  
+  storage.set(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS, preTournamentQuestions);
+  storage.set(STORAGE_KEYS.QUESTIONS, questions);
+  
+  return { 
+    success: true, 
+    message: `Released ${releasedCount} questions to main bank`, 
+    releasedCount 
+  };
+}
+
+/**
+ * Delete pre-tournament question
+ */
+export function deletePreTournamentQuestion(
+  questionId: string,
+  tournamentId: string
+): { success: boolean; message?: string } {
+  const preTournamentQuestions = storage.get(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS) || [];
+  
+  const question = preTournamentQuestions.find(
+    (q: PreTournamentQuestion) => q.id === questionId && q.tournamentId === tournamentId
+  );
+  
+  if (!question) {
+    return { success: false, message: 'Question not found' };
+  }
+  
+  if (question.usedByUsers.length > 0) {
+    return { success: false, message: 'Cannot delete question that has been used in quiz attempts' };
+  }
+  
+  const updated = preTournamentQuestions.filter(
+    (q: PreTournamentQuestion) => q.id !== questionId
+  );
+  
+  storage.set(STORAGE_KEYS.PRE_TOURNAMENT_QUESTIONS, updated);
+  
+  return { success: true, message: 'Question deleted successfully' };
+}
+
+/**
+ * Get statistics for pre-tournament question pool
+ */
+export function getPreTournamentQuestionStats(tournamentId: string) {
+  const questions = getPreTournamentQuestions(tournamentId, false);
+  
+  const totalQuestions = questions.length;
+  const variations = questions.filter(q => q.isVariation).length;
+  const directCopies = questions.filter(q => !q.isVariation && q.sourceQuestionId).length;
+  const original = questions.filter(q => !q.sourceQuestionId).length;
+  
+  const usageMap: Record<string, number> = {};
+  questions.forEach(q => {
+    q.usedByUsers.forEach(userId => {
+      usageMap[userId] = (usageMap[userId] || 0) + 1;
+    });
+  });
+  
+  const totalUniqueUsers = Object.keys(usageMap).length;
+  const avgQuestionsPerUser = totalUniqueUsers > 0 
+    ? Object.values(usageMap).reduce((a, b) => a + b, 0) / totalUniqueUsers 
+    : 0;
+  
+  return {
+    totalQuestions,
+    variations,
+    directCopies,
+    original,
+    totalUniqueUsers,
+    avgQuestionsPerUser,
+    questionsAvailable: questions.filter(q => q.usedByUsers.length === 0).length
+  };
 }
 
 

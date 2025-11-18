@@ -39,6 +39,7 @@ interface RoundQuestionConfigBuilderProps {
   initialConfigs?: RoundQuestionConfig[];
   tenantId: string;
   currentUser: User;
+  onBack?: () => void;
 }
 
 const CATEGORY_OPTIONS: Array<{ value: QuestionCategoryType; label: string; color: string }> = [

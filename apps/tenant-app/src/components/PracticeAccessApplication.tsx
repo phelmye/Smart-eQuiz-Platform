@@ -245,3 +245,5 @@ export const PracticeAccessApplication: React.FC = () => {
     </div>
   );
 };
+
+export default PracticeAccessApplication;

@@ -242,3 +242,5 @@ export const BulkCertificateGenerator: React.FC<{
     </Card>
   );
 };
+
+export default CertificateGenerator;

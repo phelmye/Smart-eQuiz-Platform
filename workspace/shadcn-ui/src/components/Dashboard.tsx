@@ -33,6 +33,16 @@ import AccessControl from './AccessControl';
 import ComponentAccessControl from './ComponentAccessControl';
 import AuditLogViewer from './AuditLogViewer';
 import TenantRoleCustomization from './TenantRoleCustomization';
+import UsageMonitoringDashboard from './UsageMonitoringDashboard';
+import SystemHealthMonitor from './SystemHealthMonitor';
+import InvoiceGenerator from './InvoiceGenerator';
+import DunningManagement from './DunningManagement';
+import { QuestionStatusBadge, ApprovalStatusBadge, CombinedStatusBadges } from './QuestionStatusBadge';
+import { EnhancedQuestionFilters, BulkActionBar, QuestionTableRow, LifecycleHistoryDialog } from './QuestionBankEnhancements';
+import TournamentQuestionConfigPanel from './TournamentQuestionConfig';
+import PracticeModeSourceSelector from './PracticeModeSourceSelector';
+import AdminLifecycleDashboard from './AdminLifecycleDashboard';
+import UserNotificationComponent from './UserNotificationComponent';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
 import SubscriptionCheckout from './SubscriptionCheckout';
@@ -262,6 +272,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <TenantManagementForSuperAdmin 
               user={user} 
               onLoginAs={handleLoginAsTenant}
+            />
+          </AccessControl>
+        );
+      case 'usage-monitoring':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="usage-monitoring"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can view usage monitoring."
+          >
+            <UsageMonitoringDashboard onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+      case 'system-health':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="system-health"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can view system health."
+          >
+            <SystemHealthMonitor onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+      case 'invoice-generator':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="invoice-generator"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage invoices."
+          >
+            <InvoiceGenerator onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+      case 'dunning-management':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="dunning-management"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only super administrators can manage dunning."
+          >
+            <DunningManagement onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+      case 'question-lifecycle':
+        return (
+          <AccessControl
+            user={user}
+            requiredPage="question-lifecycle"
+            requiredPermission="questions.read"
+            fallbackMessage="You don't have permission to view the question lifecycle dashboard."
+          >
+            <AdminLifecycleDashboard 
+              onBack={handleBackToDashboard}
+              tenantId={user?.tenantId || ''}
             />
           </AccessControl>
         );
@@ -948,6 +1016,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* User Notifications */}
+                  {user && (
+                    <UserNotificationComponent 
+                      user={user}
+                      onNavigate={(page) => handleSidebarNavigate(page)}
+                    />
+                  )}
 
                   {/* Stats Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

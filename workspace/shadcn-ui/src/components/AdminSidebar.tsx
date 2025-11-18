@@ -38,7 +38,9 @@ import {
   BellRing,
   FileText,
   Tags,
-  BookTemplate
+  BookTemplate,
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
@@ -255,6 +257,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
           requiredPermission: 'questions.create',
           planFeature: 'ai-generator'
+        },
+        {
+          id: 'question-lifecycle',
+          label: 'Question Lifecycle',
+          icon: Activity,
+          page: 'question-lifecycle',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager'],
+          requiredPermission: 'questions.read',
+          planFeature: 'ai-generator'
         }
       ]
     },
@@ -319,6 +331,38 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'Tenants',
           icon: Building,
           page: 'tenant-management',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'usage-monitoring',
+          label: 'Usage Monitoring',
+          icon: BarChart3,
+          page: 'usage-monitoring',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'system-health',
+          label: 'System Health',
+          icon: Activity,
+          page: 'system-health',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'invoice-generator',
+          label: 'Invoice Generator',
+          icon: FileText,
+          page: 'invoice-generator',
+          requiredRoles: ['super_admin'],
+          requiredPermission: 'tenant.manage'
+        },
+        {
+          id: 'dunning-management',
+          label: 'Dunning Management',
+          icon: AlertTriangle,
+          page: 'dunning-management',
           requiredRoles: ['super_admin'],
           requiredPermission: 'tenant.manage'
         },

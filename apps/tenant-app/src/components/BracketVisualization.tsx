@@ -16,6 +16,7 @@ interface BracketVisualizationProps {
   onMatchClick?: (match: KnockoutMatch) => void;
   showParticipantDetails?: boolean;
   compact?: boolean;
+  onBack?: () => void;
 }
 
 interface MatchCardProps {

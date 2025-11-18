@@ -29,6 +29,10 @@ interface EmailTemplate {
   lastModified: string;
 }
 
+interface EmailTemplateManagerProps {
+  onBack?: () => void;
+}
+
 const DEFAULT_TEMPLATES: EmailTemplate[] = [
   {
     id: 'welcome',
@@ -162,7 +166,7 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
   }
 ];
 
-export const EmailTemplateManager: React.FC = () => {
+export const EmailTemplateManager: React.FC<EmailTemplateManagerProps> = ({ onBack }) => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [previewMode, setPreviewMode] = useState(false);

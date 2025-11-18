@@ -463,17 +463,50 @@ export interface AuditLog {
   tenantId: string;
   userId: string; // User who performed the action
   targetUserId?: string; // User who was affected (for user management actions)
-  action: 'user.create' | 'user.update' | 'user.delete' | 'role.assign' | 'permission.grant' | 'permission.revoke';
-  details: {
+  action: 
+    // User actions
+    | 'user.create' | 'user.update' | 'user.delete' 
+    | 'user.login' | 'user.logout' | 'user.login_failed'
+    // Role and permission actions
+    | 'role.assign' | 'role.create' | 'role.update' | 'role.delete'
+    | 'permission.grant' | 'permission.revoke'
+    // Tenant actions
+    | 'tenant.create' | 'tenant.update' | 'tenant.suspend' | 'tenant.reactivate' | 'tenant.delete'
+    | 'tenant.suspended' // For dunning system suspension
+    // Tournament actions
+    | 'tournament.create' | 'tournament.update' | 'tournament.delete' | 'tournament.start' | 'tournament.end'
+    // Question actions
+    | 'question.create' | 'question.update' | 'question.delete' | 'question.import'
+    // Payment actions
+    | 'payment.processed' | 'payment.failed' | 'payment.refunded'
+    // Billing actions
+    | 'billing.invoices_generated' | 'billing.invoice_sent' | 'billing.invoice_downloaded'
+    | 'billing.payment_retry' | 'billing.reminder_sent' | 'billing.payment_recovered'
+    // Settings actions
+    | 'settings.update' | 'integration.connected' | 'integration.disconnected'
+    | 'system.billing_settings_updated' | 'system.dunning_settings_updated'
+    // Data actions
+    | 'data.export' | 'data.import' | 'data.delete'
+    // System actions
+    | 'system.backup' | 'system.restore';
+  entityType?: 'user' | 'tenant' | 'tournament' | 'question' | 'plan' | 'payment' | 'settings' | 'role' | 'integration' | 'billing';
+  entityId?: string;
+  // Details can be either a simple string message or a structured object with metadata
+  details: string | {
     previousValue?: any;
     newValue?: any;
+    changes?: Array<{ field: string; oldValue: any; newValue: any }>;
     roleName?: string;
     permission?: string;
     reason?: string;
+    errorMessage?: string;
+    metadata?: any;
   };
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;
+  sessionId?: string;
+  location?: string;
 }
 
 // Role permission interface
@@ -530,6 +563,16 @@ export interface Tenant {
   maxTournaments: number;
   paymentIntegrationEnabled: boolean; // Default false - tenant admin must enable
   createdAt: string;
+  // Status and suspension management
+  status?: 'active' | 'suspended' | 'deactivated';
+  suspendedAt?: string;
+  suspendedBy?: string;
+  suspensionReason?: string;
+  // Usage tracking
+  currentUsers?: number;
+  currentTournaments?: number;
+  storageUsedMB?: number;
+  lastActivityAt?: string;
   // Customizable field labels for tenant-specific terminology
   customFieldLabels?: {
     parishSingular?: string; // e.g., "Parish", "Church", "Organization", "Team"
@@ -2379,8 +2422,13 @@ export const mockTenants: Tenant[] = [
     logoUrl: '',
     maxUsers: 20,
     maxTournaments: 5,
-    paymentIntegrationEnabled: false, // Default false - tenant admin must enable
-    createdAt: '2024-01-01T00:00:00Z'
+    paymentIntegrationEnabled: false,
+    createdAt: '2024-01-01T00:00:00Z',
+    status: 'active',
+    currentUsers: 12,
+    currentTournaments: 3,
+    storageUsedMB: 45.3,
+    lastActivityAt: '2025-11-15T14:30:00Z'
   },
   {
     id: 'tenant2', 
@@ -2390,8 +2438,13 @@ export const mockTenants: Tenant[] = [
     logoUrl: '',
     maxUsers: 5,
     maxTournaments: 1,
-    paymentIntegrationEnabled: false, // Default false - tenant admin must enable
-    createdAt: '2024-02-01T00:00:00Z'
+    paymentIntegrationEnabled: false,
+    createdAt: '2024-02-01T00:00:00Z',
+    status: 'active',
+    currentUsers: 4,
+    currentTournaments: 1,
+    storageUsedMB: 12.7,
+    lastActivityAt: '2025-11-16T09:15:00Z'
   },
   {
     id: 'tenant3',
@@ -2401,8 +2454,13 @@ export const mockTenants: Tenant[] = [
     logoUrl: '',
     maxUsers: -1,
     maxTournaments: -1,
-    paymentIntegrationEnabled: true, // Example: this tenant has enabled payment integration
-    createdAt: '2024-03-01T00:00:00Z'
+    paymentIntegrationEnabled: true,
+    createdAt: '2024-03-01T00:00:00Z',
+    status: 'active',
+    currentUsers: 78,
+    currentTournaments: 15,
+    storageUsedMB: 234.8,
+    lastActivityAt: '2025-11-17T11:45:00Z'
   }
 ];
 
@@ -3318,25 +3376,59 @@ export function getAllAvailablePages(): string[] {
 
 // Audit logging functions
 export function logAuditEvent(
-  creatorUser: User,
-  action: AuditLog['action'],
-  details: AuditLog['details'],
+  creatorUserOrParams: User | {
+    tenantId: string;
+    userId: string;
+    action: AuditLog['action'];
+    entityType?: AuditLog['entityType'];
+    entityId?: string;
+    targetUserId?: string;
+    details?: AuditLog['details'];
+    ipAddress?: string;
+    userAgent?: string;
+  },
+  action?: AuditLog['action'],
+  details?: AuditLog['details'],
   targetUserId?: string
 ): void {
-  if (!creatorUser || !creatorUser.tenantId) return;
+  let logData: AuditLog;
   
-  const auditLog: AuditLog = {
-    id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    tenantId: creatorUser.tenantId,
-    userId: creatorUser.id,
-    targetUserId,
-    action,
-    details,
-    timestamp: new Date().toISOString()
-  };
+  // Handle both old and new signatures
+  if ('tenantId' in creatorUserOrParams && typeof creatorUserOrParams.tenantId === 'string') {
+    // New signature with params object
+    const params = creatorUserOrParams;
+    logData = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      tenantId: params.tenantId,
+      userId: params.userId,
+      targetUserId: params.targetUserId,
+      action: params.action,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      details: params.details || {},
+      timestamp: new Date().toISOString(),
+      ipAddress: params.ipAddress || '127.0.0.1',
+      userAgent: params.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
+      sessionId: `session_${Date.now()}`,
+    };
+  } else {
+    // Old signature with User object
+    const creatorUser = creatorUserOrParams as User;
+    if (!creatorUser || !creatorUser.tenantId) return;
+    
+    logData = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      tenantId: creatorUser.tenantId,
+      userId: creatorUser.id,
+      targetUserId,
+      action: action!,
+      details: details || {},
+      timestamp: new Date().toISOString()
+    };
+  }
   
   const existingLogs = storage.get(STORAGE_KEYS.AUDIT_LOGS) || [];
-  existingLogs.push(auditLog);
+  existingLogs.push(logData);
   storage.set(STORAGE_KEYS.AUDIT_LOGS, existingLogs);
 }
 
