@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthSystem, useAuth } from '@/components/AuthSystem';
 import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { initializeMockData } from '@/lib/mockData';
+import { initializeMockData, mockTournaments } from '@/lib/mockData';
 
 // Dynamic imports for code splitting - components are loaded only when needed
 const Dashboard = lazy(() => import('@/components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -211,15 +211,37 @@ const AppContent: React.FC = () => {
             
             // Tournament Management
             case 'certificates':
-              // TODO: Requires proper award object
-              return <div className="p-8"><h1>Certificate Generator - Coming Soon</h1></div>;
+              // Mock award for demo purposes
+              const mockAward = {
+                id: 'demo-award-1',
+                tenantId: mockTenant.id,
+                tournamentId: 'demo-tournament',
+                prizeConfigId: 'demo-config',
+                winnerId: user?.id || 'demo-user',
+                winnerName: user?.name || 'Demo User',
+                winnerType: 'individual' as const,
+                awardType: 'position' as const,
+                position: 1,
+                positionLabel: '1st Place',
+                prizeDescription: 'First Place Champion',
+                prizes: [],
+                recipientId: user?.id || 'demo-user',
+                awardedAt: new Date().toISOString(),
+                status: 'claimed' as const,
+                winnerAcknowledged: false,
+                certificateGenerated: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              return <CertificateGenerator award={mockAward} type="winner" userId={user?.id} />;
             case 'email-templates':
               return <EmailTemplateManager onBack={handleBackToDashboard} />;
             case 'hall-of-fame':
               return <WinnersHallOfFame tenantId={mockTenant.id} />;
             case 'spectator':
-              // TODO: Requires full tournament object
-              return <div className="p-8"><h1>Live Tournament Spectator - Coming Soon</h1></div>;
+              // Use first available tournament for spectator mode
+              const spectatorTournament = mockTournaments.find(t => t.tenantId === mockTenant.id) || mockTournaments[0];
+              return <LiveTournamentSpectator tournament={spectatorTournament} onBack={handleBackToDashboard} />;
             case 'match-management':
               return <MatchManagement tournamentId="demo-tournament" tenantId={mockTenant.id} onBack={handleBackToDashboard} />;
             case 'prize-management':
@@ -227,8 +249,9 @@ const AppContent: React.FC = () => {
             case 'brackets':
               return <BracketVisualization tournamentId="demo-tournament" onBack={handleBackToDashboard} />;
             case 'knockout-tournament':
-              // TODO: Requires full tournament object
-              return <div className="p-8"><h1>Knockout Tournament Engine - Coming Soon</h1></div>;
+              // Use first available tournament
+              const knockoutTournament = mockTournaments.find(t => t.tenantId === mockTenant.id) || mockTournaments[0];
+              return <KnockoutTournamentEngine tournament={knockoutTournament} tenantId={mockTenant.id} onBack={handleBackToDashboard} />;
             
             // Question & Category Management
             case 'bonus-questions':

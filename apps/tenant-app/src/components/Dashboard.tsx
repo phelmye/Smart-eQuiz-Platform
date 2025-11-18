@@ -586,15 +586,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   Back to Dashboard
                 </Button>
               </div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Security Settings</CardTitle>
-                  <CardDescription>Configure security and authentication settings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600">Security settings interface coming soon...</p>
-                </CardContent>
-              </Card>
+              <SecurityCenter user={user} />
             </div>
           </AccessControl>
         );

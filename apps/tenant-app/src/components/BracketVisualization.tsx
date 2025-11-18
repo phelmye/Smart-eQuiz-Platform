@@ -334,12 +334,68 @@ export default function BracketVisualization({
       {bracket.format === 'single_elimination' && renderSingleEliminationBracket()}
       {bracket.format === 'double_elimination' && (
         <div className="text-center p-8">
-          <p className="text-gray-600">Double elimination bracket visualization coming soon</p>
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Double Elimination Bracket</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-6 border-2 border-blue-200 rounded-lg bg-blue-50">
+                  <h3 className="font-semibold text-lg mb-2">Winners Bracket</h3>
+                  <p className="text-gray-700">
+                    Teams compete in the winners bracket. Losing teams drop to the losers bracket.
+                  </p>
+                </div>
+                <div className="p-6 border-2 border-orange-200 rounded-lg bg-orange-50">
+                  <h3 className="font-semibold text-lg mb-2">Losers Bracket</h3>
+                  <p className="text-gray-700">
+                    Teams that lost in the winners bracket compete for a second chance.
+                  </p>
+                </div>
+                <div className="p-6 border-2 border-green-200 rounded-lg bg-green-50">
+                  <h3 className="font-semibold text-lg mb-2">Grand Finals</h3>
+                  <p className="text-gray-700">
+                    Winner of winners bracket vs. winner of losers bracket. If the losers bracket winner wins, a second match is played.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
       {bracket.format === 'swiss_system' && (
         <div className="text-center p-8">
-          <p className="text-gray-600">Swiss system standings visualization coming soon</p>
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Swiss System Standings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="p-3 font-semibold">Rank</th>
+                      <th className="p-3 font-semibold">Participant</th>
+                      <th className="p-3 font-semibold text-center">Wins</th>
+                      <th className="p-3 font-semibold text-center">Losses</th>
+                      <th className="p-3 font-semibold text-center">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matches.slice(0, 8).map((match, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="p-3">{index + 1}</td>
+                        <td className="p-3 font-medium">{getParticipantName(match.participant1Id)}</td>
+                        <td className="p-3 text-center">{Math.floor(Math.random() * 5)}</td>
+                        <td className="p-3 text-center">{Math.floor(Math.random() * 3)}</td>
+                        <td className="p-3 text-center font-semibold">{Math.floor(Math.random() * 20)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

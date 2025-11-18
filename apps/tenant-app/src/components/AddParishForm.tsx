@@ -181,8 +181,23 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
 
   const handleMapPick = () => {
     // In production, integrate with Google Maps or similar
-    // For now, just show an alert
-    alert('Map integration coming soon! Please enter coordinates manually or paste map URL.');
+    // For now, provide guidance for manual entry
+    const coords = prompt('Enter coordinates in format: latitude,longitude\n\nExample: 40.7128,-74.0060 (New York City)\n\nYou can get coordinates from Google Maps by right-clicking a location.');
+    if (coords) {
+      const [lat, lng] = coords.split(',').map(s => s.trim());
+      if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+        setFormData({ 
+          ...formData, 
+          location: { 
+            ...formData.location, 
+            coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) } 
+          } 
+        });
+        alert('Coordinates saved successfully!');
+      } else {
+        alert('Invalid coordinates format. Please use: latitude,longitude');
+      }
+    }
   };
 
   if (!tenantId) {
