@@ -98,6 +98,28 @@ cd apps/tenant-app
 pnpm dev  # http://localhost:5174
 ```
 
+### Workspace Commands (Recommended)
+
+Build all applications at once:
+
+```bash
+# Build all apps
+pnpm run build
+
+# Build specific app
+pnpm run build:tenant-app
+pnpm run build:marketing-site
+pnpm run build:platform-admin
+
+# Type check all apps
+pnpm run typecheck
+
+# Development servers
+pnpm run dev:tenant-app       # Port 5174
+pnpm run dev:marketing-site   # Port 3000
+pnpm run dev:platform-admin   # Port 5173
+```
+
 ---
 
 ## 📚 Documentation
