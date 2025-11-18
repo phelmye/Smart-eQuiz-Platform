@@ -233,6 +233,13 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     }).format(amount);
   };
 
+  const calculateAnnualPrice = (plan: any) => {
+    if (!plan || !plan.monthlyPrice) return 0;
+    const yearlyPrice = plan.monthlyPrice * 12;
+    const discount = plan.yearlyDiscountPercent || 0;
+    return yearlyPrice * (1 - discount / 100);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -316,15 +323,15 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold">{currentPlan?.name}</h2>
+                    <h2 className="text-2xl font-bold">{currentPlan?.displayName || currentPlan?.name}</h2>
                     <div className="flex items-baseline gap-2 mt-2">
                       <span className="text-3xl font-bold">
                         {formatCurrency(billingCycle === 'monthly' ? 
-                          currentPlan?.pricing.monthly || 0 : 
-                          currentPlan?.pricing.annual || 0
+                          currentPlan?.monthlyPrice || 0 : 
+                          calculateAnnualPrice(currentPlan)
                         )}
                       </span>
-                      <span className="text-gray-600">/ {billingCycle}</span>
+                      <span className="text-gray-600">/ {billingCycle === 'monthly' ? 'month' : 'year'}</span>
                     </div>
                   </div>
 
