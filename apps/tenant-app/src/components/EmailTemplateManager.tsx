@@ -46,11 +46,13 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <p>We're excited to have you on board! Your account has been created successfully.</p>
       <p>Here's what you can do next:</p>
       <ul>
-        <li>Create your first quiz</li>
-        <li>Invite team members</li>
-        <li>Explore tournament features</li>
+        <li>Complete your profile</li>
+        <li>Practice with available quizzes</li>
+        <li>Join upcoming tournaments</li>
+        <li>Track your progress and scores</li>
       </ul>
-      <a href="{{dashboardUrl}}">Go to Dashboard</a>
+      <a href="{{dashboardUrl}}">View Your Dashboard</a>
+      <p>Need help? Contact support at {{supportEmail}}</p>
     `,
     variables: ['userName', 'dashboardUrl', 'supportEmail'],
     active: true,
@@ -70,9 +72,11 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <ul>
         <li>Start Date: {{startDate}}</li>
         <li>Entry Fee: {{entryFee}}</li>
-        <li>Participants: {{participantCount}}</li>
+        <li>Expected Participants: {{participantCount}}</li>
       </ul>
-      <a href="{{tournamentUrl}}">Register Now</a>
+      <p>To participate, please register before the tournament starts.</p>
+      <a href="{{tournamentUrl}}">Register for Tournament</a>
+      <p>Good luck!</p>
     `,
     variables: ['userName', 'tournamentName', 'startDate', 'entryFee', 'participantCount', 'tournamentUrl'],
     active: true,
@@ -97,8 +101,9 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       </ul>
       <p>{{description}}</p>
       <a href="{{invoiceUrl}}">Download Invoice</a>
+      <p>Questions about this charge? Contact us at {{supportEmail}}</p>
     `,
-    variables: ['userName', 'amount', 'paymentDate', 'transactionId', 'paymentMethod', 'description', 'invoiceUrl'],
+    variables: ['userName', 'amount', 'paymentDate', 'transactionId', 'paymentMethod', 'description', 'invoiceUrl', 'supportEmail'],
     active: true,
     lastModified: new Date().toISOString()
   },
@@ -119,8 +124,8 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
         <li>Next billing date: {{nextBillingDate}}</li>
         <li>Amount: {{amount}}</li>
       </ul>
-      <p>You now have access to all premium features!</p>
-      <a href="{{dashboardUrl}}">Explore Features</a>
+      <p>You can now access all features included in your plan.</p>
+      <a href="{{dashboardUrl}}">Go to Dashboard</a>
     `,
     variables: ['userName', 'planName', 'billingCycle', 'nextBillingDate', 'amount', 'dashboardUrl'],
     active: true,
@@ -138,8 +143,8 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <p><strong>{{tournamentName}}</strong> is starting soon!</p>
       <p><strong>Starts in: 24 hours</strong></p>
       <p>Start time: {{startTime}}</p>
-      <p>Make sure you're ready to compete!</p>
-      <a href="{{tournamentUrl}}">View Tournament</a>
+      <p>Make sure you're ready to compete! Review your study materials and be online at the start time.</p>
+      <a href="{{tournamentUrl}}">View Tournament Details</a>
     `,
     variables: ['userName', 'tournamentName', 'startTime', 'tournamentUrl'],
     active: true,
@@ -158,9 +163,107 @@ const DEFAULT_TEMPLATES: EmailTemplate[] = [
       <p>Click the button below to create a new password:</p>
       <a href="{{resetUrl}}">Reset Password</a>
       <p>This link will expire in 1 hour.</p>
-      <p>If you didn't request this, please ignore this email.</p>
+      <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
     `,
     variables: ['userName', 'resetUrl'],
+    active: true,
+    lastModified: new Date().toISOString()
+  },
+  {
+    id: 'tournament-registration-confirmed',
+    name: 'Tournament Registration Confirmed',
+    subject: 'Registration confirmed for {{tournamentName}}',
+    category: 'tournament',
+    description: 'Sent when user successfully registers for a tournament',
+    htmlContent: `
+      <h1>Registration Confirmed!</h1>
+      <p>Hi {{userName}},</p>
+      <p>You're all set for <strong>{{tournamentName}}</strong>!</p>
+      <p><strong>What to expect:</strong></p>
+      <ul>
+        <li>You'll receive a reminder 24 hours before the tournament</li>
+        <li>Be online at the scheduled start time</li>
+        <li>Make sure you have a stable internet connection</li>
+        <li>Have your study materials ready if needed</li>
+      </ul>
+      <p><strong>Tournament Details:</strong></p>
+      <ul>
+        <li>Date & Time: {{startTime}}</li>
+        <li>Format: {{tournamentFormat}}</li>
+      </ul>
+      <a href="{{tournamentUrl}}">View Tournament Page</a>
+      <p>Good luck!</p>
+    `,
+    variables: ['userName', 'tournamentName', 'startTime', 'tournamentFormat', 'tournamentUrl'],
+    active: true,
+    lastModified: new Date().toISOString()
+  },
+  {
+    id: 'tournament-results',
+    name: 'Tournament Results',
+    subject: 'Results for {{tournamentName}}',
+    category: 'tournament',
+    description: 'Sent after tournament concludes with participant results',
+    htmlContent: `
+      <h1>Tournament Results</h1>
+      <p>Hi {{userName}},</p>
+      <p>The results for <strong>{{tournamentName}}</strong> are now available!</p>
+      <p><strong>Your Performance:</strong></p>
+      <ul>
+        <li>Final Position: {{position}}</li>
+        <li>Total Score: {{score}}</li>
+        <li>Correct Answers: {{correctAnswers}} / {{totalQuestions}}</li>
+      </ul>
+      <a href="{{resultsUrl}}">View Full Results</a>
+      <p>Thank you for participating!</p>
+    `,
+    variables: ['userName', 'tournamentName', 'position', 'score', 'correctAnswers', 'totalQuestions', 'resultsUrl'],
+    active: true,
+    lastModified: new Date().toISOString()
+  },
+  {
+    id: 'practice-quiz-completed',
+    name: 'Practice Quiz Completed',
+    subject: 'Your practice quiz results',
+    category: 'user',
+    description: 'Sent after user completes a practice quiz',
+    htmlContent: `
+      <h1>Practice Quiz Completed!</h1>
+      <p>Hi {{userName}},</p>
+      <p>Great job completing the practice quiz!</p>
+      <p><strong>Your Results:</strong></p>
+      <ul>
+        <li>Score: {{score}}%</li>
+        <li>Correct: {{correctAnswers}} / {{totalQuestions}}</li>
+        <li>Time Taken: {{timeTaken}}</li>
+      </ul>
+      <p>Keep practicing to improve your score!</p>
+      <a href="{{dashboardUrl}}">Continue Practicing</a>
+    `,
+    variables: ['userName', 'score', 'correctAnswers', 'totalQuestions', 'timeTaken', 'dashboardUrl'],
+    active: true,
+    lastModified: new Date().toISOString()
+  },
+  {
+    id: 'spectator-access-granted',
+    name: 'Spectator Access Granted',
+    subject: 'You can now spectate {{tournamentName}}',
+    category: 'tournament',
+    description: 'Sent when spectator access is granted for a tournament',
+    htmlContent: `
+      <h1>Spectator Access Granted</h1>
+      <p>Hi {{userName}},</p>
+      <p>You've been granted spectator access to <strong>{{tournamentName}}</strong>!</p>
+      <p>As a spectator, you can:</p>
+      <ul>
+        <li>Watch the tournament live</li>
+        <li>View real-time scores and standings</li>
+        <li>Follow your favorite participants</li>
+      </ul>
+      <p><strong>Tournament starts:</strong> {{startTime}}</p>
+      <a href="{{spectatorUrl}}">Join as Spectator</a>
+    `,
+    variables: ['userName', 'tournamentName', 'startTime', 'spectatorUrl'],
     active: true,
     lastModified: new Date().toISOString()
   }

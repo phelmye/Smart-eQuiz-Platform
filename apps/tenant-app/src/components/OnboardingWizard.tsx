@@ -18,6 +18,8 @@ import { storage, STORAGE_KEYS } from '@/lib/mockData';
 interface OnboardingWizardProps {
   onComplete: () => void;
   onSkip?: () => void;
+  user?: any;
+  tenant?: any;
 }
 
 interface OnboardingStep {
@@ -30,7 +32,9 @@ interface OnboardingStep {
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   onComplete,
-  onSkip
+  onSkip,
+  user,
+  tenant
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -44,6 +48,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       tournamentAlerts: true
     }
   });
+
+  // Check if user is admin
+  const isAdmin = user && (user.role === 'org_admin' || user.role === 'super_admin' || user.role === 'admin');
 
   const steps: OnboardingStep[] = [
     {
@@ -232,8 +239,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <span className="text-xs font-bold text-blue-600">1</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Create your first question</p>
-                <p className="text-xs text-gray-600">Build your question bank</p>
+                <p className="font-medium text-sm">
+                  {isAdmin ? 'Create your first question' : 'Complete your profile'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isAdmin ? 'Build your question bank' : 'Set up your participant profile'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-purple-50 rounded-lg">
@@ -241,8 +252,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <span className="text-xs font-bold text-purple-600">2</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Invite your team</p>
-                <p className="text-xs text-gray-600">Collaborate with colleagues</p>
+                <p className="font-medium text-sm">
+                  {isAdmin ? 'Invite your team' : 'Practice with quizzes'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isAdmin ? 'Collaborate with colleagues' : 'Improve your skills'}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
@@ -250,8 +265,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 <span className="text-xs font-bold text-green-600">3</span>
               </div>
               <div>
-                <p className="font-medium text-sm">Launch a tournament</p>
-                <p className="text-xs text-gray-600">Engage your audience</p>
+                <p className="font-medium text-sm">
+                  {isAdmin ? 'Launch a tournament' : 'Join a tournament'}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {isAdmin ? 'Engage your audience' : 'Compete and have fun'}
+                </p>
               </div>
             </div>
           </div>

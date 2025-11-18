@@ -7,7 +7,8 @@ import {
   BarChart3, 
   Settings,
   LogOut,
-  Menu
+  Menu,
+  Globe
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -20,6 +21,7 @@ const navigation = [
   { name: 'Tenants', href: '/tenants', icon: Building2 },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Marketing', href: '/marketing', icon: Globe },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
