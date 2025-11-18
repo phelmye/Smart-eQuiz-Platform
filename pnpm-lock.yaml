@@ -6,6 +6,8 @@ settings:
 
 importers:
 
+  .: {}
+
   apps/marketing-site:
     dependencies:
       '@hookform/resolvers':
