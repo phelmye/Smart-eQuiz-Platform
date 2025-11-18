@@ -2352,7 +2352,9 @@ export const defaultRolePermissions: RolePermission[] = [
       // Profile Management
       'profile.manage',
       // System configuration (limited)
-      'system.configure'
+      'system.configure',
+      // Tenant management
+      'tenant.manage'
     ],
     canAccessPages: [
       'dashboard', 'user-management', 'role-management', 'role-customization', 'role-component-management', 
