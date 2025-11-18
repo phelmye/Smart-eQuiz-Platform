@@ -450,7 +450,8 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     setSelectedQuestions([]);
   };
 
-  if (!user || !hasPermission(user, 'questions.create')) {
+  // Allow super_admin, org_admin, and question_manager to use AI generator
+  if (!user || (!hasPermission(user, 'questions.create') && user.role !== 'org_admin' && user.role !== 'super_admin' && user.role !== 'question_manager')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

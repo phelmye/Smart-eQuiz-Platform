@@ -149,7 +149,8 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
     }
   };
 
-  if (!user || !hasPermission(user, 'tournaments.read')) {
+  // Allow super_admin, org_admin to view tournaments
+  if (!user || (!hasPermission(user, 'tournaments.read') && user.role !== 'org_admin' && user.role !== 'super_admin')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

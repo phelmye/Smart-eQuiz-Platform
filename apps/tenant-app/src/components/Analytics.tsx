@@ -160,7 +160,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
     URL.revokeObjectURL(url);
   };
 
-  if (!user || !hasPermission(user, 'analytics.view')) {
+  // Allow super_admin and org_admin to view analytics
+  if (!user || (!hasPermission(user, 'analytics.view') && user.role !== 'org_admin' && user.role !== 'super_admin')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

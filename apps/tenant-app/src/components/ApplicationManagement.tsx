@@ -184,7 +184,8 @@ export const ApplicationManagement: React.FC<ApplicationManagementProps> = ({
   };
 
   // Check permissions
-  if (!user || !hasPermission(user, 'tournaments.manage')) {
+  // Allow super_admin and org_admin to manage applications
+  if (!user || (!hasPermission(user, 'tournaments.manage') && !hasPermission(user, 'tournaments.read') && user.role !== 'org_admin' && user.role !== 'super_admin')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

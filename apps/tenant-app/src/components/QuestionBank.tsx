@@ -386,7 +386,8 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const stats = getQuestionStats();
 
-  if (!user || !hasPermission(user, 'questions.read')) {
+  // Allow super_admin, org_admin, and question_manager to access question bank
+  if (!user || (!hasPermission(user, 'questions.read') && user.role !== 'org_admin' && user.role !== 'super_admin' && user.role !== 'question_manager')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

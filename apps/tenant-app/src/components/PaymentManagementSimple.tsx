@@ -15,7 +15,8 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
   const { user, logout } = useAuth();
 
   // Check if user is admin
-  if (!user || !hasPermission(user, 'payments.read')) {
+  // Allow super_admin, org_admin, and account_officer to view payments
+  if (!user || (!hasPermission(user, 'payments.read') && user.role !== 'org_admin' && user.role !== 'super_admin' && user.role !== 'account_officer')) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <Card className="max-w-md mx-auto">

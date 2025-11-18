@@ -204,7 +204,8 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
     URL.revokeObjectURL(url);
   };
 
-  if (!user || !hasPermission(user, 'branding.manage')) {
+  // Allow super_admin and org_admin to manage branding
+  if (!user || (!hasPermission(user, 'branding.manage') && user.role !== 'org_admin' && user.role !== 'super_admin')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
