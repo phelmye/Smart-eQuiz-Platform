@@ -2361,7 +2361,9 @@ export const defaultRolePermissions: RolePermission[] = [
       'access-control', 'tournaments', 'question-bank', 'question-categories', 
       'custom-categories', 'round-templates', 'ai-generator', 'analytics', 
       'payments', 'billing', 'payment-integration', 'branding', 'theme-settings',
-      'notifications', 'audit-logs', 'security', 'email-templates', 'help', 'profile'
+      'notifications', 'audit-logs', 'security', 'email-templates', 'tenant-management',
+      'plan-management', 'system-settings', 'subscription-management', 'team-management',
+      'reporting-exports', 'help', 'profile'
     ],
     isSystemRole: true
   },
