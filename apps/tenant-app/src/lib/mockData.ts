@@ -2359,7 +2359,7 @@ export const defaultRolePermissions: RolePermission[] = [
       'access-control', 'tournaments', 'question-bank', 'question-categories', 
       'custom-categories', 'round-templates', 'ai-generator', 'analytics', 
       'payments', 'billing', 'payment-integration', 'branding', 'theme-settings',
-      'notifications', 'audit-logs', 'help', 'profile'
+      'notifications', 'audit-logs', 'security', 'help', 'profile'
     ],
     isSystemRole: true
   },
