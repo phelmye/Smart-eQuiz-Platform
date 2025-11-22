@@ -17,6 +17,7 @@ import PaymentManagementSimple from './PaymentManagementSimple';
 import { BrandingSettings } from './BrandingSettings';
 import { ThemeSettings } from './ThemeSettings';
 import { QuestionBank } from './QuestionBank';
+import TenantLandingSettings from './TenantLandingSettings';
 import { TournamentEngine } from './TournamentEngine';
 import { AIQuestionGenerator } from './AIQuestionGenerator';
 import { TenantManagement } from './TenantManagement';
@@ -67,7 +68,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     currentStreak: 0
   });
 
-  const isAdmin = user?.role?.toLowerCase() === 'org_admin' || user?.role?.toLowerCase() === 'super_admin';
+  // Check if user has admin or management role (should see sidebar)
+  const isAdmin = user?.role && ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator'].includes(user.role.toLowerCase());
 
   useEffect(() => {
     // Load tournaments
@@ -178,6 +180,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       'analytics': 'Analytics', 
       'payments': 'Payments',
       'branding': 'Branding Settings',
+      'landing-page': 'Landing Page',
       'question-bank': 'Question Bank',
       'question-categories': 'Question Categories',
       'custom-categories': 'Custom Categories',
@@ -307,6 +310,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             fallbackMessage="Only organization administrators can manage branding settings."
           >
             <BrandingSettings onBack={handleBackToDashboard} />
+          </AccessControl>
+        );
+        
+      case 'landing-page':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="landing-page"
+            requiredPermission="settings.manage"
+            fallbackMessage="Only organization administrators can manage the landing page."
+          >
+            <TenantLandingSettings user={user} tenant={tenant!} />
           </AccessControl>
         );
         

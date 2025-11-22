@@ -38,7 +38,8 @@ import {
   BellRing,
   FileText,
   Tags,
-  BookTemplate
+  BookTemplate,
+  Globe
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
@@ -90,7 +91,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: LayoutDashboard,
       type: 'single',
       page: 'dashboard',
-      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'participant', 'inspector', 'practice_user'],
+      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'participant', 'inspector', 'moderator', 'practice_user'],
       requiredPermission: null,
       planFeature: null
     },
@@ -99,7 +100,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Users',
       icon: Users,
       type: 'group',
-      requiredRoles: ['super_admin', 'org_admin'],
+      requiredRoles: ['super_admin', 'org_admin', 'moderator'],
       requiredPermission: 'users.read',
       planFeature: null,
       children: [
@@ -108,7 +109,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'All Users',
           icon: List,
           page: 'user-management',
-          requiredRoles: ['super_admin', 'org_admin'],
+          requiredRoles: ['super_admin', 'org_admin', 'moderator'],
           requiredPermission: 'users.read'
         },
         {
@@ -161,7 +162,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Tournaments',
       icon: Trophy,
       type: 'group',
-      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
+      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector', 'moderator'],
       requiredPermission: 'tournaments.read',
       planFeature: null,
       children: [
@@ -170,7 +171,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'All Tournaments',
           icon: List,
           page: 'tournaments',
-          requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector', 'moderator'],
           requiredPermission: 'tournaments.read'
         },
         {
@@ -301,7 +302,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: BarChart3,
       type: 'single',
       page: 'analytics',
-      requiredRoles: ['super_admin', 'org_admin', 'account_officer', 'inspector'],
+      requiredRoles: ['super_admin', 'org_admin', 'account_officer', 'inspector', 'moderator'],
       requiredPermission: 'analytics.view',
       planFeature: 'analytics'
     },
@@ -350,6 +351,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           planFeature: 'branding'
         },
         {
+          id: 'landing-page',
+          label: 'Landing Page',
+          icon: Globe,
+          page: 'landing-page',
+          badge: 'New',
+          requiredRoles: ['super_admin', 'org_admin'],
+          requiredPermission: 'settings.manage',
+          planFeature: 'branding'
+        },
+        {
           id: 'system-settings',
           label: 'System Settings',
           icon: Server,
@@ -363,7 +374,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: Shield,
           page: 'security',
           badge: 'New',
-          requiredRoles: ['super_admin', 'org_admin'],
+          requiredRoles: ['super_admin'],
           requiredPermission: null
         },
         {
