@@ -92,7 +92,7 @@ function WelcomeContent() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href={`https://${subdomain}.smartequiz.com/login`}
+            href={`https://${subdomain}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'smartequiz.com'}/login`}
             className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
             Go to Your Dashboard
