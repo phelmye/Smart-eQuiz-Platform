@@ -10,13 +10,13 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MarketingService } from './marketing.service';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../common/roles.decorator';
+import { RolesGuard } from '../common/roles.guard';
 import {
   MarketingContent,
   MarketingContentUpdateRequest,
   MarketingContentAuditLog,
-} from '@repo/types/marketing';
+} from '../types/marketing';
 
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -124,6 +124,28 @@ export class MarketingController {
       throw new HttpException(
         'Failed to rollback marketing content',
         HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  /**
+   * GET /api/marketing/preview
+   * Get preview data for marketing content (draft + published)
+   * Returns both draft and published versions for comparison
+   */
+  @Get('preview')
+  @Roles('super_admin')
+  async getPreview(): Promise<{
+    draft: MarketingContent;
+    published: MarketingContent;
+    hasChanges: boolean;
+  }> {
+    try {
+      return await this.marketingService.getPreviewData();
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve preview data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

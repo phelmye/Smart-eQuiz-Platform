@@ -4,7 +4,7 @@ import {
   MarketingContent,
   MarketingContentUpdateRequest,
   MarketingContentAuditLog,
-} from '@repo/types/marketing';
+} from '../types/marketing';
 
 @Injectable()
 export class MarketingService {
@@ -210,7 +210,7 @@ export class MarketingService {
       throw new Error('Hero section must have headline and subheadline');
     }
 
-    if (!content.contact?.email || !content.contact?.phone) {
+    if (!content.contactInfo?.email || !content.contactInfo?.phone) {
       throw new Error('Contact information must include email and phone');
     }
 
@@ -285,22 +285,25 @@ export class MarketingService {
           content:
             "This platform has revolutionized our youth Bible study program. Engagement is at an all-time high!",
           rating: 5,
+          initials: 'JS',
+          color: 'blue',
           avatar: '/images/testimonials/pastor-john.jpg',
-          date: '2024-01-15',
         },
       ],
       socialProof: {
         totalUsers: 10000,
-        totalChurches: 500,
-        totalQuestions: 50000,
-        totalTournaments: 2000,
+        activeUsers: '10,000+',
+        churchesServed: '500+',
+        quizzesHosted: '50,000+',
+        customerRating: '4.9/5',
       },
-      pricing: [],
-      faq: [],
-      contact: {
+      pricingTiers: [],
+      faqs: [],
+      contactInfo: {
         email: 'support@smartequiz.com',
         phone: '+1 (555) 123-4567',
         address: '123 Main St, City, State 12345',
+        supportHours: 'Mon-Fri 9AM-5PM EST',
         socialMedia: {
           facebook: '',
           twitter: '',
@@ -308,13 +311,40 @@ export class MarketingService {
           linkedin: '',
         },
       },
-      blog: [],
-      caseStudies: [],
-      legalPages: {
-        privacyPolicy: '',
-        termsOfService: '',
-        cookiePolicy: '',
-      },
     };
+  }
+
+  /**
+   * Get preview data for content comparison
+   * Returns both draft (current) and published versions
+   */
+  async getPreviewData(): Promise<{
+    draft: MarketingContent;
+    published: MarketingContent;
+    hasChanges: boolean;
+  }> {
+    try {
+      // Get current active content (this is the "published" version)
+      const published = await this.getContent();
+
+      // For now, draft and published are the same
+      // In a full implementation, you'd store draft content separately
+      // or retrieve unsaved changes from the frontend
+      const draft = published;
+
+      // Compare to check if there are changes
+      const hasChanges = JSON.stringify(draft) !== JSON.stringify(published);
+
+      return {
+        draft,
+        published,
+        hasChanges,
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve preview data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

@@ -278,3 +278,198 @@ model MarketingContentAuditLog {
   @@index([marketingContentId])
   @@index([createdAt])
 }
+
+// Media library for marketing content
+model MediaAsset {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int      // bytes
+  width       Int?
+  height      Int?
+  url         String   // Full URL to the asset
+  thumbnailUrl String? // Optimized thumbnail
+  storageKey  String   // S3/Cloud storage key
+  category    String   // avatar, feature-icon, hero-bg, blog-image, etc.
+  altText     String?
+  uploadedBy  String   // User ID
+  uploadedByEmail String
+  tenantId    String?  // Optional: for multi-tenant support
+  usageCount  Int      @default(0)
+  tags        String[] // Searchable tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([category])
+  @@index([uploadedBy])
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+// Marketing analytics tracking
+model AnalyticsEvent {
+  id            String   @id @default(cuid())
+  eventType     String   // cta_click, page_view, form_submit, video_play, etc.
+  eventCategory String   // marketing, engagement, conversion
+  eventLabel    String?  // Specific label (e.g., "Get Started CTA")
+  eventValue    Float?   // Optional numeric value
+  
+  // Session information
+  sessionId     String?  // Browser session ID
+  userId        String?  // If user is logged in
+  visitorId     String?  // Anonymous visitor ID (cookie)
+  
+  // Page context
+  pageUrl       String
+  pageTitle     String?
+  referrer      String?
+  
+  // Device/Browser information
+  userAgent     String?
+  deviceType    String?  // desktop, tablet, mobile
+  browser       String?
+  operatingSystem String?
+  screenResolution String?
+  
+  // Geographic information
+  country       String?
+  city          String?
+  ipAddress     String?
+  
+  // Metadata
+  metadata      Json?    // Additional custom data
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([eventType, eventCategory])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([pageUrl])
+}
+
+// Conversion tracking
+model Conversion {
+  id                String   @id @default(cuid())
+  conversionType    String   // signup, trial_start, subscription, contact_form
+  conversionValue   Float?   // Monetary value or points
+  
+  // User identification
+  userId            String?
+  visitorId         String?
+  sessionId         String?
+  
+  // Attribution
+  source            String?  // google, facebook, direct, etc.
+  medium            String?  // cpc, organic, referral, email
+  campaign          String?  // Campaign name
+  
+  // Funnel tracking
+  funnelStep        Int?     // Which step in the funnel
+  funnelStage       String?  // awareness, consideration, decision
+  
+  // Metadata
+  metadata          Json?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([conversionType])
+  @@index([userId])
+  @@index([visitorId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([source, medium])
+}
+
+// A/B test experiments
+model ABTest {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  
+  // Test configuration
+  variantA        Json     // Control variant configuration
+  variantB        Json     // Test variant configuration
+  
+  // Traffic split (percentage)
+  trafficSplitA   Int      @default(50)  // Percentage for variant A
+  trafficSplitB   Int      @default(50)  // Percentage for variant B
+  
+  // Test status
+  status          String   // draft, active, paused, completed
+  
+  // Goals
+  primaryGoal     String   // Which metric to optimize (cta_clicks, signups, etc.)
+  
+  // Results
+  totalVisitors   Int      @default(0)
+  visitorsA       Int      @default(0)
+  visitorsB       Int      @default(0)
+  conversionsA    Int      @default(0)
+  conversionsB    Int      @default(0)
+  
+  // Statistical significance
+  confidenceLevel Float?   // 0-100 percentage
+  winner          String?  // A, B, or null if inconclusive
+  
+  // Dates
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  variants        ABTestVariant[]
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Individual visitor participation in A/B tests
+model ABTestVariant {
+  id          String   @id @default(cuid())
+  testId      String
+  visitorId   String
+  variant     String   // A or B
+  assigned    DateTime @default(now())
+  converted   Boolean  @default(false)
+  convertedAt DateTime?
+  
+  test        ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  @@unique([testId, visitorId])
+  @@index([testId, variant])
+  @@index([visitorId])
+}
+
+// Aggregated analytics metrics (for performance)
+model AnalyticsMetric {
+  id              String   @id @default(cuid())
+  metricType      String   // daily_pageviews, daily_conversions, weekly_signups, etc.
+  metricDate      DateTime // Date for the metric
+  
+  // Dimensions
+  dimension1      String?  // e.g., page_url, campaign_name
+  dimension2      String?  // e.g., device_type, country
+  
+  // Metrics
+  totalCount      Int      @default(0)
+  uniqueCount     Int      @default(0)
+  totalValue      Float?
+  averageValue    Float?
+  
+  // Calculated fields
+  conversionRate  Float?
+  bounceRate      Float?
+  avgTimeOnPage   Float?   // seconds
+  
+  // Metadata
+  metadata        Json?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([metricType, metricDate, dimension1, dimension2])
+  @@index([metricType, metricDate])
+  @@index([metricDate])
+}
