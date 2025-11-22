@@ -20,8 +20,9 @@ import {
   EyeOff,
   Save
 } from 'lucide-react';
-import { PaymentIntegration, mockPaymentIntegrations, storage, STORAGE_KEYS } from '../lib/mockData';
+import { PaymentIntegration, mockPaymentIntegrations, storage, STORAGE_KEYS, hasFeatureAccess, getFeatureDisplayInfo } from '../lib/mockData';
 import { useAuth } from './AuthSystem';
+import { FeaturePreviewOverlay } from './FeaturePreviewOverlay';
 
 interface PaymentIntegrationManagementProps {
   onBack: () => void;
@@ -34,6 +35,10 @@ export const PaymentIntegrationManagement: React.FC<PaymentIntegrationManagement
   const [showSecrets, setShowSecrets] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Feature access check
+  const isLocked = user ? !hasFeatureAccess(user, 'payment-integration') : true;
+  const featureInfo = user ? getFeatureDisplayInfo(user, 'payment-integration') : null;
 
   useEffect(() => {
     // Load payment integrations for current tenant
@@ -563,6 +568,45 @@ export const PaymentIntegrationManagement: React.FC<PaymentIntegrationManagement
   };
 
   const currentIntegration = getCurrentIntegration();
+
+  // Render locked feature preview if needed
+  if (isLocked && featureInfo) {
+    return (
+      <FeaturePreviewOverlay
+        featureInfo={featureInfo}
+        onUpgrade={() => {
+          window.location.hash = 'billing';
+        }}
+        blur={true}
+      >
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <Button variant="ghost" onClick={onBack}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Payment Integration</h1>
+                  <p className="text-gray-600 mt-1">
+                    Configure payment providers to enable monetary features
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+            </div>
+          </div>
+        </div>
+      </FeaturePreviewOverlay>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

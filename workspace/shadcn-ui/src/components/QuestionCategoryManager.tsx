@@ -530,7 +530,10 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
                     size="sm" 
                     variant="ghost" 
                     className="text-orange-800"
-                    onClick={() => window.alert('Contact your administrator to upgrade your plan.')}
+                    onClick={() => {
+                      // TODO: Implement plan upgrade info modal
+                      console.log('Show plan upgrade information');
+                    }}
                   >
                     Learn More
                   </Button>

@@ -1,6 +1,6 @@
-# React + TypeScript + Vite
+# Platform Admin - Smart eQuiz
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Super admin dashboard for managing the Smart eQuiz SaaS platform.
 
 Currently, two official plugins are available:
 

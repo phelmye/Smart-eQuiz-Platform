@@ -2,16 +2,7 @@ import Link from 'next/link';
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            Smart eQuiz Platform
-          </Link>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gray-50">
       {/* Content */}
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-4xl font-bold mb-6">Privacy Policy</h1>
@@ -158,6 +149,6 @@ export default function PrivacyPage() {
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

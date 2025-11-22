@@ -2,21 +2,7 @@ import Link from 'next/link';
 
 export default function PricingPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            Smart eQuiz Platform
-          </Link>
-          <nav className="hidden md:flex gap-6">
-            <Link href="/#features" className="text-gray-600 hover:text-gray-900">Features</Link>
-            <Link href="/pricing" className="text-blue-600 font-semibold">Pricing</Link>
-            <Link href="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link>
-          </nav>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white py-16">
         <div className="container mx-auto px-4 text-center">
@@ -309,18 +295,6 @@ export default function PricingPage() {
           </Link>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-8">
-        <div className="container mx-auto px-4 text-center">
-          <p>&copy; 2025 Smart eQuiz Platform. All rights reserved.</p>
-          <div className="mt-4 flex justify-center gap-6">
-            <Link href="/privacy" className="hover:text-white">Privacy</Link>
-            <Link href="/terms" className="hover:text-white">Terms</Link>
-            <Link href="/contact" className="hover:text-white">Contact</Link>
-          </div>
-        </div>
-      </footer>
-    </main>
+    </div>
   );
 }

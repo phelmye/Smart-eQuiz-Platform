@@ -47,7 +47,7 @@ This guide walks you through migrating from the current monolithic structure to 
 ### Phase 5: Tenant App Refactoring (Week 4-5)
 - [ ] Copy current app to tenant-app
 - [ ] Implement tenant detection
-- [ ] Remove tenant selection UI
+- [x] Implement parish-based registration (COMPLETE)
 - [ ] Add subdomain routing
 - [ ] Deploy to *.smartequiz.com
 
@@ -337,32 +337,49 @@ export const useTenant = () => {
 };
 ```
 
-### Step 6: Remove Tenant Selection from AuthSystem
+### Step 6: Parish-Based Registration (✅ COMPLETED)
 
-**Current AuthSystem.tsx has:**
+**Current Implementation:**
 ```tsx
-<Select name="tenantId" required>
-  <SelectTrigger>
-    <SelectValue placeholder="Select your organization" />
-  </SelectTrigger>
-  <SelectContent>
-    {mockTenants.map(tenant => (
-      <SelectItem key={tenant.id} value={tenant.id}>
-        {tenant.name}
-      </SelectItem>
-    ))}
-  </SelectContent>
-</Select>
+// Tenant auto-detected from URL
+const currentTenantId = detectTenantFromUrl();
+
+// Load parishes for current tenant only
+const parishes = getParishesByTenant(currentTenantId);
+
+// Parish Combobox with search
+<Popover>
+  <PopoverTrigger asChild>
+    <Button variant="outline" role="combobox">
+      {selectedParishId ? parish.name : "Select parish..."}
+    </Button>
+  </PopoverTrigger>
+  <PopoverContent>
+    <Command>
+      <CommandInput placeholder="Search parishes..." />
+      <CommandList>
+        {filteredParishes.map(parish => (
+          <CommandItem key={parish.id} value={parish.id}>
+            {parish.name}
+            {!parish.isVerified && <Badge>Unverified</Badge>}
+          </CommandItem>
+        ))}
+      </CommandList>
+    </Command>
+  </PopoverContent>
+</Popover>
+
+// Hidden field for auto-detected tenant
+<input type="hidden" name="tenantId" value={currentTenantId} />
 ```
 
-**Replace with:**
-```tsx
-// Remove tenant selection completely
-// Tenant is determined by subdomain automatically
-
-// In registration - user is invited by admin OR
-// Public registration enabled by tenant
-```
+**Features Implemented:**
+- ✅ Automatic tenant detection from URL (subdomain/parameter/localhost)
+- ✅ Parish selection filtered by current tenant
+- ✅ Search and filter functionality
+- ✅ AddParishForm integration for unlisted parishes
+- ✅ Unverified parish warnings
+- ✅ Dashboard persistent warnings
 
 ### Step 7: Update API Client with Tenant Context
 
@@ -568,7 +585,7 @@ Use this checklist to track migration progress:
 ### Week 4-5: Tenant App
 - [ ] Copy current app
 - [ ] Implement tenant detection
-- [ ] Remove tenant selection
+- [x] Parish-based registration (COMPLETED)
 - [ ] Add subdomain routing
 - [ ] Update API calls
 - [ ] Deploy to Vercel

@@ -249,13 +249,8 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
                   return (
                     <TableRow key={tenant.id}>
                       <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                            style={{ backgroundColor: tenant.primaryColor }}
-                          >
-                            {tenant.name.charAt(0)}
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <TenantAvatar tenant={tenant} size="sm" />
                           <div>
                             <div className="font-medium">{tenant.name}</div>
                             <div className="text-sm text-gray-500">{tenant.id}</div>

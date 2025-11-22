@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, BarChart3, TrendingUp, Users, Trophy, DollarSign, Calendar, Download, RefreshCw, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
+import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES, hasPermission, hasFeatureAccess, getFeatureDisplayInfo } from '@/lib/mockData';
+import { FeaturePreviewOverlay } from './FeaturePreviewOverlay';
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -37,6 +38,10 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
   const [timeRange, setTimeRange] = useState('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Feature access check
+  const isLocked = user ? !hasFeatureAccess(user, 'analytics') : true;
+  const featureInfo = user ? getFeatureDisplayInfo(user, 'analytics') : null;
 
   useEffect(() => {
     loadAnalyticsData();
@@ -193,6 +198,43 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Render locked feature preview if needed
+  if (isLocked && featureInfo) {
+    return (
+      <FeaturePreviewOverlay
+        featureInfo={featureInfo}
+        onUpgrade={() => {
+          window.location.hash = 'billing';
+        }}
+        blur={true}
+      >
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-4">
+                  <Button variant="ghost" size="sm" onClick={onBack}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+                    <p className="text-gray-600">Platform performance and insights</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card><CardContent className="p-6"><div className="h-20" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-20" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-20" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-20" /></CardContent></Card>
+            </div>
+          </div>
+        </div>
+      </FeaturePreviewOverlay>
     );
   }
 

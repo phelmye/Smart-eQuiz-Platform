@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Palette, Save, RotateCcw, Eye, CheckCircle, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tenant, hasPermission } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tenant, hasPermission, hasFeatureAccess, getFeatureDisplayInfo } from '@/lib/mockData';
+import { FeaturePreviewOverlay } from './FeaturePreviewOverlay';
 import {
   themeTemplates,
   getThemeById,
@@ -45,6 +46,10 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({ onBack }) => {
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+
+  // Feature access check
+  const isLocked = user ? !hasFeatureAccess(user, 'theme-settings') : true;
+  const featureInfo = user ? getFeatureDisplayInfo(user, 'theme-settings') : null;
 
   useEffect(() => {
     loadThemeConfig();
@@ -179,6 +184,42 @@ export const ThemeSettings: React.FC<ThemeSettingsProps> = ({ onBack }) => {
     }
     setPreviewMode(!previewMode);
   };
+
+  // Render locked feature preview if needed
+  if (isLocked && featureInfo) {
+    return (
+      <FeaturePreviewOverlay
+        featureInfo={featureInfo}
+        onUpgrade={() => {
+          window.location.hash = 'billing';
+        }}
+        blur={true}
+      >
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-4">
+                  <Button variant="ghost" size="sm" onClick={onBack}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Theme Settings</h1>
+                    <p className="text-gray-600">Customize your platform's appearance with templates or custom colors</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-40" /></CardContent></Card>
+            </div>
+          </div>
+        </div>
+      </FeaturePreviewOverlay>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

@@ -307,7 +307,14 @@ export const EmailTemplateManager: React.FC = () => {
               </div>
             </ScrollArea>
 
-            <Button className="w-full" variant="outline">
+            <Button 
+              className="w-full" 
+              variant="outline"
+              onClick={() => {
+                // TODO: Open create template modal
+                console.log('Create new template');
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Create Template
             </Button>
@@ -333,11 +340,25 @@ export const EmailTemplateManager: React.FC = () => {
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        // TODO: Open template editor modal
+                        console.log('Edit template:', selectedTemplate.id);
+                      }}
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        // TODO: Send test email
+                        console.log('Send test email for template:', selectedTemplate.id);
+                      }}
+                    >
                       <Send className="h-4 w-4 mr-1" />
                       Test
                     </Button>

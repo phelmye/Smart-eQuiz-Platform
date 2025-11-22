@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft, Shield } from 'lucide-react';
+import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft, Shield, AlertTriangle } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { AdminSidebar } from './AdminSidebar';
 import UserManagement from './UserManagement';
@@ -52,11 +52,17 @@ import OnboardingWizard from './OnboardingWizard';
 import NotificationCenter from './NotificationCenter';
 import EmailTemplateManager from './EmailTemplateManager';
 import HelpCenter from './HelpCenter';
+import { PracticeAccessApplication } from './PracticeAccessApplication';
 import SecurityCenter from './SecurityCenter';
 import SubscriptionManagement from './SubscriptionManagement';
 import TeamManagement from './TeamManagement';
 import ReportingExports from './ReportingExports';
-import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
+import { GlobalChatWidget } from './GlobalChatWidget';
+import ParticipantReferrals from './ParticipantReferrals';
+import ReferralDashboard from './ReferralDashboard';
+import AffiliateRegistration from './AffiliateRegistration';
+import AffiliateDashboard from './AffiliateDashboard';
+import { Tournament, User, UserProfile, Parish, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage, getParishById } from '@/lib/mockData';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -76,8 +82,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     winRate: 0,
     currentStreak: 0
   });
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userParish, setUserParish] = useState<Parish | null>(null);
 
-  const isAdmin = user?.role?.toLowerCase() === 'org_admin' || user?.role?.toLowerCase() === 'super_admin';
+  // Check if user has admin or management role (should see sidebar)
+  const isAdmin = user?.role && ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator'].includes(user.role.toLowerCase());
 
   useEffect(() => {
     // Load tournaments
@@ -96,6 +105,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       currentStreak: Math.floor(Math.random() * 10) + 1
     });
   }, [user]);
+
+  // Load user profile and parish data for unverified parish warnings
+  useEffect(() => {
+    if (user?.id) {
+      const profiles = storage.get(STORAGE_KEYS.USER_PROFILES) || [];
+      const profile = profiles.find((p: UserProfile) => p.userId === user.id);
+      setUserProfile(profile || null);
+      
+      if (profile?.parishId) {
+        const parish = getParishById(profile.parishId);
+        setUserParish(parish);
+      } else {
+        setUserParish(null);
+      }
+    } else {
+      setUserProfile(null);
+      setUserParish(null);
+    }
+  }, [user]);
+
+  // Handle hash-based navigation for deep linking
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1); // Remove '#'
+      if (hash) {
+        setCurrentPage(hash);
+      }
+    };
+    
+    // Check initial hash on mount
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const getCurrentLevel = () => {
     if (!user) return XP_LEVELS[0];
@@ -726,6 +771,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <HelpCenter />
           </div>
         );
+      case 'practice-access':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <PracticeAccessApplication />
+          </div>
+        );
       case 'terms':
         return (
           <TermsOfService onBack={handleBackToDashboard} />
@@ -781,6 +838,41 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             onBack={handleBackToDashboard}
           />
         );
+      case 'participant-referrals':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="participant-referrals"
+            requiredPermission="tenant.manage"
+            fallbackMessage="Only organization administrators can manage the participant referral program."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <ParticipantReferrals user={user} tenant={tenant} />
+            </div>
+          </AccessControl>
+        );
+      case 'my-referrals':
+        return (
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" onClick={handleBackToDashboard}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </div>
+            <ReferralDashboard user={user} tenant={tenant} />
+          </div>
+        );
+      case 'affiliate-register':
+        return <AffiliateRegistration />;
+      case 'affiliate-dashboard':
+        return <AffiliateDashboard affiliateId={user?.id || 'demo-affiliate'} />;
       default:
         return null;
     }
@@ -975,6 +1067,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Page Content */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          {/* Unverified Parish Warning Banner */}
+          {userProfile?.parishId && userParish && !userParish.isVerified && 
+           ['inspector', 'participant'].includes(user.role.toLowerCase()) && (
+            <Alert variant="destructive" className="mb-6 bg-yellow-50 border-yellow-300">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-400">
+                    Unverified
+                  </Badge>
+                  <strong className="text-yellow-900">Your parish "{userParish.name}" is pending verification</strong>
+                </div>
+                <p className="text-sm text-yellow-800">
+                  You cannot participate in tournaments until an administrator verifies your parish.
+                  This verification ensures all participants are properly registered members of their respective parishes.
+                  Please contact your organization administrator to expedite the verification process.
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {currentPage === 'dashboard' && (
             <div className="max-w-7xl mx-auto">
               <Tabs defaultValue="overview" className="space-y-6">
@@ -1262,6 +1375,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           )}
         </div>
       </div>
+      
+      {/* Global Chat Widget - Persistent across all pages */}
+      <GlobalChatWidget />
     </div>
   );
 };

@@ -36,7 +36,18 @@ export const STORAGE_KEYS = {
   QUESTION_LIFECYCLE_LOGS: 'equiz_question_lifecycle_logs',
   BONUS_QUESTION_CONFIGS: 'equiz_bonus_question_configs',
   BONUS_QUESTION_REQUESTS: 'equiz_bonus_question_requests',
-  NOTIFICATIONS: 'equiz_notifications'
+  NOTIFICATIONS: 'equiz_notifications',
+  // Referral System Storage Keys
+  AFFILIATES: 'equiz_affiliates', // Tier 1: Global affiliates
+  AFFILIATE_REFERRALS: 'equiz_affiliate_referrals', // Tier 1 & 2 tracking
+  AFFILIATE_PAYOUTS: 'equiz_affiliate_payouts', // Tier 1 & 2 payouts
+  AFFILIATE_TIERS: 'equiz_affiliate_tiers', // Commission tier configs
+  TENANT_REFERRALS: 'equiz_tenant_referrals', // Tier 2: Tenant-to-tenant
+  PARTICIPANT_REFERRALS: 'equiz_participant_referrals', // Tier 3: Participant-to-participant
+  PARTICIPANT_REWARDS: 'equiz_participant_rewards', // Tier 3: Reward tracking
+  // Platform Admin Keys
+  API_KEYS: 'equiz_api_keys', // External service API keys (moved from platform-admin)
+  MARKETING_CONTENT: 'equiz_marketing_content' // Marketing website content (moved from platform-admin)
 };
 
 // User roles
@@ -559,6 +570,9 @@ export interface Tenant {
   planId: string; // Reference to plan ID instead of hardcoded plan name
   primaryColor: string;
   logoUrl?: string;
+  // Logo branding options
+  logoAspectRatio?: 'auto' | 'square' | 'landscape' | 'portrait'; // How to display logo
+  logoFitMode?: 'contain' | 'cover'; // How logo fits in container
   maxUsers: number;
   maxTournaments: number;
   paymentIntegrationEnabled: boolean; // Default false - tenant admin must enable
@@ -580,6 +594,284 @@ export interface Tenant {
     parishMember?: string; // e.g., "Member", "Parishioner", "Team Member"
     parishLeader?: string; // e.g., "Parish Priest", "Pastor", "Team Leader"
   };
+  // Tier 3 Referral Program (Tenant-controlled)
+  referralProgramEnabled?: boolean; // Default false - advanced feature
+  referralRewardType?: 'points' | 'credits' | 'tournament_entries'; // What participants earn
+  referralRewardAmount?: number; // Amount per successful referral
+}
+
+// ============================================================================
+// REFERRAL SYSTEM INTERFACES
+// ============================================================================
+
+/**
+ * TIER 1: Global Affiliates (Super Admin Managed)
+ * Independent marketers/promoters who refer new tenants to the platform
+ * Earn commission on tenant subscriptions (managed by super admin)
+ */
+export interface Affiliate {
+  id: string;
+  userId?: string; // Optional: Link to user account if they have one
+  
+  // Personal Information
+  fullName: string;
+  email: string;
+  country?: string; // Country name for display
+  countryCode: string; // ISO 3166-1 alpha-2 (e.g., 'US', 'NG', 'KE')
+  website?: string; // Affiliate's website URL
+  socialMedia?: string; // Social media handle or URL
+  
+  // Affiliate Code
+  affiliateCode: string; // e.g., 'JOHN-AFFILIATE-2025'
+  
+  // Status (Super Admin Controls)
+  status: 'pending' | 'active' | 'suspended' | 'banned';
+  approvedAt?: string;
+  approvedBy?: string; // Super admin user ID
+  
+  // Commission Settings (Super Admin Sets)
+  commissionTier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  commissionRate: number; // Percentage (e.g., 20 = 20%)
+  
+  // Payment Information
+  payoutCurrency: string; // USD, EUR, GBP, NGN, KES, etc.
+  payoutMethod: 'stripe' | 'paypal' | 'bank_transfer' | 'crypto';
+  payoutDetails?: any; // Encrypted payment info (email, account number, etc.)
+  
+  // Performance Tracking
+  totalReferrals: number; // Total clicks/signups
+  successfulConversions: number; // Paid tenants
+  totalEarned: number; // Lifetime earnings in USD
+  totalPaidOut?: number; // Total withdrawn in USD
+  pendingPayout: number; // Available for withdrawal in USD
+  monthlyEarnings?: number; // Current month earnings
+  yearlyEarnings?: number; // Current year earnings
+  
+  // Application Information
+  marketingPlan?: string; // How they plan to promote
+  experienceLevel?: 'beginner' | 'intermediate' | 'expert';
+  monthlyTraffic?: string; // Estimated traffic/reach
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * TIER 1 & 2: Referral Tracking
+ * Tracks all tenant sign-ups from affiliate links or tenant referrals
+ * Used for commission calculation
+ */
+export interface AffiliateReferral {
+  id: string;
+  
+  // Referrer Information
+  referrerType: 'affiliate' | 'tenant'; // Tier 1 or Tier 2
+  referrerId: string; // Affiliate.id or Tenant.id
+  referralCode: string;
+  
+  // Referred Tenant
+  tenantId: string;
+  tenantName?: string; // Display name of tenant organization
+  
+  // Attribution Tracking
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  landingPage?: string;
+  ipAddress?: string;
+  
+  // Conversion Status
+  signupDate: string;
+  firstPaymentDate?: string;
+  conversionDate?: string;
+  conversionStatus: 'clicked' | 'signed_up' | 'converted' | 'cancelled';
+  
+  // Revenue & Commission
+  tenantPlanId: string;
+  subscriptionPlan?: string; // Plan name for display (e.g., 'professional')
+  subscriptionValue: number; // Monthly recurring revenue in USD
+  commissionAmount: number; // Per month in USD
+  commissionCurrency: string;
+  
+  // Recurring Commission Settings
+  recurringMonths: number; // How many months to pay (1, 2, 3, 6, 12, 24, 999 for lifetime)
+  monthsPaid: number; // How many months already paid
+  totalEarned?: number; // Total earned so far
+  nextPaymentDate?: string; // Next commission payment date
+  
+  // Fraud Detection
+  fraudScore: number; // 0.00 - 1.00
+  fraudNotes?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * TIER 1 & 2: Payout Records
+ * Tracks payouts to affiliates and tenant referrers
+ * Super admin processes these payouts
+ */
+export interface AffiliatePayout {
+  id: string;
+  
+  // Recipient
+  recipientType: 'affiliate' | 'tenant'; // Tier 1 or Tier 2
+  recipientId: string;
+  affiliateId?: string; // Alias for recipientId for backward compatibility
+  
+  // Payout Amount
+  amount: number; // Amount in USD
+  currency: string; // USD (platform base currency)
+  convertedAmount?: number; // Amount in recipient's currency
+  payoutCurrency?: string; // Recipient's chosen currency
+  exchangeRate?: number;
+  
+  // Payment Processing
+  payoutMethod: 'stripe' | 'paypal' | 'bank_transfer' | 'crypto';
+  transactionId?: string;
+  referenceNumber?: string; // Human-readable reference (e.g., 'PAY-20250105-001')
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  
+  // Period Covered
+  periodStart: string;
+  periodEnd: string;
+  referralIds: string[]; // Array of AffiliateReferral.id included in this payout
+  
+  // Tax & Compliance
+  taxFormRequired: boolean;
+  taxFormSubmitted: boolean;
+  
+  // Processing Info
+  requestedAt?: string; // When payout was requested
+  processedAt?: string;
+  processedBy?: string; // Super admin user ID
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * Commission Tier Configuration
+ * Defines requirements and rewards for each affiliate tier
+ * Super admin manages these tiers
+ */
+export interface AffiliateTier {
+  id: string;
+  tierName: 'bronze' | 'silver' | 'gold' | 'platinum';
+  
+  // Requirements
+  minReferrals: number;
+  minConversions: number;
+  minTotalRevenue: number; // In USD
+  
+  // Rewards
+  commissionRate: number; // Percentage (20, 25, 30, 35)
+  recurringMonths: number; // 1, 2, 3, 6, 12, 18, 24, or 999 (lifetime) - Super admin configurable
+  bonusPerReferral: number; // One-time bonus in USD
+  
+  // Perks
+  perks: {
+    prioritySupport?: boolean;
+    marketingMaterials?: boolean;
+    customLandingPage?: boolean;
+    earlyAccess?: boolean;
+  };
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * TIER 2: Tenant-to-Tenant Referrals
+ * Tracks when one tenant organization refers another
+ * Super admin manages commission structure
+ */
+export interface TenantReferral {
+  id: string;
+  referrerTenantId: string; // Tenant that made the referral
+  referredTenantId: string; // New tenant that signed up
+  referralCode: string;
+  
+  // Same structure as AffiliateReferral but specific to tenants
+  // Inherits most fields from AffiliateReferral
+  conversionStatus: 'invited' | 'signed_up' | 'active_subscriber' | 'churned';
+  
+  // Commission (Paid to referring tenant)
+  commissionAmount: number; // Per month in USD
+  recurringMonths: number; // How long to pay commission
+  monthsPaid: number;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * TIER 3: Participant Referrals (Tenant-Managed)
+ * Participants within a tenant refer friends to join the platform
+ * Tenant admin controls rewards and payout in their currency
+ */
+export interface ParticipantReferral {
+  id: string;
+  tenantId: string;
+  referrerId: string; // User ID who made the referral
+  referredUserId: string; // User ID who signed up
+  referralCode: string;
+  
+  // Status
+  status: 'pending' | 'completed' | 'rewarded';
+  
+  // Requirements for completion
+  referredUserActive: boolean; // Must complete X quizzes or 1 tournament
+  minimumActivityMet: boolean;
+  
+  // Reward (Tenant Controls)
+  rewardType: 'points' | 'credits' | 'tournament_entries'; // What referrer receives
+  rewardAmount: number; // Amount of reward
+  rewardCurrency?: string; // For credits: tenant's currency
+  rewardAwarded: boolean;
+  rewardAwardedAt?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * TIER 3: Participant Reward Tracking
+ * Tracks rewards earned by participants through referrals
+ * Managed by tenant admin
+ */
+export interface ParticipantReward {
+  id: string;
+  tenantId: string;
+  userId: string;
+  referralId: string; // Links to ParticipantReferral
+  
+  // Reward Details
+  rewardType: 'points' | 'credits' | 'tournament_entries';
+  amount: number;
+  currency?: string; // For credits
+  
+  // Status
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  approvedBy?: string; // Tenant admin user ID
+  approvedAt?: string;
+  
+  // Payout (For credits)
+  payoutMethod?: 'wallet' | 'bank_transfer' | 'mobile_money';
+  payoutDetails?: any;
+  paidAt?: string;
+  transactionId?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // Tournament interface
@@ -2289,7 +2581,7 @@ export const defaultRolePermissions: RolePermission[] = [
       'access-control', 'tournaments', 'question-bank', 'question-categories', 
       'custom-categories', 'round-templates', 'ai-generator', 'analytics', 
       'payments', 'billing', 'payment-integration', 'branding', 'theme-settings',
-      'notifications', 'audit-logs', 'help', 'profile'
+      'notifications', 'audit-logs', 'help', 'profile', 'question-lifecycle', 'security'
     ],
     isSystemRole: true
   },
@@ -2765,7 +3057,11 @@ export const mockQuestions: Question[] = [
     source: 'manual',
     explanation: 'Adam was the first man created by God in the Garden of Eden.',
     verse: 'Genesis 2:7',
-    tenantId: 'tenant1'
+    tenantId: 'tenant1',
+    status: QuestionStatus.QUESTION_POOL,
+    usageCount: 0,
+    createdBy: 'admin',
+    createdAt: new Date().toISOString()
   },
   {
     id: 'q2', 
@@ -2777,7 +3073,11 @@ export const mockQuestions: Question[] = [
     source: 'manual',
     explanation: 'God created the world in 6 days and rested on the 7th day.',
     verse: 'Genesis 1:31-2:2',
-    tenantId: 'tenant1'
+    tenantId: 'tenant1',
+    status: QuestionStatus.QUESTION_POOL,
+    usageCount: 0,
+    createdBy: 'admin',
+    createdAt: new Date().toISOString()
   },
   {
     id: 'q3',
@@ -2789,7 +3089,11 @@ export const mockQuestions: Question[] = [
     source: 'manual',
     explanation: 'Judas Iscariot betrayed Jesus to the chief priests for 30 pieces of silver.',
     verse: 'Matthew 26:14-16',
-    tenantId: 'tenant1'
+    tenantId: 'tenant1',
+    status: QuestionStatus.QUESTION_POOL,
+    usageCount: 0,
+    createdBy: 'admin',
+    createdAt: new Date().toISOString()
   },
   {
     id: 'q4',
@@ -2801,7 +3105,11 @@ export const mockQuestions: Question[] = [
     source: 'ai',
     explanation: 'Psalms is the longest book in the Bible with 150 chapters.',
     verse: 'Psalms 1:1',
-    tenantId: 'tenant1'
+    tenantId: 'tenant1',
+    status: QuestionStatus.QUESTION_POOL,
+    usageCount: 0,
+    createdBy: 'admin',
+    createdAt: new Date().toISOString()
   }
 ];
 
@@ -3049,6 +3357,96 @@ export function getRequiredPlanForFeature(feature: string): string | null {
   }
   
   return null;
+}
+
+// Get feature display info (for locked feature UI)
+export interface FeatureDisplayInfo {
+  featureName: string;
+  requiredPlan: string;
+  currentPlan: string;
+  benefits: string[];
+}
+
+export function getFeatureDisplayInfo(user: User, featureKey: string): FeatureDisplayInfo | null {
+  if (!user || !user.tenantId) return null;
+  
+  const currentPlan = getTenantPlan(user.tenantId);
+  const currentPlanName = currentPlan?.displayName || 'Free';
+  
+  // Feature display information
+  const featureMap: Record<string, { name: string; requiredPlan: string; benefits: string[] }> = {
+    'branding': {
+      name: 'Custom Branding',
+      requiredPlan: 'Professional',
+      benefits: [
+        'Upload custom logo and favicon',
+        'Choose custom colors and fonts',
+        'White-label the platform',
+        'Custom email templates',
+        'Branded certificates and reports'
+      ]
+    },
+    'analytics': {
+      name: 'Advanced Analytics',
+      requiredPlan: 'Professional',
+      benefits: [
+        'Detailed performance metrics',
+        'Custom reports and exports',
+        'User engagement tracking',
+        'Tournament analytics',
+        'Question difficulty analysis'
+      ]
+    },
+    'ai-generator': {
+      name: 'AI Question Generator',
+      requiredPlan: 'Professional',
+      benefits: [
+        'Generate unlimited questions with AI',
+        'Multiple difficulty levels',
+        'Custom question formats',
+        'Bulk question generation',
+        'Smart question suggestions'
+      ]
+    },
+    'payment-integration': {
+      name: 'Payment Integration',
+      requiredPlan: 'Professional',
+      benefits: [
+        'Accept payments for tournaments',
+        'Multiple payment gateways',
+        'Automated invoicing',
+        'Revenue tracking',
+        'Refund management'
+      ]
+    },
+    'theme-settings': {
+      name: 'Theme Customization',
+      requiredPlan: 'Professional',
+      benefits: [
+        'Custom color schemes',
+        'Advanced typography options',
+        'Dark mode support',
+        'Mobile-responsive themes',
+        'Preview before publishing'
+      ]
+    }
+  };
+  
+  const featureInfo = featureMap[featureKey];
+  if (!featureInfo) return null;
+  
+  return {
+    featureName: featureInfo.name,
+    requiredPlan: featureInfo.requiredPlan,
+    currentPlan: currentPlanName,
+    benefits: featureInfo.benefits
+  };
+}
+
+// Check if feature is locked (not available on current plan)
+export function isFeatureLocked(user: User, feature: string): boolean {
+  if (!user) return true;
+  return !hasFeatureAccess(user, feature);
 }
 
 export function canCreateMoreUsers(tenantId: string): boolean {
@@ -3396,21 +3794,27 @@ export function logAuditEvent(
   // Handle both old and new signatures
   if ('tenantId' in creatorUserOrParams && typeof creatorUserOrParams.tenantId === 'string') {
     // New signature with params object
-    const params = creatorUserOrParams;
-    logData = {
-      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      tenantId: params.tenantId,
-      userId: params.userId,
-      targetUserId: params.targetUserId,
-      action: params.action,
-      entityType: params.entityType,
-      entityId: params.entityId,
-      details: params.details || {},
-      timestamp: new Date().toISOString(),
-      ipAddress: params.ipAddress || '127.0.0.1',
-      userAgent: params.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
-      sessionId: `session_${Date.now()}`,
-    };
+    // Type guard: if it has 'action' property, it's the new signature
+    if ('action' in creatorUserOrParams) {
+      const params = creatorUserOrParams;
+      logData = {
+        id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        tenantId: params.tenantId,
+        userId: params.userId,
+        targetUserId: params.targetUserId,
+        action: params.action,
+        entityType: params.entityType,
+        entityId: params.entityId,
+        details: params.details || {},
+        timestamp: new Date().toISOString(),
+        ipAddress: params.ipAddress || '127.0.0.1',
+        userAgent: params.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
+        sessionId: `session_${Date.now()}`,
+      };
+    } else {
+      // Old signature - this branch won't execute given the logic above
+      return;
+    }
   } else {
     // Old signature with User object
     const creatorUser = creatorUserOrParams as User;
@@ -3610,11 +4014,14 @@ export function applyForPracticeAccess(userId: string): boolean {
   storage.set(STORAGE_KEYS.CURRENT_USER, user);
   
   logAuditEvent({
+    tenantId: user.tenantId,
     userId: user.id,
-    action: 'apply_practice_access',
+    action: 'user.update',
     entityType: 'user',
     entityId: user.id,
-    details: { status: 'pending' }
+    details: {
+      changes: [{ field: 'practiceAccessStatus', oldValue: 'none', newValue: 'pending' }]
+    }
   });
   
   return true;
@@ -3639,11 +4046,15 @@ export function approvePracticeAccess(userId: string, approverId: string): boole
   }
   
   logAuditEvent({
+    tenantId: user.tenantId,
     userId: approverId,
-    action: 'approve_practice_access',
+    action: 'user.update',
     entityType: 'user',
     entityId: userId,
-    details: { status: 'approved' }
+    targetUserId: userId,
+    details: {
+      changes: [{ field: 'practiceAccessStatus', oldValue: 'pending', newValue: 'approved' }]
+    }
   });
   
   return true;
@@ -3660,11 +4071,16 @@ export function rejectPracticeAccess(userId: string, approverId: string, reason?
   storage.set(STORAGE_KEYS.USERS, users);
   
   logAuditEvent({
+    tenantId: user.tenantId,
     userId: approverId,
-    action: 'reject_practice_access',
+    action: 'user.update',
     entityType: 'user',
     entityId: userId,
-    details: { status: 'rejected', reason }
+    targetUserId: userId,
+    details: {
+      changes: [{ field: 'practiceAccessStatus', oldValue: 'pending', newValue: 'rejected' }],
+      metadata: { reason }
+    }
   });
   
   return true;
@@ -3689,11 +4105,15 @@ export function qualifyUserForTournaments(userId: string, approverId: string): b
   }
   
   logAuditEvent({
+    tenantId: user.tenantId,
     userId: approverId,
-    action: 'qualify_user',
+    action: 'user.update',
     entityType: 'user',
     entityId: userId,
-    details: { status: 'qualified' }
+    targetUserId: userId,
+    details: {
+      changes: [{ field: 'qualificationStatus', oldValue: 'in_training', newValue: 'qualified' }]
+    }
   });
   
   return true;
@@ -3721,11 +4141,16 @@ export function approveAsParticipant(userId: string, approverId: string): boolea
   }
   
   logAuditEvent({
+    tenantId: user.tenantId,
     userId: approverId,
-    action: 'approve_participant',
+    action: 'role.assign',
     entityType: 'user',
     entityId: userId,
-    details: { oldRole: 'inspector', newRole: 'participant' }
+    targetUserId: userId,
+    details: {
+      roleName: 'participant',
+      metadata: { previousValue: 'inspector', newValue: 'participant' }
+    }
   });
   
   return true;
@@ -3928,11 +4353,14 @@ export function applyToTournament(
   }
 
   logAuditEvent({
+    tenantId: user.tenantId,
     userId,
-    action: 'apply_tournament',
+    action: 'tournament.create',
     entityType: 'tournament',
     entityId: tournamentId,
-    details: { applicationId: application.id, pathway: qualificationPathway, autoQualified, participationType, parishId }
+    details: {
+      metadata: { applicationId: application.id, pathway: qualificationPathway, autoQualified, participationType, parishId }
+    }
   });
 
   return { 
@@ -4080,7 +4508,7 @@ export function getQuestionsForAttempt(
     };
   }
   
-  return { success: true, questions: selectedQuestions };
+  return { success: true, questions: selectedQuestions as Question[] };
 }
 
 // Calculate final score based on scoring method
@@ -4166,11 +4594,14 @@ export function addParish(parishData: Omit<Parish, 'id' | 'createdAt' | 'isVerif
   storage.set(STORAGE_KEYS.PARISHES, parishes);
   
   logAuditEvent({
+    tenantId: parishData.tenantId,
     userId: parishData.createdBy,
-    action: 'create_parish',
-    entityType: 'parish',
+    action: 'data.import',
+    entityType: 'tenant',
     entityId: newParish.id,
-    details: { parishName: parishData.name }
+    details: {
+      metadata: { parishName: parishData.name, type: 'parish_created' }
+    }
   });
   
   return { success: true, parishId: newParish.id };
@@ -4208,11 +4639,14 @@ export function verifyParish(parishId: string, adminId: string): boolean {
   storage.set(STORAGE_KEYS.PARISHES, parishes);
   
   logAuditEvent({
+    tenantId: parishes[parishIndex].tenantId,
     userId: adminId,
-    action: 'verify_parish',
-    entityType: 'parish',
+    action: 'data.import',
+    entityType: 'tenant',
     entityId: parishId,
-    details: { status: 'verified' }
+    details: {
+      metadata: { type: 'parish_verified', parishName: parishes[parishIndex].name }
+    }
   });
   
   return true;
@@ -4396,11 +4830,14 @@ export function calculateParishScore(
   tournamentId: string, 
   parishId: string
 ): ParishTournamentStats | null {
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
   if (!tournament || !tournament.parishScoringConfig?.enabled) return null;
   
-  const applications = getAllApplicationsForTournament(tournamentId)
-    .filter(app => app.parishId === parishId && app.participationType === 'parish');
+  const allApplications = storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+  const applications = allApplications.filter((app: TournamentApplication) => 
+    app.tournamentId === tournamentId && app.parishId === parishId && app.participationType === 'parish'
+  );
   
   if (applications.length === 0) return null;
   
@@ -4485,19 +4922,21 @@ export function calculateParishScore(
 
 // Get parish leaderboard for a tournament
 export function getParishLeaderboard(tournamentId: string): ParishTournamentStats[] {
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
   if (!tournament || !tournament.parishScoringConfig?.enabled) return [];
   
   // Get all parishes with participants
-  const applications = getAllApplicationsForTournament(tournamentId);
+  const allApplications = storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+  const applications = allApplications.filter((app: TournamentApplication) => app.tournamentId === tournamentId);
   const parishIds = [...new Set(applications
-    .filter(app => app.participationType === 'parish' && app.parishId)
-    .map(app => app.parishId!)
+    .filter((app: TournamentApplication) => app.participationType === 'parish' && app.parishId)
+    .map((app: TournamentApplication) => app.parishId as string)
   )];
   
   // Calculate scores for each parish
   const parishStats = parishIds
-    .map(parishId => calculateParishScore(tournamentId, parishId))
+    .map((parishId: string) => calculateParishScore(tournamentId, parishId))
     .filter((stats): stats is ParishTournamentStats => stats !== null);
   
   // Sort by final score (descending)
@@ -4555,8 +4994,10 @@ export function checkTournamentEligibility(
   userId: string,
   tournamentId: string
 ): { eligible: boolean; reasons: string[] } {
-  const tournament = tournaments.find(t => t.id === tournamentId);
-  const user = getUserById(userId);
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === userId);
   
   if (!tournament) {
     return { eligible: false, reasons: ['Tournament not found'] };
@@ -4785,7 +5226,8 @@ export function canParishAcceptParticipants(
   tournamentId: string,
   parishId: string
 ): { canAccept: boolean; reason?: string; currentCount: number; maxAllowed?: number } {
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
   
   if (!tournament) {
     return { canAccept: false, reason: 'Tournament not found', currentCount: 0 };
@@ -4797,8 +5239,8 @@ export function canParishAcceptParticipants(
   }
   
   const maxAllowed = tournament.participationConfig.maxParticipantsPerParish;
-  const applications = getAllApplicationsForTournament(tournamentId)
-    .filter(app => app.parishId === parishId && app.participationType === 'parish');
+  const allApplications = storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+  const applications = allApplications.filter((app: TournamentApplication) => app.tournamentId === tournamentId && app.parishId === parishId && app.participationType === 'parish');
   
   const currentCount = applications.length;
   const canAccept = currentCount < maxAllowed;
@@ -4890,7 +5332,8 @@ export function getWinnerPrizeAwards(winnerId: string): PrizeAward[] {
 
 // Calculate and create prize awards for tournament winners
 export function generatePrizeAwards(tournamentId: string): { success: boolean; awards?: PrizeAward[]; message?: string } {
-  const tournament = tournaments.find(t => t.id === tournamentId);
+  const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+  const tournament = tournaments.find((t: Tournament) => t.id === tournamentId);
   if (!tournament) {
     return { success: false, message: 'Tournament not found' };
   }
@@ -4901,7 +5344,8 @@ export function generatePrizeAwards(tournamentId: string): { success: boolean; a
   }
   
   // Get qualified applications sorted by score
-  const applications = getAllApplicationsForTournament(tournamentId)
+  const allApplications = storage.get(STORAGE_KEYS.TOURNAMENT_APPLICATIONS) || [];
+  const applications = allApplications.filter((app: TournamentApplication) => app.tournamentId === tournamentId)
     .filter(app => app.status === 'qualified' || app.status === 'auto_qualified')
     .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
   
@@ -4997,7 +5441,8 @@ function createPrizeAward(
   position: number,
   positionPrize: PositionPrize
 ): PrizeAward {
-  const user = getUsers().find(u => u.id === application.userId);
+  const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+  const user = users.find((u: User) => u.id === application.userId);
   
   const prizes: PrizeAward['prizes'] = [];
   
@@ -5992,7 +6437,7 @@ export function applyRoundTemplate(templateId: string): RoundQuestionConfig[] {
   return template.roundConfigs.map((config, index) => ({
     ...config,
     roundNumber: index + 1,
-    roundName: config.roundName || getRoundNameFromNumber(index + 1, template.numberOfRounds)
+    roundName: getRoundNameFromNumber(index + 1, template.numberOfRounds)
   }));
 }
 
@@ -6069,6 +6514,7 @@ export function cloneRoundTemplate(templateId: string, tenantId: string, newName
   if (!original) return null;
   
   const cloned = createRoundTemplate(tenantId, {
+    tenantId,
     name: newName || `${original.name} (Copy)`,
     description: original.description,
     templateType: 'custom',
@@ -7266,7 +7712,7 @@ function generateAdvancedVariation(
   category?: string;
   qualityScore: number;
 } {
-  let question = original.question;
+  let question = original.text;
   let questionOptions = [...original.options];
   let correctAnswer = original.correctAnswer;
   let qualityScore = 70;
@@ -7928,6 +8374,168 @@ export function clearAllNotifications(userId: string): void {
 export function getUnreadNotificationCount(userId: string): number {
   const notifications = getNotifications(userId);
   return notifications.filter(n => !n.read).length;
+}
+
+// ============================================================================
+// REFERRAL SYSTEM - DEFAULT TIER CONFIGURATIONS
+// ============================================================================
+
+/**
+ * Default affiliate tier configurations
+ * Super admin can modify these via platform settings
+ */
+export const defaultAffiliateTiers: AffiliateTier[] = [
+  {
+    id: 'tier-bronze',
+    tierName: 'bronze',
+    minReferrals: 0,
+    minConversions: 0,
+    minTotalRevenue: 0,
+    commissionRate: 20,
+    recurringMonths: 3, // 3 months for bronze
+    bonusPerReferral: 0,
+    perks: {},
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'tier-silver',
+    tierName: 'silver',
+    minReferrals: 10,
+    minConversions: 5,
+    minTotalRevenue: 5000,
+    commissionRate: 25,
+    recurringMonths: 6, // 6 months for silver
+    bonusPerReferral: 50,
+    perks: {
+      prioritySupport: true,
+      marketingMaterials: true
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'tier-gold',
+    tierName: 'gold',
+    minReferrals: 50,
+    minConversions: 25,
+    minTotalRevenue: 25000,
+    commissionRate: 30,
+    recurringMonths: 12, // 12 months for gold
+    bonusPerReferral: 100,
+    perks: {
+      prioritySupport: true,
+      marketingMaterials: true,
+      customLandingPage: true
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'tier-platinum',
+    tierName: 'platinum',
+    minReferrals: 100,
+    minConversions: 50,
+    minTotalRevenue: 100000,
+    commissionRate: 35,
+    recurringMonths: 24, // 24 months for platinum
+    bonusPerReferral: 500,
+    perks: {
+      prioritySupport: true,
+      marketingMaterials: true,
+      customLandingPage: true,
+      earlyAccess: true
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
+
+/**
+ * Example: Plan-based commission duration overrides
+ * Super admin can configure different durations based on the plan being sold
+ */
+export const planCommissionDurations = {
+  basic: 1,        // 1 month for Basic plan referrals
+  professional: 2, // 2 months for Professional plan referrals
+  premium: 3,      // 3 months for Premium plan referrals
+  enterprise: 6    // 6 months for Enterprise plan referrals
+};
+
+/**
+ * Calculate commission earnings based on plan and duration
+ * 
+ * @example
+ * // Professional plan: $49/month, Bronze tier: 20%, 3 months
+ * const earnings = calculateCommissionEarnings(49, 20, 3);
+ * // Returns: { monthly: 9.80, total: 29.40 }
+ */
+export function calculateCommissionEarnings(
+  planPrice: number,
+  commissionRate: number,
+  recurringMonths: number
+): { monthly: number; total: number; breakdown: string } {
+  const monthly = (planPrice * commissionRate) / 100;
+  const total = monthly * recurringMonths;
+  
+  return {
+    monthly: parseFloat(monthly.toFixed(2)),
+    total: parseFloat(total.toFixed(2)),
+    breakdown: `$${planPrice} × ${commissionRate}% × ${recurringMonths} months = $${total.toFixed(2)}`
+  };
+}
+
+/**
+ * Get commission tier by name
+ */
+export function getAffiliateTier(tierName: 'bronze' | 'silver' | 'gold' | 'platinum'): AffiliateTier | undefined {
+  return defaultAffiliateTiers.find(t => t.tierName === tierName);
+}
+
+/**
+ * Calculate affiliate progression
+ * Returns the next tier an affiliate should be promoted to based on performance
+ */
+export function calculateAffiliateProgression(affiliate: Affiliate): {
+  currentTier: AffiliateTier;
+  nextTier?: AffiliateTier;
+  progressPercentage: number;
+  eligible: boolean;
+} {
+  const currentTier = getAffiliateTier(affiliate.commissionTier);
+  if (!currentTier) throw new Error('Invalid tier');
+  
+  const tiers = defaultAffiliateTiers.sort((a, b) => a.commissionRate - b.commissionRate);
+  const currentIndex = tiers.findIndex(t => t.tierName === affiliate.commissionTier);
+  const nextTier = tiers[currentIndex + 1];
+  
+  if (!nextTier) {
+    return {
+      currentTier,
+      progressPercentage: 100,
+      eligible: false
+    };
+  }
+  
+  // Check if affiliate meets next tier requirements
+  const meetsReferrals = affiliate.totalReferrals >= nextTier.minReferrals;
+  const meetsConversions = affiliate.successfulConversions >= nextTier.minConversions;
+  const meetsRevenue = affiliate.totalEarned >= nextTier.minTotalRevenue;
+  
+  const eligible = meetsReferrals && meetsConversions && meetsRevenue;
+  
+  // Calculate progress percentage (average of three metrics)
+  const refProgress = Math.min(100, (affiliate.totalReferrals / nextTier.minReferrals) * 100);
+  const convProgress = Math.min(100, (affiliate.successfulConversions / nextTier.minConversions) * 100);
+  const revProgress = Math.min(100, (affiliate.totalEarned / nextTier.minTotalRevenue) * 100);
+  const progressPercentage = Math.floor((refProgress + convProgress + revProgress) / 3);
+  
+  return {
+    currentTier,
+    nextTier,
+    progressPercentage,
+    eligible
+  };
 }
 
 

@@ -13,10 +13,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [themeVersion, setThemeVersion] = useState(0);
 
   const reloadTheme = () => {
+    // Try to get tenant ID from current user or directly from storage
     const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-    if (currentUser?.tenantId) {
-      loadSavedTheme(currentUser.tenantId);
+    const tenantId = currentUser?.tenantId;
+    
+    if (tenantId) {
+      loadSavedTheme(tenantId);
       setThemeVersion(prev => prev + 1);
+      console.log('Theme reloaded for tenant:', tenantId);
+    } else {
+      // No tenant ID, load default theme
+      loadSavedTheme(null);
     }
   };
 
@@ -26,7 +33,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Listen for storage changes (theme updates, tenant switches)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.CURRENT_USER || e.key === STORAGE_KEYS.THEME_CONFIGS) {
+      if (e.key === STORAGE_KEYS.CURRENT_USER || 
+          e.key === STORAGE_KEYS.THEME_CONFIGS ||
+          e.key === 'equiz_theme_configs') {
         reloadTheme();
       }
     };

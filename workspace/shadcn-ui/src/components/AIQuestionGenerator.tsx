@@ -24,8 +24,11 @@ import {
   canGenerateAIQuestions,
   createAIGenerationRequest,
   getAIGenerationRequests,
-  updateQuestionStatus
+  updateQuestionStatus,
+  hasFeatureAccess,
+  getFeatureDisplayInfo
 } from '@/lib/mockData';
+import { FeaturePreviewOverlay } from './FeaturePreviewOverlay';
 
 interface AIQuestionGeneratorProps {
   onBack: () => void;
@@ -68,6 +71,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
   const [aiConfig, setAiConfig] = useState<any>(null);
   const [generationRequests, setGenerationRequests] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('generate');
+  
+  // Feature access check
+  const isLocked = user ? !hasFeatureAccess(user, 'ai-generator') : true;
+  const featureInfo = user ? getFeatureDisplayInfo(user, 'ai-generator') : null;
   
   // Review dialog state
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -461,6 +468,42 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  // Render locked feature preview if needed
+  if (isLocked && featureInfo) {
+    return (
+      <FeaturePreviewOverlay
+        featureInfo={featureInfo}
+        onUpgrade={() => {
+          window.location.hash = 'billing';
+        }}
+        blur={true}
+      >
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6">
+              <div className="flex items-center space-x-4 mb-4">
+                <Button variant="ghost" size="sm" onClick={onBack}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                    <Sparkles className="h-8 w-8 text-yellow-500" />
+                    AI Question Generator
+                  </h1>
+                  <p className="text-gray-600">Generate quiz questions with artificial intelligence</p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card><CardContent className="p-6"><div className="h-60" /></CardContent></Card>
+              <Card><CardContent className="p-6"><div className="h-60" /></CardContent></Card>
+            </div>
+          </div>
+        </div>
+      </FeaturePreviewOverlay>
     );
   }
 

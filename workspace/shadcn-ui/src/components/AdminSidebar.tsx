@@ -40,9 +40,10 @@ import {
   Tags,
   BookTemplate,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  Crown
 } from 'lucide-react';
-import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
+import { User, hasPermission, hasFeatureAccess, canAccessPage, isFeatureLocked, storage, getRolePermission } from '@/lib/mockData';
 
 interface AdminSidebarProps {
   currentPage?: string;
@@ -92,7 +93,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: LayoutDashboard,
       type: 'single',
       page: 'dashboard',
-      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'participant', 'inspector', 'practice_user'],
+      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'participant', 'inspector', 'moderator', 'practice_user'],
       requiredPermission: null,
       planFeature: null
     },
@@ -101,7 +102,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Users',
       icon: Users,
       type: 'group',
-      requiredRoles: ['super_admin', 'org_admin'],
+      requiredRoles: ['super_admin', 'org_admin', 'moderator'],
       requiredPermission: 'users.read',
       planFeature: null,
       children: [
@@ -110,7 +111,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'All Users',
           icon: List,
           page: 'user-management',
-          requiredRoles: ['super_admin', 'org_admin'],
+          requiredRoles: ['super_admin', 'org_admin', 'moderator'],
           requiredPermission: 'users.read'
         },
         {
@@ -163,7 +164,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       label: 'Tournaments',
       icon: Trophy,
       type: 'group',
-      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
+      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector', 'moderator'],
       requiredPermission: 'tournaments.read',
       planFeature: null,
       children: [
@@ -172,7 +173,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           label: 'All Tournaments',
           icon: List,
           page: 'tournaments',
-          requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector'],
+          requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'inspector', 'moderator'],
           requiredPermission: 'tournaments.read'
         },
         {
@@ -313,7 +314,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: BarChart3,
       type: 'single',
       page: 'analytics',
-      requiredRoles: ['super_admin', 'org_admin', 'account_officer', 'inspector'],
+      requiredRoles: ['super_admin', 'org_admin', 'account_officer', 'inspector', 'moderator'],
       requiredPermission: 'analytics.view',
       planFeature: 'analytics'
     },
@@ -407,7 +408,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: Shield,
           page: 'security',
           badge: 'New',
-          requiredRoles: ['super_admin', 'org_admin'],
+          requiredRoles: ['super_admin'],
           requiredPermission: null
         },
         {
@@ -436,6 +437,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           badge: 'New',
           requiredRoles: ['super_admin', 'org_admin'],
           requiredPermission: null
+        },
+        {
+          id: 'participant-referrals',
+          label: 'Referral Program',
+          icon: Users,
+          page: 'participant-referrals',
+          badge: 'New',
+          requiredRoles: ['org_admin'],
+          requiredPermission: 'tenant.manage'
         },
         {
           id: 'notifications',
@@ -506,6 +516,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   // Helper function to check if menu item/group should be visible
   const isItemVisible = (item: any) => {
+    // If no user, hide everything except dashboard
+    if (!user) {
+      return item.page === 'dashboard';
+    }
+    
     // Normalize user role to lowercase for comparison
     const normalizedUserRole = userRole?.toLowerCase();
     const normalizedRequiredRoles = item.requiredRoles.map((role: string) => role.toLowerCase());
@@ -515,13 +530,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       return false;
     }
     
-    // Check permission if required and user is available
-    if (item.requiredPermission && user && !hasPermission(user, item.requiredPermission)) {
+    // For items with a page, check canAccessPage (handles role permissions + plan features)
+    if (item.page && !canAccessPage(user, item.page)) {
       return false;
     }
     
-    // Check plan feature access
-    if (item.planFeature && user && !hasFeatureAccess(user, item.planFeature)) {
+    // Check permission if required and user is available
+    if (item.requiredPermission && !hasPermission(user, item.requiredPermission)) {
+      return false;
+    }
+    
+    // Additional check for plan feature access (redundant with canAccessPage but kept for safety)
+    if (item.planFeature && !hasFeatureAccess(user, item.planFeature)) {
       return false;
     }
     
@@ -544,6 +564,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       return null;
     }
   }).filter(Boolean);
+
+  // Auto-expand parent groups when child page is active
+  useEffect(() => {
+    // Find which groups have active children and auto-expand them
+    const groupsToExpand: string[] = [];
+    
+    menuGroups.forEach((group: any) => {
+      if (group.type === 'group' && group.children) {
+        const hasActiveChild = group.children.some((child: any) => currentPage === child.page);
+        if (hasActiveChild && !expandedGroups.includes(group.id)) {
+          groupsToExpand.push(group.id);
+        }
+      }
+    });
+
+    if (groupsToExpand.length > 0) {
+      setExpandedGroups(prev => [...new Set([...prev, ...groupsToExpand])]);
+    }
+  }, [currentPage, menuGroups, expandedGroups]);
 
   return (
     <div className={cn(
@@ -717,6 +756,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     const ChildIcon = child.icon;
                     const isActive = currentPage === child.page;
                     
+                    // Check if feature is locked (has planFeature but no access)
+                    const isLocked = child.planFeature && user && !hasFeatureAccess(user, child.planFeature);
+                    
                     return (
                       <Button
                         key={child.id}
@@ -724,18 +766,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         size="sm"
                         className={cn(
                           "w-full justify-start h-9 text-sm",
-                          isActive && "bg-blue-50 text-blue-700 border-blue-200"
+                          isActive && "bg-blue-50 text-blue-700 border-blue-200",
+                          isLocked && "text-gray-400 hover:text-gray-600"
                         )}
                         onClick={() => onNavigate(child.page, (child as any).action)}
                       >
                         <ChildIcon className="h-3.5 w-3.5 mr-2" />
                         <span className="flex-1 text-left">{child.label}</span>
-                        {child.badge && (
+                        {isLocked && (
+                          <Lock className="h-3 w-3 ml-auto text-gray-400" />
+                        )}
+                        {!isLocked && child.badge && (
                           <Badge 
                             variant="secondary" 
                             className="ml-auto text-xs px-1.5 py-0"
                           >
                             {child.badge}
+                          </Badge>
+                        )}
+                        {isLocked && (
+                          <Badge 
+                            variant="outline" 
+                            className="ml-auto text-xs px-1.5 py-0 border-amber-300 bg-amber-50 text-amber-700"
+                          >
+                            <Crown className="h-2.5 w-2.5 mr-0.5" />
+                            Pro
                           </Badge>
                         )}
                       </Button>

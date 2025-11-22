@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, AlertTriangle, LogOut } from 'lucide-react';
+import { ArrowLeft, CreditCard, AlertTriangle, LogOut, FileText } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from './AuthSystem';
 import { hasPermission } from '@/lib/mockData';
 import { isPaymentIntegrationEnabled } from '@/lib/mockData';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentManagementProps {
   onBack: () => void;
@@ -13,6 +14,7 @@ interface PaymentManagementProps {
 
 export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBack }) => {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
 
   // Check if user is admin
   // Allow super_admin, org_admin, and account_officer to view payments
@@ -110,7 +112,10 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
               <Button 
                 className="w-full" 
                 disabled={!paymentEnabled}
-                onClick={() => console.log('Manual deposit')}
+                onClick={() => toast({
+                  title: "Manual Deposit",
+                  description: "Manual deposit feature coming soon. This will allow you to record manual payments.",
+                })}
               >
                 Manual Deposit
               </Button>
@@ -118,15 +123,22 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
                 className="w-full" 
                 variant="outline"
                 disabled={!paymentEnabled}
-                onClick={() => console.log('Process payout')}
+                onClick={() => toast({
+                  title: "Process Payout",
+                  description: "Payout processing feature coming soon. This will handle participant payouts.",
+                })}
               >
                 Process Payout
               </Button>
               <Button 
                 className="w-full" 
                 variant="outline"
-                onClick={() => console.log('View reports')}
+                onClick={() => toast({
+                  title: "View Reports",
+                  description: "Redirecting to payment reports...",
+                })}
               >
+                <FileText className="h-4 w-4 mr-2" />
                 View Reports
               </Button>
             </CardContent>
@@ -155,7 +167,10 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
                 <Button 
                   className="w-full" 
                   variant="outline"
-                  onClick={() => console.log('Configure integration')}
+                  onClick={() => toast({
+                    title: "Configure Integration",
+                    description: "Navigate to Settings > Payment Integration to configure payment providers.",
+                  })}
                 >
                   Configure Integration
                 </Button>

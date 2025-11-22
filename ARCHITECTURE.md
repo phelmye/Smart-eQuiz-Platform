@@ -608,7 +608,7 @@ cd tenant-app && pnpm dev          # http://localhost:5174
 ### Phase 4: Tenant App
 - Refactor current app to tenant-only
 - Add tenant detection middleware
-- Remove tenant selection UI
+- ✅ Parish-based registration (COMPLETED)
 - Test subdomain routing
 - Deploy to *.smartequiz.com
 

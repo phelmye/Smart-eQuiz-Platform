@@ -23,9 +23,11 @@ import {
   Crown,
   AlertTriangle,
   RefreshCw,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { storage, STORAGE_KEYS, defaultPlans } from '@/lib/mockData';
+import { useAuth } from './AuthSystem';
 
 interface SubscriptionManagementProps {
   user: any;
@@ -65,10 +67,11 @@ interface PaymentMethod {
 
 const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ 
   user, 
-  tenant,
+  tenant, 
   onNavigate,
   onBack 
 }) => {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [currentPlan, setCurrentPlan] = useState<any>(null);
   const [usageMetrics, setUsageMetrics] = useState<UsageMetrics>({
@@ -215,6 +218,22 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     }
   };
 
+  const handleAddPaymentMethod = () => {
+    // In a real app, this would open a payment provider modal (Stripe, PayPal, etc.)
+    const newMethod: PaymentMethod = {
+      id: `pm_${Date.now()}`,
+      type: 'card',
+      last4: '4242',
+      brand: 'Visa',
+      expiryMonth: 12,
+      expiryYear: 2025,
+      isDefault: paymentMethods.length === 0
+    };
+    
+    setPaymentMethods(prev => [...prev, newMethod]);
+    alert('Payment method added successfully!\n\nIn production, this would integrate with Stripe, PayPal, or your payment provider.');
+  };
+
   const getUsagePercentage = (used: number, limit: number) => {
     if (limit === -1) return 0; // Unlimited
     return Math.min((used / limit) * 100, 100);
@@ -268,11 +287,17 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
               </h1>
               <p className="text-gray-600 mt-2">Manage your plan, usage, and billing</p>
             </div>
-            {onBack && (
-              <Button variant="outline" onClick={onBack}>
-                Back to Dashboard
+            <div className="flex items-center gap-2">
+              {onBack && (
+                <Button variant="outline" onClick={onBack}>
+                  Back to Dashboard
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={logout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -320,8 +345,8 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                     <div className="flex items-baseline gap-2 mt-2">
                       <span className="text-3xl font-bold">
                         {formatCurrency(billingCycle === 'monthly' ? 
-                          currentPlan?.pricing.monthly || 0 : 
-                          currentPlan?.pricing.annual || 0
+                          currentPlan?.monthlyPrice || 0 : 
+                          ((currentPlan?.monthlyPrice || 0) * 12 * (1 - (currentPlan?.yearlyDiscountPercent || 0) / 100))
                         )}
                       </span>
                       <span className="text-gray-600">/ {billingCycle}</span>
@@ -686,7 +711,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                   </div>
                 ))}
 
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={handleAddPaymentMethod}>
                   <CreditCard className="h-4 w-4 mr-2" />
                   Add New Payment Method
                 </Button>

@@ -282,7 +282,10 @@ export const NotificationCenter: React.FC = () => {
                   <p className="text-sm text-gray-500">Receive notifications via email</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // TODO: Open email notification settings modal
+                console.log('Configure email notifications');
+              }}>
                 Configure
               </Button>
             </div>
@@ -294,7 +297,10 @@ export const NotificationCenter: React.FC = () => {
                   <p className="text-sm text-gray-500">Get notified about tournament updates</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // TODO: Open tournament alerts settings modal
+                console.log('Configure tournament alerts');
+              }}>
                 Configure
               </Button>
             </div>
@@ -306,7 +312,10 @@ export const NotificationCenter: React.FC = () => {
                   <p className="text-sm text-gray-500">Team member activity notifications</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => {
+                // TODO: Open user activity settings modal
+                console.log('Configure user activity notifications');
+              }}>
                 Configure
               </Button>
             </div>

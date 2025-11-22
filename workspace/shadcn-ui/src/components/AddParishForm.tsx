@@ -22,15 +22,21 @@ import {
 interface AddParishFormProps {
   onSuccess?: (parishId: string) => void;
   onCancel?: () => void;
+  overrideTenantId?: string; // Allow override for registration flow
+  overrideUserId?: string; // Allow override for registration flow
 }
 
-export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCancel }) => {
+export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCancel, overrideTenantId, overrideUserId }) => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
+  // Use override values for registration flow, or user values for authenticated flow
+  const effectiveTenantId = overrideTenantId || user?.tenantId;
+  const effectiveUserId = overrideUserId || user?.id || 'anonymous';
+  
   // Get custom field labels
-  const fieldLabels = getFieldLabels(user?.tenantId);
+  const fieldLabels = getFieldLabels(effectiveTenantId);
   
   const [formData, setFormData] = useState({
     parishName: '',
@@ -85,7 +91,10 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (!effectiveTenantId || !effectiveUserId) {
+      setSubmitMessage({ type: 'error', text: 'Missing tenant or user information' });
+      return;
+    }
 
     if (!validateForm()) {
       setSubmitMessage({ type: 'error', text: 'Please fill in all required fields' });
@@ -118,7 +127,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
 
       const result = addParish({
         name: formData.parishName,
-        tenantId: user.tenantId,
+        tenantId: effectiveTenantId,
         authority,
         contactPerson,
         parishPhoneNumber: formData.parishPhoneNumber,
@@ -126,7 +135,7 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
         location,
         parishImage: formData.parishImage || undefined,
         isActive: true,
-        createdBy: user.id
+        createdBy: effectiveUserId
       });
 
       if (result.success) {
@@ -174,7 +183,8 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
     alert('Map integration coming soon! Please enter coordinates manually or paste map URL.');
   };
 
-  if (!user) {
+  // Only require authentication if no override values are provided
+  if (!user && !overrideTenantId && !overrideUserId) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">

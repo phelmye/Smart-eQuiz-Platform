@@ -26,9 +26,11 @@ import {
   Activity,
   Eye,
   Edit,
-  MoreVertical
+  MoreVertical,
+  LogOut
 } from 'lucide-react';
 import { storage, STORAGE_KEYS, User } from '@/lib/mockData';
+import { useAuth } from './AuthSystem';
 
 interface TeamManagementProps {
   user: any;
@@ -76,6 +78,7 @@ const AVAILABLE_ROLES = [
 ];
 
 const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack }) => {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState('members');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -360,11 +363,17 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
               </h1>
               <p className="text-gray-600 mt-2">Manage your team members, roles, and permissions</p>
             </div>
-            {onBack && (
-              <Button variant="outline" onClick={onBack}>
-                Back to Dashboard
+            <div className="flex items-center gap-2">
+              {onBack && (
+                <Button variant="outline" onClick={onBack}>
+                  Back to Dashboard
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={logout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
-            )}
+            </div>
           </div>
         </div>
 

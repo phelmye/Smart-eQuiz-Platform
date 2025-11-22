@@ -21,7 +21,8 @@ export const Layout: React.FC<LayoutProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
-  const isAdmin = user?.role === 'org_admin' || user?.role === 'super_admin';
+  // Check if user has admin or management role (should see sidebar)
+  const isAdmin = user?.role && ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator'].includes(user.role);
 
   if (!user) return null;
 

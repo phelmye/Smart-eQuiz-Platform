@@ -45,12 +45,13 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
   const loadAnalyticsData = async () => {
     setIsLoading(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
-    const questions = storage.get(STORAGE_KEYS.QUESTIONS) || mockQuestions;
+      const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+      const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
+      const questions = storage.get(STORAGE_KEYS.QUESTIONS) || mockQuestions;
 
     // Filter data based on user role
     const filteredUsers = user?.role === 'super_admin' ? users : 
@@ -138,6 +139,25 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
     });
 
     setIsLoading(false);
+  } catch (error) {
+    console.error('Error loading analytics data:', error);
+    setIsLoading(false);
+    // Set default empty data on error
+    setAnalyticsData({
+      totalUsers: 0,
+      activeUsers: 0,
+      totalTournaments: 0,
+      activeTournaments: 0,
+      totalQuestions: 0,
+      totalRevenue: 0,
+      avgTournamentSize: 0,
+      userGrowthRate: 0,
+      popularCategories: [],
+      tournamentStats: [],
+      userEngagement: [],
+      revenueByMonth: []
+    });
+  }
   };
 
   const exportData = () => {

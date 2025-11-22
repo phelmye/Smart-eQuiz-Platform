@@ -73,7 +73,14 @@ export const PracticeAccessApplication: React.FC = () => {
             {getStatusBadge()}
           </CardTitle>
           <CardDescription>
-            Apply for practice mode access to train and improve your skills
+            {user.practiceAccessStatus === 'none' 
+              ? "Practice access is the first step toward tournament participation. Apply below to begin your training journey."
+              : user.practiceAccessStatus === 'pending'
+              ? "Your application is under review. Administrators will approve or reject your request within 24-48 hours."
+              : user.practiceAccessStatus === 'approved'
+              ? "You have practice access! Use the practice quizzes to improve your skills and work toward tournament qualification."
+              : "Your previous application was rejected. You can reapply or contact an administrator for more information."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

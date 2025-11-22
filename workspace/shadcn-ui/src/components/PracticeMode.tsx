@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Clock, Trophy, Star, RotateCcw, CheckCircle, XCircle, Zap } from 'lucide-react';
+import { ArrowLeft, Clock, Trophy, Star, RotateCcw, CheckCircle, XCircle, Zap, BookOpen } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { apiClient } from '@/lib/apiClient';
 import { Spinner } from '@/components/ui/spinner';
@@ -284,14 +284,65 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="p-8 text-center">
-            <h2 className="text-xl font-bold text-red-600 mb-4">Practice Access Required</h2>
+            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-yellow-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Practice Access Required</h2>
             <p className="text-gray-600 mb-4">
-              You need to apply for practice access before you can use this feature.
+              You need practice access to use this feature and improve your Bible quiz skills.
             </p>
-            <p className="text-sm text-gray-500 mb-6">
-              Practice access allows you to train and improve your skills. Apply through your dashboard to get started.
-            </p>
-            <Button onClick={onBack}>Back to Dashboard</Button>
+            
+            {user?.practiceAccessStatus === 'none' && (
+              <>
+                <p className="text-sm text-gray-500 mb-6">
+                  Apply for practice access to unlock training materials, practice quizzes, and prepare for tournaments.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={onBack} variant="outline">Back to Dashboard</Button>
+                  <Button onClick={() => window.location.hash = '#practice-access'} className="bg-green-600 hover:bg-green-700">
+                    Apply for Practice Access
+                  </Button>
+                </div>
+              </>
+            )}
+            
+            {user?.practiceAccessStatus === 'pending' && (
+              <>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center gap-2 text-yellow-800 font-medium mb-2">
+                    <Clock className="h-5 w-5" />
+                    Application Under Review
+                  </div>
+                  <p className="text-sm text-yellow-700">
+                    Your practice access application is being reviewed by administrators. You'll be notified within 24-48 hours.
+                  </p>
+                </div>
+                <Button onClick={onBack}>Back to Dashboard</Button>
+              </>
+            )}
+            
+            {user?.practiceAccessStatus === 'rejected' && (
+              <>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-center gap-2 text-red-800 font-medium mb-2">
+                    <XCircle className="h-5 w-5" />
+                    Application Rejected
+                  </div>
+                  <p className="text-sm text-red-700 mb-2">
+                    Your previous application was not approved.
+                  </p>
+                  <p className="text-sm text-red-600">
+                    Please contact an administrator for more information or to reapply.
+                  </p>
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={onBack} variant="outline">Back to Dashboard</Button>
+                  <Button onClick={() => window.location.hash = '#practice-access'}>
+                    Reapply for Access
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

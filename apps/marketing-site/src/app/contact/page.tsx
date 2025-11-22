@@ -1,22 +1,32 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function ContactPage() {
-  return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            Smart eQuiz Platform
-          </Link>
-          <nav className="hidden md:flex gap-6">
-            <Link href="/#features" className="text-gray-600 hover:text-gray-900">Features</Link>
-            <Link href="/pricing" className="text-gray-600 hover:text-gray-900">Pricing</Link>
-            <Link href="/contact" className="text-blue-600 font-semibold">Contact</Link>
-          </nav>
-        </div>
-      </header>
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    organization: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setIsSubmitting(false);
+    setSubmitted(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white py-16">
         <div className="container mx-auto px-4 text-center">
@@ -32,67 +42,75 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid md:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
-              <form className="space-y-6">
+            <div className=\"bg-white rounded-lg shadow-lg p-8\">
+              <h2 className=\"text-2xl font-bold mb-6\">Send Us a Message</h2>
+              <form onSubmit={handleSubmit} className=\"space-y-6\">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor=\"name\" className=\"block text-sm font-medium text-gray-700 mb-2\">
                     Your Name *
                   </label>
                   <input
-                    type="text"
-                    id="name"
-                    name="name"
+                    type=\"text\"
+                    id=\"name\"
+                    name=\"name\"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
+                    placeholder=\"John Doe\"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor=\"email\" className=\"block text-sm font-medium text-gray-700 mb-2\">
                     Email Address *
                   </label>
                   <input
-                    type="email"
-                    id="email"
-                    name="email"
+                    type=\"email\"
+                    id=\"email\"
+                    name=\"email\"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
+                    placeholder=\"john@example.com\"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor=\"organization\" className=\"block text-sm font-medium text-gray-700 mb-2\">
                     Organization/Church Name
                   </label>
                   <input
-                    type="text"
-                    id="organization"
-                    name="organization"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Your Church Name"
+                    type=\"text\"
+                    id=\"organization\"
+                    name=\"organization\"
+                    value={formData.organization}
+                    onChange={(e) => setFormData({...formData, organization: e.target.value})}
+                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
+                    placeholder=\"Your Church Name\"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor=\"subject\" className=\"block text-sm font-medium text-gray-700 mb-2\">
                     Subject *
                   </label>
                   <select
-                    id="subject"
-                    name="subject"
+                    id=\"subject\"
+                    name=\"subject\"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
                   >
-                    <option value="">Select a subject</option>
-                    <option value="sales">Sales Inquiry</option>
-                    <option value="support">Technical Support</option>
-                    <option value="demo">Schedule a Demo</option>
-                    <option value="billing">Billing Question</option>
-                    <option value="partnership">Partnership Opportunity</option>
-                    <option value="other">Other</option>
+                    <option value=\"\">Select a subject</option>
+                    <option value=\"sales\">Sales Inquiry</option>
+                    <option value=\"support\">Technical Support</option>
+                    <option value=\"demo\">Schedule a Demo</option>
+                    <option value=\"billing\">Billing Question</option>
+                    <option value=\"partnership\">Partnership Opportunity</option>
+                    <option value=\"other\">Other</option>
                   </select>
                 </div>
 
@@ -105,17 +123,27 @@ export default function ContactPage() {
                     name="message"
                     required
                     rows={6}
+                    value={formData.message}
+                    onChange={(e) => setFormData({...formData, message: e.target.value})}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Tell us how we can help..."
                   ></textarea>
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Send Message
-                </button>
+                {submitted ? (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-800 font-semibold">Thank you for your message!</p>
+                    <p className="text-green-700 text-sm mt-1">We'll get back to you within 24 hours.</p>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                  </button>
+                )}
 
                 <p className="text-sm text-gray-600">
                   * Required fields. We typically respond within 24 hours during business days.
@@ -255,46 +283,6 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-white font-semibold mb-4">Smart eQuiz</h3>
-              <p className="text-sm">
-                Transforming Bible quiz programs with powerful tournament management.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/#features" className="hover:text-white">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
-                <li><Link href="/docs" className="hover:text-white">Documentation</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/about" className="hover:text-white">About</Link></li>
-                <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
-                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-white">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>&copy; 2025 Smart eQuiz Platform. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </main>
+    </div>
   );
 }

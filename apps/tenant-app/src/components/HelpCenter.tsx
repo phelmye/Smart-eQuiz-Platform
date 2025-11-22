@@ -129,7 +129,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
 
       {/* Quick Links */}
       <div className="grid md:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('articles')}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Book className="h-6 w-6 text-blue-600" />
@@ -139,7 +139,10 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => {
+          // TODO: Implement video tutorials feature
+          console.log('Navigate to video tutorials');
+        }}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Video className="h-6 w-6 text-purple-600" />
@@ -149,7 +152,10 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => {
+          // TODO: Implement live chat feature
+          console.log('Open live chat');
+        }}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <MessageCircle className="h-6 w-6 text-green-600" />
@@ -159,7 +165,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+        <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setActiveTab('faq')}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <HelpCircle className="h-6 w-6 text-orange-600" />
@@ -183,13 +189,13 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
             {categories.map((category) => {
               const articleCount = HELP_ARTICLES.filter(a => a.category === category).length;
               return (
-                <Card key={category} className="cursor-pointer hover:shadow-lg transition-shadow">
+                <Card key={category} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedCategory(category)}>
                   <CardContent className="pt-6">
                     <h3 className="font-semibold mb-2">{category}</h3>
                     <p className="text-sm text-gray-600 mb-3">
                       {articleCount} {articleCount === 1 ? 'article' : 'articles'}
                     </p>
-                    <Button variant="link" className="p-0">
+                    <Button variant="link" className="p-0" onClick={(e) => { e.stopPropagation(); setSelectedCategory(category); }}>
                       View all <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </CardContent>

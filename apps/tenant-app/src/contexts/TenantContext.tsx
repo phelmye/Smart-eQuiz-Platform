@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Tenant } from '@smart-equiz/types';
+import { loadSavedTheme } from '@/lib/theme';
 
 interface TenantContextType {
   tenant: Tenant | null;
@@ -70,6 +71,14 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
       }
     }
   }, []);
+
+  // Load theme when tenant is set or changes
+  useEffect(() => {
+    if (tenant?.id) {
+      loadSavedTheme(tenant.id);
+      console.log('Loading theme for tenant:', tenant.id, tenant.name);
+    }
+  }, [tenant?.id]);
 
   const fetchTenantData = async (sub: string) => {
     try {

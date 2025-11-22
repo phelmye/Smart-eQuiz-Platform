@@ -317,7 +317,7 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                By completing this purchase, you agree to our <button className="underline">Terms of Service</button> and <button className="underline">Privacy Policy</button>. Your subscription will automatically renew unless cancelled.
+                By completing this purchase, you agree to our <button onClick={() => window.open('/terms', '_blank')} className="underline hover:text-blue-600">Terms of Service</button> and <button onClick={() => window.open('/privacy', '_blank')} className="underline hover:text-blue-600">Privacy Policy</button>. Your subscription will automatically renew unless cancelled.
               </AlertDescription>
             </Alert>
           </div>

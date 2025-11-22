@@ -271,30 +271,56 @@ export function applyTheme(colors: ThemeColors) {
  * Should be called on app initialization
  */
 export function loadSavedTheme(tenantId: string | null) {
-  if (!tenantId) return;
+  if (!tenantId) {
+    // Apply default theme if no tenant
+    const defaultTheme = getDefaultTheme();
+    applyTheme(defaultTheme.colors);
+    return;
+  }
 
-  // Import storage dynamically to avoid circular dependency
-  const STORAGE_KEYS = { THEME_CONFIGS: 'theme_configs' };
-  const configs = JSON.parse(localStorage.getItem(STORAGE_KEYS.THEME_CONFIGS) || '[]');
-  const config = configs.find((c: any) => c.tenantId === tenantId);
+  try {
+    // Use correct storage key matching platform-admin
+    const THEME_CONFIGS_KEY = 'equiz_theme_configs';
+    const configsJson = localStorage.getItem(THEME_CONFIGS_KEY);
+    const configs = configsJson ? JSON.parse(configsJson) : [];
+    const config = configs.find((c: any) => c.tenantId === tenantId);
 
-  if (config) {
-    if (config.isCustom && config.customColors) {
-      const customTheme = createCustomTheme(
-        'Custom Theme',
-        config.customColors.primary,
-        config.customColors.secondary,
-        config.customColors.accent
-      );
-      applyTheme(customTheme.colors);
-    } else {
-      const template = getThemeById(config.templateId);
-      if (template) {
-        applyTheme(template.colors);
+    if (config) {
+      if (config.isCustom && config.customColors) {
+        // Apply custom theme from branding settings
+        const customTheme = createCustomTheme(
+          'Custom Theme',
+          config.customColors.primary,
+          config.customColors.secondary,
+          config.customColors.accent
+        );
+        applyTheme(customTheme.colors);
+        console.log('Applied custom theme for tenant:', tenantId);
+      } else if (config.templateId) {
+        // Apply predefined template
+        const template = getThemeById(config.templateId);
+        if (template) {
+          applyTheme(template.colors);
+          console.log('Applied theme template:', config.templateId);
+        } else {
+          // Fallback to default if template not found
+          const defaultTheme = getDefaultTheme();
+          applyTheme(defaultTheme.colors);
+        }
+      } else {
+        // Config exists but invalid, use default
+        const defaultTheme = getDefaultTheme();
+        applyTheme(defaultTheme.colors);
       }
+    } else {
+      // No theme config found, apply default theme
+      const defaultTheme = getDefaultTheme();
+      applyTheme(defaultTheme.colors);
+      console.log('No theme config found, using default theme');
     }
-  } else {
-    // Apply default theme if no config found
+  } catch (error) {
+    console.error('Error loading theme:', error);
+    // Fallback to default theme on any error
     const defaultTheme = getDefaultTheme();
     applyTheme(defaultTheme.colors);
   }
