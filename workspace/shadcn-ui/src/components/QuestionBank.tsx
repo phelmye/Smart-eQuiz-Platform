@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
@@ -65,6 +66,7 @@ const BIBLE_CATEGORIES = [
 
 export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories, initialAction }) => {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(initialAction === 'add');
@@ -267,7 +269,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
     e.preventDefault();
     
     if (!formData.text.trim() || !formData.category || formData.options.some(opt => !opt.trim())) {
-      alert('Please fill in all required fields');
+      toast({
+        title: "Incomplete Form",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -332,7 +338,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const bulkDelete = () => {
     if (selectedQuestions.length === 0) {
-      alert('Please select questions to delete');
+      toast({
+        title: "No Selection",
+        description: "Please select questions to delete",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -346,7 +356,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const bulkToggleStatus = () => {
     if (selectedQuestions.length === 0) {
-      alert('Please select questions to update');
+      toast({
+        title: "No Selection",
+        description: "Please select questions to update",
+        variant: "destructive"
+      });
       return;
     }
 
