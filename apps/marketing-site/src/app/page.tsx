@@ -7,12 +7,15 @@ export default function HomePage() {
       <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
         <div className="container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-block bg-blue-400/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-blue-300/50">
+              🎉 Trusted by 500+ churches worldwide
+            </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
               Transform Your Church&apos;s Bible Quiz Program
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
               The complete SaaS platform for managing tournaments, practice sessions, 
-              and competitive championships for churches worldwide.
+              and competitive championships. Engage youth, track progress, and inspire deeper Scripture study.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
@@ -31,6 +34,18 @@ export default function HomePage() {
             <p className="mt-6 text-blue-200 text-sm">
               No credit card required • 14-day free trial • Cancel anytime
             </p>
+            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-blue-200">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span>4.9/5 rating</span>
+              </div>
+              <div>•</div>
+              <div>50K+ quizzes hosted</div>
+              <div>•</div>
+              <div>15 countries</div>
+            </div>
           </div>
         </div>
         
