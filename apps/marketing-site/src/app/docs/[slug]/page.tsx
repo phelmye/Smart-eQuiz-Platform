@@ -1594,9 +1594,9 @@ question,answer,difficulty,scripture_reference,category,question_type
       <h3>Current Plans</h3>
       <ul>
         <li><strong>Free:</strong> $0/month - Basic features</li>
-        <li><strong>Pro:</strong> $29/month - Advanced features</li>
-        <li><strong>Professional:</strong> $59/month - Full features</li>
-        <li><strong>Enterprise:</strong> $99/month - Premium support</li>
+        <li><strong>Starter:</strong> $29/month - Essential features</li>
+        <li><strong>Professional:</strong> $99/month - Advanced features</li>
+        <li><strong>Enterprise:</strong> $299/month - Premium support</li>
       </ul>
 
       <h3>Upgrading Your Plan</h3>

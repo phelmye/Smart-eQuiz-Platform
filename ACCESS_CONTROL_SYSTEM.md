@@ -210,7 +210,7 @@ canAccessPages: ['*']
   - Email support
   - Custom branding
 
-### Pro Plan ($79/month)
+### Professional Plan ($99/month)
 - **Max Users:** 1,000
 - **Max Tournaments:** 100
 - **Max Questions/Tournament:** 500
@@ -453,7 +453,7 @@ if (user.role === 'org_admin') {
 if (!hasFeatureAccess(user, 'ai-generator')) {
   return (
     <Alert>
-      <AlertTitle>AI Generator requires Pro plan</AlertTitle>
+      <AlertTitle>AI Generator requires Starter plan or higher</AlertTitle>
       <AlertDescription>
         Upgrade to Pro to unlock AI-powered question generation.
         <Button onClick={showUpgradeModal}>Upgrade Now</Button>

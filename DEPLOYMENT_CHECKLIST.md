@@ -255,9 +255,9 @@ CREATE POLICY tenant_isolation ON users
 #### 7.1 Stripe Setup
 - [ ] Create Stripe account
 - [ ] Configure products and prices
-  - [ ] Starter Plan: $19/month
-  - [ ] Professional Plan: $49/month
-  - [ ] Enterprise Plan: $149/month
+  - [ ] Starter Plan: $29/month
+  - [ ] Professional Plan: $99/month
+  - [ ] Enterprise Plan: $299/month
 - [ ] Set up webhooks
 - [ ] Configure payment success/cancel URLs
 - [ ] Test in test mode

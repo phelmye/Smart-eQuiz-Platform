@@ -64,10 +64,10 @@ export default function PricingPage() {
               </Link>
             </div>
 
-            {/* Pro Plan */}
+            {/* Starter Plan */}
             <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-blue-500">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold mb-2">Pro</h3>
+                <h3 className="text-2xl font-bold mb-2">Starter</h3>
                 <div className="text-4xl font-bold mb-2">$29<span className="text-lg text-gray-600">/mo</span></div>
                 <p className="text-gray-600">For small churches</p>
               </div>
@@ -116,7 +116,7 @@ export default function PricingPage() {
                 </li>
               </ul>
               <Link 
-                href="/signup?plan=pro"
+                href="/signup?plan=starter"
                 className="block w-full py-3 px-6 text-center bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
               >
                 Start Free Trial
@@ -130,7 +130,7 @@ export default function PricingPage() {
               </div>
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold mb-2">Professional</h3>
-                <div className="text-4xl font-bold mb-2">$59<span className="text-lg text-gray-600">/mo</span></div>
+                <div className="text-4xl font-bold mb-2">$99<span className="text-lg text-gray-600">/mo</span></div>
                 <p className="text-gray-600">For growing churches</p>
               </div>
               <ul className="space-y-3 mb-8">
@@ -156,7 +156,7 @@ export default function PricingPage() {
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-gray-700"><strong>All Pro features, plus:</strong></span>
+                  <span className="text-gray-700"><strong>All Starter features, plus:</strong></span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -189,7 +189,7 @@ export default function PricingPage() {
             <div className="bg-white rounded-xl shadow-lg p-8 border-2 border-gray-200">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-                <div className="text-4xl font-bold mb-2">$99<span className="text-lg text-gray-600">/mo</span></div>
+                <div className="text-4xl font-bold mb-2">$299<span className="text-lg text-gray-600">/mo</span></div>
                 <p className="text-gray-600">For large organizations</p>
               </div>
               <ul className="space-y-3 mb-8">
@@ -268,7 +268,7 @@ export default function PricingPage() {
             </div>
             <div className="border-b pb-6">
               <h3 className="text-xl font-semibold mb-2">Do you offer annual billing?</h3>
-              <p className="text-gray-600">Yes! Save 5-15% with annual billing (5% for Pro, 10% for Professional, 15% for Enterprise).</p>
+              <p className="text-gray-600">Yes! Save 5-15% with annual billing (5% for Starter, 10% for Professional, 15% for Enterprise).</p>
             </div>
             <div className="border-b pb-6">
               <h3 className="text-xl font-semibold mb-2">Is there a contract or can I cancel anytime?</h3>

@@ -480,21 +480,21 @@ CREATE POLICY tenant_isolation ON participant_rewards
 
 ### Tier 1: Global Affiliate
 
-**Scenario:** Bronze affiliate refers a tenant that subscribes to Professional plan ($49/month)
+**Scenario:** Bronze affiliate refers a tenant that subscribes to Professional plan ($99/month)
 
 ```
 Commission Rate: 20%
 Recurring Months: 3 (configurable by super admin)
-Monthly Commission: $49 × 20% = $9.80
-Total Earned: $9.80 × 3 = $29.40
+Monthly Commission: $99 × 20% = $19.80
+Total Earned: $19.80 × 3 = $59.40
 ```
 
 **Alternative Configurations:**
-- **1 month:** $9.80 × 1 = $9.80 total
-- **2 months:** $9.80 × 2 = $19.60 total
-- **3 months:** $9.80 × 3 = $29.40 total
-- **6 months:** $9.80 × 6 = $58.80 total
-- **12 months:** $9.80 × 12 = $117.60 total
+- **1 month:** $19.80 × 1 = $19.80 total
+- **2 months:** $19.80 × 2 = $39.60 total
+- **3 months:** $19.80 × 3 = $59.40 total
+- **6 months:** $19.80 × 6 = $118.80 total
+- **12 months:** $19.80 × 12 = $237.60 total
 
 **Progression:** After 10 successful conversions → Upgrade to Silver tier (25% for 6 months)
 
@@ -507,9 +507,9 @@ Total Earned: $9.80 × 3 = $29.40
 ```
 Commission Rate: 15% (set by super admin)
 Recurring Months: 3 (configurable by super admin per referral or globally)
-Referred Tenant Plan: Enterprise ($199/month)
-Monthly Commission: $199 × 15% = $29.85
-Total Earned: $29.85 × 3 = $89.55
+Referred Tenant Plan: Enterprise ($299/month)
+Monthly Commission: $299 × 15% = $44.85
+Total Earned: $44.85 × 3 = $134.55
 
 Options:
 1. Credit to tenant account (reduce their bill)
@@ -609,15 +609,15 @@ const campaign = {
 Different durations based on referred tenant's plan:
 
 | Referred Plan | Commission Duration | Monthly Commission |
-|---------------|--------------------|--------------------|
-| Basic ($19/mo) | 1 month | 15% × $19 = $2.85 |
-| Professional ($49/mo) | 2 months | 15% × $49 = $7.35 |
-| Enterprise ($199/mo) | 6 months | 15% × $199 = $29.85 |
+|---------------|--------------------|--------------------|---|
+| Starter ($29/mo) | 1 month | 15% × $29 = $4.35 |
+| Professional ($99/mo) | 2 months | 15% × $99 = $14.85 |
+| Enterprise ($299/mo) | 6 months | 15% × $299 = $44.85 |
 
 **Total Earnings:**
-- Basic: $2.85 × 1 = **$2.85**
-- Professional: $7.35 × 2 = **$14.70**
-- Enterprise: $29.85 × 6 = **$179.10**
+- Starter: $4.35 × 1 = **$4.35**
+- Professional: $14.85 × 2 = **$29.70**
+- Enterprise: $44.85 × 6 = **$269.10**
 
 ### **UI Implementation**
 

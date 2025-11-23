@@ -27,9 +27,9 @@ function SignupForm() {
   const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null);
 
   const plans = {
-    starter: { name: 'Starter', price: 19 },
-    professional: { name: 'Professional', price: 49 },
-    enterprise: { name: 'Enterprise', price: 149 },
+    starter: { name: 'Starter', price: 29 },
+    professional: { name: 'Professional', price: 99 },
+    enterprise: { name: 'Enterprise', price: 299 },
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

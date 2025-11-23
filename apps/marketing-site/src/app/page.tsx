@@ -252,9 +252,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Pro Plan */}
+            {/* Starter Plan */}
             <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-              <h3 className="text-2xl font-bold mb-2">Pro</h3>
+              <h3 className="text-2xl font-bold mb-2">Starter</h3>
               <div className="mb-6">
                 <span className="text-4xl font-bold">$29</span>
                 <span className="text-gray-600">/month</span>
@@ -286,7 +286,7 @@ export default function HomePage() {
                 </li>
               </ul>
               <Link 
-                href="/signup?plan=pro"
+                href="/signup?plan=starter"
                 className="block w-full py-3 text-center bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
               >
                 Get Started
@@ -300,7 +300,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold mb-2">Professional</h3>
               <div className="mb-6">
-                <span className="text-4xl font-bold">$59</span>
+                <span className="text-4xl font-bold">$99</span>
                 <span className="text-blue-200">/month</span>
               </div>
               <ul className="space-y-3 mb-8">
@@ -353,7 +353,7 @@ export default function HomePage() {
             <div className="bg-white p-8 rounded-lg shadow-md hover:shadow-xl transition-shadow">
               <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
               <div className="mb-6">
-                <span className="text-4xl font-bold">$99</span>
+                <span className="text-4xl font-bold">$299</span>
                 <span className="text-gray-600">/month</span>
               </div>
               <ul className="space-y-3 mb-8">

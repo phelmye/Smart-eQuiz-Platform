@@ -76,7 +76,7 @@ For granular control within pages:
 ```tsx
 <FeatureLockedField 
   isLocked={!hasFeatureAccess(user, 'branding')}
-  requiredPlan="Pro Plan"
+  requiredPlan="Starter Plan"
 >
   <Input 
     placeholder="Upload logo..."
@@ -221,7 +221,7 @@ switch (feature) {
 - No branding
 - No AI features
 
-### Pro Plan ($29/month)
+### Starter Plan ($29/month)
 - ✅ Custom Branding
 - ✅ Advanced Analytics
 - ✅ AI Question Generator
@@ -229,15 +229,15 @@ switch (feature) {
 - 5 tournaments
 - 200 questions
 
-### Professional Plan ($59/month)
-- ✅ All Pro features
+### Professional Plan ($99/month)
+- ✅ All Starter features
 - 100 users
 - 20 tournaments
 - 500 questions
 - Parish/Group tournaments
 - API access
 
-### Enterprise Plan ($99/month)
+### Enterprise Plan ($299/month)
 - ✅ All Professional features
 - Unlimited everything
 - White-label options
@@ -262,9 +262,9 @@ Even if users try to access features via URL (e.g., `#branding`), they'll see:
 3. **Page Loads:** Shows blurred branding interface
 4. **Overlay Appears:** 
    - "Custom Branding" heading with lock icon
-   - "You're on Free Plan → Upgrade to Pro" comparison
+   - "You're on Free Plan → Upgrade to Starter" comparison
    - List of 5 benefits they'll get
-   - Big "Upgrade to Pro Plan" button
+   - Big "Upgrade to Starter Plan" button
    - Helpful message about contacting support
 5. **Clicks Upgrade:** Redirects to billing/subscription page
 6. **After Upgrade:** Full access, lock icons removed

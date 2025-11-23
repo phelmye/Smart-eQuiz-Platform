@@ -243,7 +243,7 @@ export default function AffiliateSettings() {
 
                     {/* Example Earnings */}
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Example Earnings (Professional Plan @ $49/month)</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-3">Example Earnings (Professional Plan @ $99/month)</h4>
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <div className="text-gray-500">Monthly Commission</div>
