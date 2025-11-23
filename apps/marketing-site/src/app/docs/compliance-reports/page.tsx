@@ -4,8 +4,8 @@ import { Shield, CheckCircle, FileText, Download, Award, Globe, Lock } from 'luc
 export default function ComplianceReportsPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      {/* Page Header */}
+      <div className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 py-16">
           <Link href="/docs" className="text-sm hover:underline mb-4 inline-block opacity-90">
             ← Back to Documentation
@@ -15,7 +15,7 @@ export default function ComplianceReportsPage() {
             Third-party audits, security certifications, and compliance documentation
           </p>
         </div>
-      </header>
+      </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-16 max-w-4xl">

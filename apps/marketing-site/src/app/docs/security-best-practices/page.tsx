@@ -4,8 +4,8 @@ import { Shield, Lock, Key, AlertTriangle, CheckCircle, Users, Database, Eye } f
 export default function SecurityBestPracticesPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+      {/* Page Header */}
+      <div className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="container mx-auto px-4 py-16">
           <Link href="/docs" className="text-sm hover:underline mb-4 inline-block opacity-90">
             ← Back to Documentation
@@ -15,7 +15,7 @@ export default function SecurityBestPracticesPage() {
             Comprehensive guide to keeping your Smart eQuiz account and data secure
           </p>
         </div>
-      </header>
+      </div>
 
       {/* Content */}
       <div className="container mx-auto px-4 py-16 max-w-4xl">
