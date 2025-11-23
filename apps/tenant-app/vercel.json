@@ -1,13 +1,43 @@
 {
-  "framework": "vite",
-  "installCommand": "cd workspace/shadcn-ui && corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile --network-concurrency=1 --fetch-timeout=120000 --registry=https://registry.npmjs.org/",
-  "buildCommand": "cd workspace/shadcn-ui && pnpm run build",
-  "outputDirectory": "workspace/shadcn-ui/dist",
-  "devCommand": "cd workspace/shadcn-ui && pnpm run dev",
+  "buildCommand": "cd ../.. && pnpm build --filter=tenant-app",
+  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && cd ../.. && pnpm install --frozen-lockfile",
+  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "(.*)",
+      "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
