@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ const AVAILABLE_ROLES = [
 
 const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack }) => {
   const { logout } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('members');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -206,7 +208,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
 
   const handleSendInvitation = () => {
     if (!inviteEmail.trim()) {
-      alert('Please enter an email address');
+      toast({
+        title: "Email Required",
+        description: "Please enter an email address",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -215,7 +221,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
                        invitations.some(i => i.email.toLowerCase() === inviteEmail.toLowerCase() && i.status === 'pending');
     
     if (emailExists) {
-      alert('This email is already associated with a team member or has a pending invitation');
+      toast({
+        title: "Email Already Exists",
+        description: "This email is already associated with a team member or has a pending invitation",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -243,25 +253,38 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
     };
     setActivityLogs(prev => [newLog, ...prev]);
 
-    alert(`Invitation sent to ${inviteEmail}!`);
+    toast({
+      title: "Invitation Sent",
+      description: `Invitation sent to ${inviteEmail}!`
+    });
     setInviteEmail('');
     setInviteMessage('');
   };
 
   const handleResendInvitation = (invitation: Invitation) => {
-    alert(`Invitation resent to ${invitation.email}`);
+    toast({
+      title: "Invitation Resent",
+      description: `Invitation resent to ${invitation.email}`
+    });
   };
 
   const handleCancelInvitation = (invitationId: string) => {
     if (confirm('Cancel this invitation?')) {
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      alert('Invitation cancelled');
+      toast({
+        title: "Invitation Cancelled",
+        description: "Invitation cancelled"
+      });
     }
   };
 
   const handleRemoveMember = (memberId: string, memberName: string) => {
     if (memberId === user?.id) {
-      alert('You cannot remove yourself from the team');
+      toast({
+        title: "Action Not Allowed",
+        description: "You cannot remove yourself from the team",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -279,13 +302,20 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
       };
       setActivityLogs(prev => [newLog, ...prev]);
 
-      alert(`${memberName} has been removed from the team`);
+      toast({
+        title: "Member Removed",
+        description: `${memberName} has been removed from the team`
+      });
     }
   };
 
   const handleChangeRole = (memberId: string, memberName: string, newRole: string) => {
     if (memberId === user?.id) {
-      alert('You cannot change your own role');
+      toast({
+        title: "Action Not Allowed",
+        description: "You cannot change your own role",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -304,7 +334,10 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
     };
     setActivityLogs(prev => [newLog, ...prev]);
 
-    alert(`Role updated for ${memberName}`);
+    toast({
+      title: "Role Updated",
+      description: `Role updated for ${memberName}`
+    });
   };
 
   const formatDate = (dateString: string) => {
