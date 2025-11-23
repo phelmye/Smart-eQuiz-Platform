@@ -164,7 +164,7 @@ export function MarketingContentManager({ className }: MarketingContentManagerPr
           Manage content for the platform marketing website (www.smartequiz.com)
         </p>
         <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontStyle: 'italic' }}>
-          Note: Tenant landing pages ({'{'}tenant{'}'}.smartequiz.com) are managed by tenants in their own dashboard
+          Note: Tenant-specific landing pages are managed by each tenant in their own dashboard
         </p>
       </div>
 
