@@ -160,9 +160,6 @@ function SignupForm() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-6">
-              <span className="text-2xl font-bold text-blue-600">Smart eQuiz</span>
-            </Link>
             <h1 className="text-3xl font-bold mb-2">Start Your Free Trial</h1>
             <p className="text-gray-600">
               No credit card required • 14 days free • Cancel anytime
