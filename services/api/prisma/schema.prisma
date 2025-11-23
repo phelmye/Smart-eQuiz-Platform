@@ -12,6 +12,28 @@ enum Role {
   ORG_ADMIN
   PARTICIPANT
   SPECTATOR
+  QUESTION_MANAGER
+  INSPECTOR
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TournamentStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
 }
 
 model Plan {
@@ -23,22 +45,29 @@ model Plan {
 }
 
 model Tenant {
-  id        String   @id @default(cuid())
-  name      String
-  planId    String?
-  plan      Plan?    @relation(fields: [planId], references: [id])
-  createdAt DateTime @default(now())
-  users     UserTenant[]
+  id          String       @id @default(cuid())
+  name        String
+  planId      String?
+  plan        Plan?        @relation(fields: [planId], references: [id])
+  createdAt   DateTime     @default(now())
+  users       UserTenant[]
+  tournaments Tournament[]
+  questions   Question[]
+  categories  Category[]
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  refreshTokenHash String?
-  role         Role      @default(PARTICIPANT)
-  createdAt    DateTime  @default(now())
-  tenants      UserTenant[]
+  id                String            @id @default(cuid())
+  email             String            @unique
+  passwordHash      String
+  refreshTokenHash  String?
+  role              Role              @default(PARTICIPANT)
+  createdAt         DateTime          @default(now())
+  tenants           UserTenant[]
+  tournamentEntries TournamentEntry[]
+  matches           MatchParticipant[]
+  practiceProgress  PracticeProgress[]
+  badges            UserBadge[]
 }
 
 model UserTenant {
@@ -49,4 +78,398 @@ model UserTenant {
   user      User    @relation(fields: [userId], references: [id])
   tenant    Tenant  @relation(fields: [tenantId], references: [id])
   @@unique([userId, tenantId])
+}
+
+// Category for organizing questions (Bible books, topics, etc.)
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  questions Question[]
+  createdAt DateTime   @default(now())
+  @@unique([tenantId, name])
+}
+
+// Question bank
+model Question {
+  id              String     @id @default(cuid())
+  tenantId        String
+  categoryId      String
+  prompt          String     @db.Text
+  correctAnswer   String
+  wrongAnswers    Json       // Array of wrong answer strings
+  difficulty      Difficulty @default(MEDIUM)
+  points          Int        @default(10)
+  timeLimit       Int        @default(30) // seconds
+  explanation     String?    @db.Text
+  isActive        Boolean    @default(true)
+  createdBy       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  category        Category   @relation(fields: [categoryId], references: [id])
+  tournaments     TournamentQuestion[]
+  practiceAnswers PracticeAnswer[]
+  @@index([tenantId, categoryId])
+  @@index([difficulty])
+}
+
+// Tournament
+model Tournament {
+  id                String              @id @default(cuid())
+  tenantId          String
+  name              String
+  description       String?             @db.Text
+  entryFee          Float               @default(0)
+  prizePool         Float               @default(0)
+  maxParticipants   Int                 @default(50)
+  status            TournamentStatus    @default(DRAFT)
+  startDate         DateTime
+  endDate           DateTime
+  createdBy         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  tenant            Tenant              @relation(fields: [tenantId], references: [id])
+  questions         TournamentQuestion[]
+  entries           TournamentEntry[]
+  matches           Match[]
+  @@index([tenantId, status])
+  @@index([startDate, endDate])
+}
+
+// Many-to-many: Tournament <-> Question
+model TournamentQuestion {
+  id           String     @id @default(cuid())
+  tournamentId String
+  questionId   String
+  orderIndex   Int        @default(0)
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  question     Question   @relation(fields: [questionId], references: [id])
+  @@unique([tournamentId, questionId])
+  @@index([tournamentId, orderIndex])
+}
+
+// Tournament participant entry
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  userId       String
+  isPaid       Boolean    @default(false)
+  enteredAt    DateTime   @default(now())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+  @@unique([tournamentId, userId])
+  @@index([tournamentId])
+}
+
+// Match (tournament round/game)
+model Match {
+  id           String             @id @default(cuid())
+  tournamentId String
+  roundNumber  Int                @default(1)
+  status       MatchStatus        @default(PENDING)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime           @default(now())
+  tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participants MatchParticipant[]
+  @@index([tournamentId, roundNumber])
+}
+
+// Match participant scores
+model MatchParticipant {
+  id        String   @id @default(cuid())
+  matchId   String
+  userId    String
+  score     Int      @default(0)
+  rank      Int?
+  createdAt DateTime @default(now())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  @@unique([matchId, userId])
+  @@index([matchId, score])
+}
+
+// Practice mode progress
+model PracticeProgress {
+  id            String   @id @default(cuid())
+  userId        String
+  categoryId    String?
+  totalXp       Int      @default(0)
+  currentLevel  Int      @default(1)
+  questionsAnswered Int  @default(0)
+  correctAnswers    Int  @default(0)
+  currentStreak     Int  @default(0)
+  longestStreak     Int  @default(0)
+  lastPracticeAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+  answers       PracticeAnswer[]
+  @@unique([userId, categoryId])
+  @@index([userId])
+}
+
+// Practice answer records
+model PracticeAnswer {
+  id          String           @id @default(cuid())
+  progressId  String
+  questionId  String
+  isCorrect   Boolean
+  timeSpent   Int              // seconds
+  xpEarned    Int              @default(0)
+  answeredAt  DateTime         @default(now())
+  progress    PracticeProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  question    Question         @relation(fields: [questionId], references: [id])
+  @@index([progressId, answeredAt])
+}
+
+// Badge definitions
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  iconUrl     String?
+  createdAt   DateTime    @default(now())
+  users       UserBadge[]
+}
+
+// User badges (earned)
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// Marketing content management
+model MarketingContent {
+  id            String   @id @default(cuid())
+  contentJson   String   @db.Text  // Stores full MarketingContent JSON
+  version       Int      @default(1)
+  isActive      Boolean  @default(true)
+  updatedBy     String   // User ID who made the update
+  updatedByEmail String  // Email for audit trail
+  changeNotes   String?  // Optional notes about the change
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  auditLogs     MarketingContentAuditLog[]
+  @@index([isActive, version])
+  @@index([createdAt])
+}
+
+// Marketing content audit log
+model MarketingContentAuditLog {
+  id                  String            @id @default(cuid())
+  marketingContentId  String
+  action              String            // create, update, rollback
+  changes             String            @db.Text
+  userId              String
+  userEmail           String
+  previousVersion     Int?
+  newVersion          Int
+  createdAt           DateTime          @default(now())
+  marketingContent    MarketingContent  @relation(fields: [marketingContentId], references: [id], onDelete: Cascade)
+  @@index([marketingContentId])
+  @@index([createdAt])
+}
+
+// Media library for marketing content
+model MediaAsset {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int      // bytes
+  width       Int?
+  height      Int?
+  url         String   // Full URL to the asset
+  thumbnailUrl String? // Optimized thumbnail
+  storageKey  String   // S3/Cloud storage key
+  category    String   // avatar, feature-icon, hero-bg, blog-image, etc.
+  altText     String?
+  uploadedBy  String   // User ID
+  uploadedByEmail String
+  tenantId    String?  // Optional: for multi-tenant support
+  usageCount  Int      @default(0)
+  tags        String[] // Searchable tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([category])
+  @@index([uploadedBy])
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
+// Marketing analytics tracking
+model AnalyticsEvent {
+  id            String   @id @default(cuid())
+  eventType     String   // cta_click, page_view, form_submit, video_play, etc.
+  eventCategory String   // marketing, engagement, conversion
+  eventLabel    String?  // Specific label (e.g., "Get Started CTA")
+  eventValue    Float?   // Optional numeric value
+  
+  // Session information
+  sessionId     String?  // Browser session ID
+  userId        String?  // If user is logged in
+  visitorId     String?  // Anonymous visitor ID (cookie)
+  
+  // Page context
+  pageUrl       String
+  pageTitle     String?
+  referrer      String?
+  
+  // Device/Browser information
+  userAgent     String?
+  deviceType    String?  // desktop, tablet, mobile
+  browser       String?
+  operatingSystem String?
+  screenResolution String?
+  
+  // Geographic information
+  country       String?
+  city          String?
+  ipAddress     String?
+  
+  // Metadata
+  metadata      Json?    // Additional custom data
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([eventType, eventCategory])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([pageUrl])
+}
+
+// Conversion tracking
+model Conversion {
+  id                String   @id @default(cuid())
+  conversionType    String   // signup, trial_start, subscription, contact_form
+  conversionValue   Float?   // Monetary value or points
+  
+  // User identification
+  userId            String?
+  visitorId         String?
+  sessionId         String?
+  
+  // Attribution
+  source            String?  // google, facebook, direct, etc.
+  medium            String?  // cpc, organic, referral, email
+  campaign          String?  // Campaign name
+  
+  // Funnel tracking
+  funnelStep        Int?     // Which step in the funnel
+  funnelStage       String?  // awareness, consideration, decision
+  
+  // Metadata
+  metadata          Json?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([conversionType])
+  @@index([userId])
+  @@index([visitorId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([source, medium])
+}
+
+// A/B test experiments
+model ABTest {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  
+  // Test configuration
+  variantA        Json     // Control variant configuration
+  variantB        Json     // Test variant configuration
+  
+  // Traffic split (percentage)
+  trafficSplitA   Int      @default(50)  // Percentage for variant A
+  trafficSplitB   Int      @default(50)  // Percentage for variant B
+  
+  // Test status
+  status          String   // draft, active, paused, completed
+  
+  // Goals
+  primaryGoal     String   // Which metric to optimize (cta_clicks, signups, etc.)
+  
+  // Results
+  totalVisitors   Int      @default(0)
+  visitorsA       Int      @default(0)
+  visitorsB       Int      @default(0)
+  conversionsA    Int      @default(0)
+  conversionsB    Int      @default(0)
+  
+  // Statistical significance
+  confidenceLevel Float?   // 0-100 percentage
+  winner          String?  // A, B, or null if inconclusive
+  
+  // Dates
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  variants        ABTestVariant[]
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Individual visitor participation in A/B tests
+model ABTestVariant {
+  id          String   @id @default(cuid())
+  testId      String
+  visitorId   String
+  variant     String   // A or B
+  assigned    DateTime @default(now())
+  converted   Boolean  @default(false)
+  convertedAt DateTime?
+  
+  test        ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  @@unique([testId, visitorId])
+  @@index([testId, variant])
+  @@index([visitorId])
+}
+
+// Aggregated analytics metrics (for performance)
+model AnalyticsMetric {
+  id              String   @id @default(cuid())
+  metricType      String   // daily_pageviews, daily_conversions, weekly_signups, etc.
+  metricDate      DateTime // Date for the metric
+  
+  // Dimensions
+  dimension1      String?  // e.g., page_url, campaign_name
+  dimension2      String?  // e.g., device_type, country
+  
+  // Metrics
+  totalCount      Int      @default(0)
+  uniqueCount     Int      @default(0)
+  totalValue      Float?
+  averageValue    Float?
+  
+  // Calculated fields
+  conversionRate  Float?
+  bounceRate      Float?
+  avgTimeOnPage   Float?   // seconds
+  
+  // Metadata
+  metadata        Json?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([metricType, metricDate, dimension1, dimension2])
+  @@index([metricType, metricDate])
+  @@index([metricDate])
 }

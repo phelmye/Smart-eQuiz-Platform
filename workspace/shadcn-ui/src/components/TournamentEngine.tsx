@@ -8,18 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Calendar, DollarSign } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Calendar, DollarSign, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 
 interface TournamentEngineProps {
   onBack: () => void;
+  initialAction?: string;
 }
 
-export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack }) => {
-  const { user, tenant } = useAuth();
+export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, initialAction }) => {
+  const { user, tenant, logout } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'create');
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [newTournament, setNewTournament] = useState({
     name: '',
@@ -148,7 +149,7 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack }) =>
     }
   };
 
-  if (!user || !['org_admin', 'super_admin'].includes(user.role)) {
+  if (!user || !hasPermission(user, 'tournaments.read')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
@@ -178,10 +179,16 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack }) =>
               </div>
             </div>
 
-            <Button onClick={() => { setEditingTournament(null); resetForm(); setIsCreateDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Tournament
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => { setEditingTournament(null); resetForm(); setIsCreateDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Tournament
+              </Button>
+              <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Stats Cards */}

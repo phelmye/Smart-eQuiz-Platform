@@ -1,0 +1,31 @@
+{
+  "name": "smart-equiz-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart eQuiz Platform - Multi-tenant Quiz Tournament System",
+  "scripts": {
+    "build": "pnpm -r --filter=tenant-app --filter=marketing-site --filter=platform-admin build",
+    "build:tenant-app": "pnpm --filter tenant-app build",
+    "build:marketing-site": "pnpm --filter marketing-site build",
+    "build:platform-admin": "pnpm --filter platform-admin build",
+    "dev:tenant-app": "pnpm --filter tenant-app dev",
+    "dev:marketing-site": "pnpm --filter marketing-site dev",
+    "dev:platform-admin": "pnpm --filter platform-admin dev",
+    "clean": "pnpm -r exec rm -rf dist node_modules .next",
+    "typecheck": "pnpm -r --filter=tenant-app --filter=marketing-site --filter=platform-admin exec tsc --noEmit",
+    "lint": "pnpm -r --filter=tenant-app --filter=marketing-site --filter=platform-admin lint"
+  },
+  "keywords": [
+    "quiz",
+    "tournament",
+    "multi-tenant",
+    "education",
+    "competition"
+  ],
+  "author": "Smart eQuiz Platform",
+  "license": "PROPRIETARY",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.10.0"
+  }
+}

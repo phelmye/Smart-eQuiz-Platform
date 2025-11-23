@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd ../.. && corepack enable && corepack prepare pnpm@8.10.0 --activate && pnpm install --frozen-lockfile && cd services/api && pnpm prisma generate && pnpm build"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "pnpm prisma migrate deploy && node dist/main.js",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10,
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 300
+  }
+}

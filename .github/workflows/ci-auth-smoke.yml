@@ -55,6 +55,7 @@ jobs:
           pushd services/api
           corepack enable
           corepack prepare pnpm@latest --activate
+          npm install -g pnpm@8.10.0
           pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
           popd
 
