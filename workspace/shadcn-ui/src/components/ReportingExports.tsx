@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -103,6 +104,7 @@ const EXPORT_FORMATS = [
 ];
 
 const ReportingExports: React.FC<ReportingExportsProps> = ({ user, tenant, onBack }) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('quick-export');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [exportFormat, setExportFormat] = useState<string>('pdf');
@@ -139,43 +141,73 @@ const ReportingExports: React.FC<ReportingExportsProps> = ({ user, tenant, onBac
   const handleQuickExport = (templateId: string) => {
     const template = REPORT_TEMPLATES.find(t => t.id === templateId);
     if (template) {
-      alert(`Generating ${template.name}...\nFormat: ${exportFormat.toUpperCase()}\nThis will download shortly.`);
+      toast({
+        title: "Generating Report",
+        description: `Generating ${template.name} in ${exportFormat.toUpperCase()} format. This will download shortly.`
+      });
       // In real app, this would trigger actual file generation
     }
   };
 
   const handleCustomExport = () => {
     if (selectedFields.length === 0) {
-      alert('Please select at least one field to export');
+      toast({
+        title: "Fields Required",
+        description: "Please select at least one field to export",
+        variant: "destructive"
+      });
       return;
     }
 
     if (!dateRange.start || !dateRange.end) {
-      alert('Please select a date range');
+      toast({
+        title: "Date Range Required",
+        description: "Please select a date range",
+        variant: "destructive"
+      });
       return;
     }
 
-    alert(`Generating custom report...\nFields: ${selectedFields.length}\nDate Range: ${dateRange.start} to ${dateRange.end}\nFormat: ${exportFormat.toUpperCase()}`);
+    toast({
+      title: "Generating Custom Report",
+      description: `Generating custom report with ${selectedFields.length} fields from ${dateRange.start} to ${dateRange.end} in ${exportFormat.toUpperCase()} format.`
+    });
   };
 
   const handleSaveCustomReport = () => {
     if (!customReportName.trim()) {
-      alert('Please enter a report name');
+      toast({
+        title: "Name Required",
+        description: "Please enter a report name",
+        variant: "destructive"
+      });
       return;
     }
 
     if (customFields.length === 0) {
-      alert('Please select at least one field');
+      toast({
+        title: "Fields Required",
+        description: "Please select at least one field",
+        variant: "destructive"
+      });
       return;
     }
 
-    alert(`Custom report "${customReportName}" saved successfully!`);
+    toast({
+      title: "Report Saved",
+      description: `Custom report "${customReportName}" saved successfully!`
+    });
     setCustomReportName('');
     setCustomFields([]);
   };
 
   const handleScheduleReport = (reportId: string) => {
-    alert('Schedule report dialog would open here');
+    // TODO: Implement schedule report dialog
+    console.log('Schedule report dialog for:', reportId);
+    toast({
+      title: "Coming Soon",
+      description: "Schedule report feature will be available soon"
+    });
   };
 
   const handleToggleScheduledReport = (reportId: string) => {
@@ -187,7 +219,10 @@ const ReportingExports: React.FC<ReportingExportsProps> = ({ user, tenant, onBac
   const handleDeleteScheduledReport = (reportId: string) => {
     if (confirm('Delete this scheduled report?')) {
       setScheduledReports(prev => prev.filter(r => r.id !== reportId));
-      alert('Scheduled report deleted');
+      toast({
+        title: "Report Deleted",
+        description: "Scheduled report deleted"
+      });
     }
   };
 
