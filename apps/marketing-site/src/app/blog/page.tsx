@@ -61,6 +61,87 @@ export default function BlogPage() {
       date: "October 15, 2025",
       category: "Case Studies",
       image: "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?w=800&h=400&fit=crop"
+    },
+    {
+      id: 7,
+      title: "Understanding Role-Based Access Control in Quiz Platforms",
+      excerpt: "Learn how RBAC ensures security and proper permissions across your organization's quiz program.",
+      author: "Michael Chen",
+      date: "October 10, 2025",
+      category: "Platform Features",
+      image: "https://images.unsplash.com/photo-1555421689-491a97ff2040?w=800&h=400&fit=crop"
+    },
+    {
+      id: 8,
+      title: "Motivating Participants: Gamification Strategies That Work",
+      excerpt: "Explore proven gamification techniques including XP systems, badges, and leaderboards to boost engagement.",
+      author: "Sarah Johnson",
+      date: "October 5, 2025",
+      category: "Coaching Tips",
+      image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&h=400&fit=crop"
+    },
+    {
+      id: 9,
+      title: "Multi-Currency Support: Going Global with Your Quiz Program",
+      excerpt: "How Smart eQuiz Platform supports 12 currencies to help churches worldwide run competitions.",
+      author: "Emily Rodriguez",
+      date: "September 28, 2025",
+      category: "Platform Features",
+      image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&h=400&fit=crop"
+    },
+    {
+      id: 10,
+      title: "Creating Effective Study Plans for Quiz Participants",
+      excerpt: "Structured approaches to help students prepare for tournaments with daily goals and adaptive difficulty.",
+      author: "David Williams",
+      date: "September 20, 2025",
+      category: "Coaching Tips",
+      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&h=400&fit=crop"
+    },
+    {
+      id: 11,
+      title: "The Power of Real-Time Analytics in Tournament Management",
+      excerpt: "Discover how live performance tracking and insights improve both participant experience and outcomes.",
+      author: "James Patterson",
+      date: "September 15, 2025",
+      category: "Technology",
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop"
+    },
+    {
+      id: 12,
+      title: "Building a Thriving Bible Quiz Community",
+      excerpt: "Proven strategies for fostering engagement, retention, and growth in your church's quiz program.",
+      author: "Sarah Johnson",
+      date: "September 10, 2025",
+      category: "Best Practices",
+      image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&h=400&fit=crop"
+    },
+    {
+      id: 13,
+      title: "Parish Tournament Mode: Coordinating Multi-Church Competitions",
+      excerpt: "Step-by-step guide to organizing and running successful inter-church Bible quiz tournaments.",
+      author: "David Williams",
+      date: "September 5, 2025",
+      category: "Tournaments",
+      image: "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=400&fit=crop"
+    },
+    {
+      id: 14,
+      title: "Data Security and Privacy in Multi-Tenant Platforms",
+      excerpt: "Understanding how tenant isolation protects your organization's data and ensures compliance.",
+      author: "Michael Chen",
+      date: "August 30, 2025",
+      category: "Technology",
+      image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&h=400&fit=crop"
+    },
+    {
+      id: 15,
+      title: "Success Story: Regional Network Scales to 1000+ Participants",
+      excerpt: "How a regional Bible quiz network used Smart eQuiz Platform to manage explosive growth.",
+      author: "Emily Rodriguez",
+      date: "August 25, 2025",
+      category: "Case Studies",
+      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop"
     }
   ];
 
