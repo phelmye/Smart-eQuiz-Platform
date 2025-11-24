@@ -1,6 +1,7 @@
 import { Body, Controller, Post, Res, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { 
   ApiTags, 
   ApiOperation, 
@@ -17,6 +18,8 @@ import { LoginDto, LoginResponseDto } from './dto/login.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Stricter rate limit for login endpoint (5 requests per minute per IP)
+  @Throttle(5, 60)
   @Post('login')
   @ApiOperation({ 
     summary: 'User login',
@@ -32,7 +35,7 @@ Authenticates a user with email and password credentials.
 - Super admins have access to all tenants
 
 **Security:**
-- Failed login attempts are rate-limited (5 attempts per 15 minutes)
+- Failed login attempts are rate-limited (5 attempts per minute)
 - Passwords are hashed with bcrypt
 - Refresh tokens are stored securely in database
     `

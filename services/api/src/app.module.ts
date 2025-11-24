@@ -1,6 +1,8 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
@@ -18,6 +20,11 @@ import { PrismaModule } from './prisma.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Rate limiting - Enterprise SaaS standard
+    ThrottlerModule.forRoot({
+      ttl: 60,          // Time window in seconds
+      limit: 100,       // Max 100 requests per minute (global default)
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'uploads'),
       serveRoot: '/uploads',
@@ -34,6 +41,13 @@ import { PrismaModule } from './prisma.module';
     AnalyticsModule,
   ],
   controllers: [AppController],
+  providers: [
+    // Apply rate limiting globally to all endpoints
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
