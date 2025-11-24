@@ -473,3 +473,41 @@ model AnalyticsMetric {
   @@index([metricType, metricDate])
   @@index([metricDate])
 }
+
+// Audit log for enterprise compliance (SOC 2, GDPR)
+model AuditLog {
+  id          String   @id @default(cuid())
+  
+  // Who performed the action
+  userId      String?  // Null for system actions or failed logins
+  tenantId    String?  // Null for super_admin operations
+  
+  // What action was performed
+  action      String   // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
+  resource    String   // USER, TOURNAMENT, QUESTION, etc.
+  resourceId  String?  // ID of the affected resource
+  
+  // Details
+  changes     Json?    // Before/after snapshots for data mutations
+  metadata    Json?    // Additional context (e.g., IP, user agent, reason)
+  
+  // Result
+  success     Boolean  @default(true)
+  errorMsg    String?  // Error message if action failed
+  
+  // IP tracking
+  ipAddress   String?
+  userAgent   String?
+  
+  // Timestamp
+  createdAt   DateTime @default(now())
+  
+  // Indexes for compliance queries
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([resource, createdAt])
+  @@index([success, createdAt])
+  @@index([createdAt])
+}
+

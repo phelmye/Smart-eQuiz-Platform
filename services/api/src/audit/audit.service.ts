@@ -108,18 +108,22 @@ export class AuditService {
    */
   async log(data: AuditLogData): Promise<void> {
     try {
-      // In a real implementation, this would use Prisma to insert into audit_logs table
-      // For now, we'll log to console and prepare for future database integration
-      const auditEntry = {
-        ...data,
-        timestamp: new Date(),
-        success: data.success !== undefined ? data.success : true,
-      };
-
-      // TODO: Replace with actual Prisma call once audit_logs table is created
-      // await this.prisma.auditLog.create({ data: auditEntry });
-      
-      console.log('[AUDIT]', JSON.stringify(auditEntry, null, 2));
+      // Create audit log entry in database
+      await this.prisma.auditLog.create({
+        data: {
+          userId: data.userId,
+          tenantId: data.tenantId,
+          action: data.action,
+          resource: data.resource,
+          resourceId: data.resourceId,
+          changes: data.changes as any,
+          metadata: data.metadata as any,
+          success: data.success ?? true,
+          errorMsg: data.errorMessage,
+          ipAddress: data.ipAddress,
+          userAgent: data.userAgent,
+        },
+      });
     } catch (error) {
       // Never throw errors from audit logging - it should be non-blocking
       console.error('[AUDIT ERROR]', error);
@@ -249,29 +253,27 @@ export class AuditService {
    * Query audit logs (for compliance reporting)
    */
   async query(filters: AuditLogFilters): Promise<any[]> {
-    // TODO: Implement actual Prisma query once audit_logs table exists
-    // const where: any = {};
-    // if (filters.tenantId) where.tenantId = filters.tenantId;
-    // if (filters.userId) where.userId = filters.userId;
-    // if (filters.action) where.action = filters.action;
-    // if (filters.resource) where.resource = filters.resource;
-    // if (filters.resourceId) where.resourceId = filters.resourceId;
-    // if (filters.success !== undefined) where.success = filters.success;
-    // if (filters.startDate || filters.endDate) {
-    //   where.timestamp = {};
-    //   if (filters.startDate) where.timestamp.gte = filters.startDate;
-    //   if (filters.endDate) where.timestamp.lte = filters.endDate;
-    // }
+    const where: any = {};
+    
+    if (filters.tenantId) where.tenantId = filters.tenantId;
+    if (filters.userId) where.userId = filters.userId;
+    if (filters.action) where.action = filters.action;
+    if (filters.resource) where.resource = filters.resource;
+    if (filters.resourceId) where.resourceId = filters.resourceId;
+    if (filters.success !== undefined) where.success = filters.success;
+    
+    if (filters.startDate || filters.endDate) {
+      where.createdAt = {};
+      if (filters.startDate) where.createdAt.gte = filters.startDate;
+      if (filters.endDate) where.createdAt.lte = filters.endDate;
+    }
 
-    // return this.prisma.auditLog.findMany({
-    //   where,
-    //   orderBy: { timestamp: 'desc' },
-    //   take: filters.limit || 100,
-    //   skip: filters.offset || 0,
-    // });
-
-    console.log('[AUDIT QUERY]', filters);
-    return [];
+    return this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: filters.limit || 100,
+      skip: filters.offset || 0,
+    });
   }
 
   /**
@@ -293,17 +295,48 @@ export class AuditService {
         break;
     }
 
-    // TODO: Implement actual statistics query
+    // Get all logs for the period
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        tenantId,
+        createdAt: {
+          gte: startDate,
+          lte: now,
+        },
+      },
+    });
+
+    // Calculate statistics
+    const totalEvents = logs.length;
+    const eventsByAction: Record<string, number> = {};
+    const eventsByResource: Record<string, number> = {};
+    let failedLogins = 0;
+    let dataExports = 0;
+    let adminActions = 0;
+
+    for (const log of logs) {
+      // Count by action
+      eventsByAction[log.action] = (eventsByAction[log.action] || 0) + 1;
+      
+      // Count by resource
+      eventsByResource[log.resource] = (eventsByResource[log.resource] || 0) + 1;
+      
+      // Count specific action types
+      if (log.action === AuditAction.LOGIN_FAILED) failedLogins++;
+      if (log.action === AuditAction.EXPORT) dataExports++;
+      if (log.metadata && (log.metadata as any).adminAction) adminActions++;
+    }
+
     return {
       period,
       startDate,
       endDate: now,
-      totalEvents: 0,
-      eventsByAction: {},
-      eventsByResource: {},
-      failedLogins: 0,
-      dataExports: 0,
-      adminActions: 0,
+      totalEvents,
+      eventsByAction,
+      eventsByResource,
+      failedLogins,
+      dataExports,
+      adminActions,
     };
   }
 
