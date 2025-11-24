@@ -11,17 +11,35 @@ import {
 } from '@nestjs/common';
 import { TournamentsService, CreateTournamentDto, UpdateTournamentDto } from './tournaments.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuditService, AuditAction, AuditResource } from '../audit/audit.service';
 
 @Controller('tournaments')
 @UseGuards(JwtAuthGuard)
 export class TournamentsController {
-  constructor(private readonly tournamentsService: TournamentsService) {}
+  constructor(
+    private readonly tournamentsService: TournamentsService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Post()
-  create(@Request() req, @Body() createTournamentDto: CreateTournamentDto) {
+  async create(@Request() req, @Body() createTournamentDto: CreateTournamentDto) {
     const tenantId = req.user.tenantId || 'default';
     const userId = req.user.sub;
-    return this.tournamentsService.create(tenantId, userId, createTournamentDto);
+    const tournament = await this.tournamentsService.create(tenantId, userId, createTournamentDto);
+    
+    // Log tournament creation
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.CREATE,
+      AuditResource.TOURNAMENT,
+      tournament.id,
+      null,
+      { name: tournament.name, status: tournament.status },
+      req.ip,
+    );
+    
+    return tournament;
   }
 
   @Get()
@@ -37,19 +55,55 @@ export class TournamentsController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Request() req,
     @Param('id') id: string,
     @Body() updateTournamentDto: UpdateTournamentDto,
   ) {
     const tenantId = req.user.tenantId || 'default';
-    return this.tournamentsService.update(tenantId, id, updateTournamentDto);
+    const userId = req.user.sub;
+    
+    // Get current state before update
+    const before = await this.tournamentsService.findOne(tenantId, id);
+    const updated = await this.tournamentsService.update(tenantId, id, updateTournamentDto);
+    
+    // Log tournament update
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.UPDATE,
+      AuditResource.TOURNAMENT,
+      id,
+      { name: before.name, status: before.status },
+      { name: updated.name, status: updated.status },
+      req.ip,
+    );
+    
+    return updated;
   }
 
   @Delete(':id')
-  remove(@Request() req, @Param('id') id: string) {
+  async remove(@Request() req, @Param('id') id: string) {
     const tenantId = req.user.tenantId || 'default';
-    return this.tournamentsService.remove(tenantId, id);
+    const userId = req.user.sub;
+    
+    // Get tournament details before deletion
+    const tournament = await this.tournamentsService.findOne(tenantId, id);
+    const result = await this.tournamentsService.remove(tenantId, id);
+    
+    // Log tournament deletion
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.DELETE,
+      AuditResource.TOURNAMENT,
+      id,
+      { name: tournament.name, status: tournament.status },
+      null,
+      req.ip,
+    );
+    
+    return result;
   }
 
   @Post(':id/enter')
