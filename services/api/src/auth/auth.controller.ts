@@ -97,7 +97,7 @@ Authenticates a user with email and password credentials.
     await this.auditService.logAuth(
       AuditAction.LOGIN,
       fullUser.id,
-      fullUser.tenantId || undefined,
+      userResponse.tenantId || undefined,
       req.ip,
       req.headers['user-agent'],
       true,
