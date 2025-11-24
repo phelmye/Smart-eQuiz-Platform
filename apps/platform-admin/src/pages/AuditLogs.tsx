@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,193 +10,154 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/react-table';
-import { Search, Download, User, Activity } from 'lucide-react';
+import { 
+  Search, 
+  Download, 
+  RefreshCw, 
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
-import { Card, CardContent } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import api from '../lib/api';
 
 interface AuditLog {
   id: string;
-  timestamp: string;
-  actor: string;
-  actorEmail: string;
+  userId: string | null;
+  tenantId: string | null;
+  action: string;
+  resource: string;
+  resourceId: string | null;
+  changes: any;
+  metadata: any;
+  success: boolean;
+  errorMsg: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+interface AuditStats {
+  total: number;
+  byAction: Record<string, number>;
+  byResource: Record<string, number>;
+  successRate: number;
+}
+
+interface FilterState {
+  tenantId: string;
+  userId: string;
   action: string;
   resource: string;
   resourceId: string;
-  status: 'success' | 'failure' | 'warning';
-  ipAddress: string;
-  userAgent: string;
-  changes?: {
-    field: string;
-    oldValue: string;
-    newValue: string;
-  }[];
-  metadata?: Record<string, any>;
+  success: string;
+  startDate: string;
+  endDate: string;
 }
 
-const mockAuditLogs: AuditLog[] = [
-  {
-    id: '1',
-    timestamp: '2024-02-15T14:30:22Z',
-    actor: 'John Admin',
-    actorEmail: 'admin@equiz.com',
-    action: 'user.create',
-    resource: 'user',
-    resourceId: 'user_123',
-    status: 'success',
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    changes: [
-      { field: 'email', oldValue: '', newValue: 'newuser@example.com' },
-      { field: 'role', oldValue: '', newValue: 'admin' },
-    ],
-  },
-  {
-    id: '2',
-    timestamp: '2024-02-15T14:25:10Z',
-    actor: 'Sarah Manager',
-    actorEmail: 'sarah@equiz.com',
-    action: 'tenant.suspend',
-    resource: 'tenant',
-    resourceId: 'tenant_456',
-    status: 'success',
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    changes: [
-      { field: 'status', oldValue: 'active', newValue: 'suspended' },
-      { field: 'reason', oldValue: '', newValue: 'Payment overdue' },
-    ],
-  },
-  {
-    id: '3',
-    timestamp: '2024-02-15T14:20:45Z',
-    actor: 'Mike Support',
-    actorEmail: 'mike@equiz.com',
-    action: 'settings.update',
-    resource: 'settings',
-    resourceId: 'settings_global',
-    status: 'success',
-    ipAddress: '192.168.1.102',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    changes: [
-      { field: 'sessionTimeout', oldValue: '30', newValue: '60' },
-    ],
-  },
-  {
-    id: '4',
-    timestamp: '2024-02-15T14:15:30Z',
-    actor: 'John Admin',
-    actorEmail: 'admin@equiz.com',
-    action: 'user.delete',
-    resource: 'user',
-    resourceId: 'user_789',
-    status: 'failure',
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    metadata: { error: 'User has active subscriptions' },
-  },
-  {
-    id: '5',
-    timestamp: '2024-02-15T14:10:15Z',
-    actor: 'Lisa Admin',
-    actorEmail: 'lisa@equiz.com',
-    action: 'billing.invoice',
-    resource: 'invoice',
-    resourceId: 'inv_001',
-    status: 'success',
-    ipAddress: '192.168.1.103',
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64)',
-    changes: [
-      { field: 'amount', oldValue: '', newValue: '$14,900' },
-      { field: 'tenant', oldValue: '', newValue: 'Acme University' },
-    ],
-  },
-  {
-    id: '6',
-    timestamp: '2024-02-15T14:05:00Z',
-    actor: 'Sarah Manager',
-    actorEmail: 'sarah@equiz.com',
-    action: 'tenant.plan_change',
-    resource: 'tenant',
-    resourceId: 'tenant_123',
-    status: 'success',
-    ipAddress: '192.168.1.101',
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-    changes: [
-      { field: 'plan', oldValue: 'Professional', newValue: 'Enterprise' },
-      { field: 'mrr', oldValue: '$4,900', newValue: '$14,900' },
-    ],
-  },
-  {
-    id: '7',
-    timestamp: '2024-02-15T14:00:45Z',
-    actor: 'Mike Support',
-    actorEmail: 'mike@equiz.com',
-    action: 'api_key.create',
-    resource: 'api_key',
-    resourceId: 'key_abc123',
-    status: 'success',
-    ipAddress: '192.168.1.102',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    changes: [
-      { field: 'name', oldValue: '', newValue: 'Production API Key' },
-      { field: 'permissions', oldValue: '', newValue: 'read,write' },
-    ],
-  },
-  {
-    id: '8',
-    timestamp: '2024-02-15T13:55:30Z',
-    actor: 'John Admin',
-    actorEmail: 'admin@equiz.com',
-    action: 'user.role_change',
-    resource: 'user',
-    resourceId: 'user_456',
-    status: 'warning',
-    ipAddress: '192.168.1.100',
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    changes: [
-      { field: 'role', oldValue: 'admin', newValue: 'support' },
-    ],
-    metadata: { warning: 'Reduced privileges' },
-  },
-];
-
-const statusColors = {
-  success: 'bg-green-100 text-green-800',
-  failure: 'bg-red-100 text-red-800',
-  warning: 'bg-yellow-100 text-yellow-800',
-};
-
-const actionIcons: Record<string, string> = {
-  'user.create': '👤',
-  'user.update': '✏️',
-  'user.delete': '🗑️',
-  'user.role_change': '🔄',
-  'tenant.create': '🏢',
-  'tenant.suspend': '⏸️',
-  'tenant.plan_change': '📈',
-  'settings.update': '⚙️',
-  'billing.invoice': '💰',
-  'api_key.create': '🔑',
-};
-
 export default function AuditLogs() {
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'timestamp', desc: true }]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [stats, setStats] = useState<AuditStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [filters, setFilters] = useState<FilterState>({
+    tenantId: '',
+    userId: '',
+    action: '',
+    resource: '',
+    resourceId: '',
+    success: '',
+    startDate: '',
+    endDate: '',
+  });
+
+  // Fetch audit logs
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query params
+      const params: Record<string, string> = {};
+      if (filters.tenantId) params.tenantId = filters.tenantId;
+      if (filters.userId) params.userId = filters.userId;
+      if (filters.action) params.action = filters.action;
+      if (filters.resource) params.resource = filters.resource;
+      if (filters.resourceId) params.resourceId = filters.resourceId;
+      if (filters.success !== '') params.success = filters.success;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+      
+      const data = await api.get<AuditLog[]>('/audit/logs', params);
+      setLogs(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch audit logs');
+      console.error('Error fetching audit logs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch statistics
+  const fetchStats = async () => {
+    try {
+      const data = await api.get<AuditStats>('/audit/stats', { period: 'week' });
+      setStats(data);
+    } catch (err) {
+      console.error('Error fetching audit stats:', err);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchLogs();
+    fetchStats();
+  }, []);
+
+  // Apply filters
+  useEffect(() => {
+    if (!loading) {
+      fetchLogs();
+    }
+  }, [filters]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        fetchLogs();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, filters]);
 
   const columns: ColumnDef<AuditLog>[] = [
     {
-      accessorKey: 'timestamp',
+      accessorKey: 'createdAt',
       header: 'Timestamp',
       cell: ({ row }) => (
-        <div className="text-sm">
+        <div className="text-sm min-w-[140px]">
           <div className="font-medium text-gray-900">
-            {new Date(row.original.timestamp).toLocaleDateString()}
+            {new Date(row.original.createdAt).toLocaleDateString()}
           </div>
           <div className="text-gray-500">
-            {new Date(row.original.timestamp).toLocaleTimeString()}
+            {new Date(row.original.createdAt).toLocaleTimeString()}
           </div>
         </div>
       ),
@@ -205,39 +166,56 @@ export default function AuditLogs() {
       accessorKey: 'action',
       header: 'Action',
       cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <span className="text-lg">{actionIcons[row.original.action] || '📋'}</span>
-          <div className="text-sm">
-            <div className="font-medium text-gray-900">{row.original.action}</div>
-            <div className="text-gray-500">{row.original.resource}</div>
-          </div>
+        <div className="text-sm min-w-[120px]">
+          <div className="font-medium text-gray-900">{row.original.action}</div>
+          <div className="text-gray-500 text-xs">{row.original.resource}</div>
         </div>
       ),
     },
     {
-      accessorKey: 'actor',
-      header: 'Actor',
+      accessorKey: 'userId',
+      header: 'User',
       cell: ({ row }) => (
-        <div className="text-sm">
-          <div className="font-medium text-gray-900">{row.original.actor}</div>
-          <div className="text-gray-500">{row.original.actorEmail}</div>
+        <div className="text-sm text-gray-600 font-mono">
+          {row.original.userId ? row.original.userId.substring(0, 12) + '...' : 'System'}
         </div>
       ),
     },
     {
-      accessorKey: 'status',
+      accessorKey: 'tenantId',
+      header: 'Tenant',
+      cell: ({ row }) => (
+        <div className="text-sm text-gray-600 font-mono">
+          {row.original.tenantId ? row.original.tenantId.substring(0, 12) + '...' : 'N/A'}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'success',
       header: 'Status',
       cell: ({ row }) => (
-        <Badge className={statusColors[row.original.status]}>
-          {row.original.status}
-        </Badge>
+        <div className="flex items-center space-x-2">
+          {row.original.success ? (
+            <Badge className="bg-green-100 text-green-800 flex items-center space-x-1">
+              <CheckCircle className="h-3 w-3" />
+              <span>Success</span>
+            </Badge>
+          ) : (
+            <Badge className="bg-red-100 text-red-800 flex items-center space-x-1">
+              <XCircle className="h-3 w-3" />
+              <span>Failed</span>
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
       accessorKey: 'ipAddress',
       header: 'IP Address',
       cell: ({ row }) => (
-        <span className="text-sm text-gray-600 font-mono">{row.original.ipAddress}</span>
+        <span className="text-sm text-gray-600 font-mono">
+          {row.original.ipAddress || 'N/A'}
+        </span>
       ),
     },
     {
@@ -248,14 +226,14 @@ export default function AuditLogs() {
           onClick={() => setSelectedLog(row.original)}
           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
         >
-          View Details
+          Details
         </button>
       ),
     },
   ];
 
   const table = useReactTable({
-    data: mockAuditLogs,
+    data: logs,
     columns,
     state: {
       sorting,
@@ -271,324 +249,598 @@ export default function AuditLogs() {
     getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
-        pageSize: 10,
+        pageSize: 100,
       },
     },
   });
 
-  const exportLogs = () => {
-    const csv = [
-      ['Timestamp', 'Actor', 'Action', 'Resource', 'Status', 'IP Address'].join(','),
-      ...mockAuditLogs.map(log =>
-        [
-          log.timestamp,
-          log.actor,
-          log.action,
-          log.resource,
-          log.status,
-          log.ipAddress,
-        ].join(',')
-      ),
-    ].join('\n');
+  const exportLogsCSV = async () => {
+    try {
+      // Build query params
+      const params: Record<string, string> = { format: 'csv' };
+      if (filters.tenantId) params.tenantId = filters.tenantId;
+      if (filters.userId) params.userId = filters.userId;
+      if (filters.action) params.action = filters.action;
+      if (filters.resource) params.resource = filters.resource;
+      if (filters.resourceId) params.resourceId = filters.resourceId;
+      if (filters.success !== '') params.success = filters.success;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+      // Use fetch directly for blob response
+      const token = localStorage.getItem('token');
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/audit/export?${queryString}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error('Error exporting logs:', err);
+      alert('Failed to export logs. Please try again.');
+    }
+  };
+
+  const exportLogsJSON = async () => {
+    try {
+      const params: Record<string, string> = { format: 'json' };
+      if (filters.tenantId) params.tenantId = filters.tenantId;
+      if (filters.userId) params.userId = filters.userId;
+      if (filters.action) params.action = filters.action;
+      if (filters.resource) params.resource = filters.resource;
+      if (filters.resourceId) params.resourceId = filters.resourceId;
+      if (filters.success !== '') params.success = filters.success;
+      if (filters.startDate) params.startDate = filters.startDate;
+      if (filters.endDate) params.endDate = filters.endDate;
+
+      const data = await api.get<AuditLog[]>('/audit/export', params);
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error exporting logs:', err);
+      alert('Failed to export logs. Please try again.');
+    }
+  };
+
+  const handleFilterChange = (key: keyof FilterState, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      tenantId: '',
+      userId: '',
+      action: '',
+      resource: '',
+      resourceId: '',
+      success: '',
+      startDate: '',
+      endDate: '',
+    });
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Track all system activities and administrative actions
+        <h1 className="text-3xl font-bold text-gray-900">Audit Logs</h1>
+        <p className="mt-2 text-gray-600">
+          Complete audit trail of all system operations for compliance and security
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Events</p>
-                <p className="text-2xl font-bold text-gray-900">{mockAuditLogs.length}</p>
-              </div>
-              <Activity className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Statistics Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total.toLocaleString()}</div>
+              <p className="text-xs text-gray-500 mt-1">Last 7 days</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {Math.round((mockAuditLogs.filter(l => l.status === 'success').length / mockAuditLogs.length) * 100)}%
-                </p>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Success Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {(stats.successRate * 100).toFixed(1)}%
               </div>
-              <Activity className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-gray-500 mt-1">Operations succeeded</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Failed Actions</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {mockAuditLogs.filter(l => l.status === 'failure').length}
-                </p>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Top Action</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-semibold">
+                {Object.entries(stats.byAction).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'}
               </div>
-              <Activity className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-xs text-gray-500 mt-1">
+                {Object.entries(stats.byAction).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} events
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Unique Actors</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {new Set(mockAuditLogs.map(l => l.actorEmail)).size}
-                </p>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Top Resource</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-semibold">
+                {Object.entries(stats.byResource).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'}
               </div>
-              <User className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters and Actions */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search logs..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-10"
-          />
+              <p className="text-xs text-gray-500 mt-1">
+                {Object.entries(stats.byResource).sort((a, b) => b[1] - a[1])[0]?.[1] || 0} events
+              </p>
+            </CardContent>
+          </Card>
         </div>
+      )}
 
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => {
-            if (e.target.value) {
-              setColumnFilters([{ id: 'status', value: e.target.value }]);
-            } else {
-              setColumnFilters([]);
-            }
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="success">Success</option>
-          <option value="failure">Failure</option>
-          <option value="warning">Warning</option>
-        </select>
-
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => {
-            if (e.target.value) {
-              setColumnFilters([{ id: 'resource', value: e.target.value }]);
-            } else {
-              setColumnFilters([]);
-            }
-          }}
-        >
-          <option value="">All Resources</option>
-          <option value="user">Users</option>
-          <option value="tenant">Tenants</option>
-          <option value="settings">Settings</option>
-          <option value="billing">Billing</option>
-          <option value="api_key">API Keys</option>
-        </select>
-
-        <button
-          onClick={exportLogs}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Download className="h-4 w-4" />
-          <span>Export</span>
-        </button>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <div className="flex items-center space-x-1">
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() && (
-                          <span>{header.column.getIsSorted() === 'asc' ? '↑' : '↓'}</span>
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="hover:bg-gray-50">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
-              Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )}{' '}
-              of {table.getFilteredRowModel().rows.length} results
+      {/* Controls */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            {/* Search */}
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search logs..."
+                  value={globalFilter ?? ''}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-2"
               >
-                Previous
-              </button>
-              <button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                <Filter className="h-4 w-4" />
+                <span>Filters</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`flex items-center space-x-2 ${autoRefresh ? 'bg-blue-50 border-blue-300' : ''}`}
               >
-                Next
-              </button>
+                <Clock className="h-4 w-4" />
+                <span>Auto-refresh</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchLogs}
+                disabled={loading}
+                className="flex items-center space-x-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </Button>
+
+              <div className="relative group">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>Export</span>
+                </Button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 hidden group-hover:block z-10">
+                  <button
+                    onClick={exportLogsCSV}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={exportLogsJSON}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Export as JSON
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Details Modal */}
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tenant ID
+                  </label>
+                  <Input
+                    value={filters.tenantId}
+                    onChange={(e) => handleFilterChange('tenantId', e.target.value)}
+                    placeholder="Filter by tenant..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    User ID
+                  </label>
+                  <Input
+                    value={filters.userId}
+                    onChange={(e) => handleFilterChange('userId', e.target.value)}
+                    placeholder="Filter by user..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Action
+                  </label>
+                  <select
+                    value={filters.action}
+                    onChange={(e) => handleFilterChange('action', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All actions</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="LOGOUT">Logout</option>
+                    <option value="LOGIN_FAILED">Login Failed</option>
+                    <option value="CREATE">Create</option>
+                    <option value="UPDATE">Update</option>
+                    <option value="DELETE">Delete</option>
+                    <option value="ACCESS">Access</option>
+                    <option value="EXPORT">Export</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resource
+                  </label>
+                  <select
+                    value={filters.resource}
+                    onChange={(e) => handleFilterChange('resource', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All resources</option>
+                    <option value="USER">User</option>
+                    <option value="TENANT">Tenant</option>
+                    <option value="TOURNAMENT">Tournament</option>
+                    <option value="QUESTION">Question</option>
+                    <option value="PARTICIPANT">Participant</option>
+                    <option value="SETTINGS">Settings</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resource ID
+                  </label>
+                  <Input
+                    value={filters.resourceId}
+                    onChange={(e) => handleFilterChange('resourceId', e.target.value)}
+                    placeholder="Filter by resource ID..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={filters.success}
+                    onChange={(e) => handleFilterChange('success', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">All statuses</option>
+                    <option value="true">Success only</option>
+                    <option value="false">Failed only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="flex items-center space-x-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>Clear Filters</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {error && (
+            <div className="p-4 bg-red-50 border-b border-red-200">
+              <div className="flex items-center space-x-2 text-red-800">
+                <AlertCircle className="h-5 w-5" />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+
+          {loading && logs.length === 0 ? (
+            <div className="p-12 text-center text-gray-500">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p>Loading audit logs...</p>
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="p-12 text-center text-gray-500">
+              <p>No audit logs found matching your criteria.</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th
+                            key={header.id}
+                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {table.getRowModel().rows.map((row) => (
+                      <tr key={row.id} className="hover:bg-gray-50">
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing{' '}
+                  <span className="font-medium">
+                    {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
+                  </span>{' '}
+                  to{' '}
+                  <span className="font-medium">
+                    {Math.min(
+                      (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                      logs.length
+                    )}
+                  </span>{' '}
+                  of <span className="font-medium">{logs.length}</span> results
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(0)}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-gray-700">
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                    disabled={!table.getCanNextPage()}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Detail Modal */}
       {selectedLog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Audit Log Details</h2>
+          <Card className="max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <CardHeader className="border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <CardTitle>Audit Log Details</CardTitle>
                 <button
                   onClick={() => setSelectedLog(null)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  ✕
+                  <XCircle className="h-6 w-6" />
                 </button>
               </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {/* Basic Info */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Timestamp</label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {new Date(selectedLog.timestamp).toLocaleString()}
-                    </p>
+                    <span className="text-gray-600">ID:</span>
+                    <span className="ml-2 font-mono">{selectedLog.id}</span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Status</label>
-                    <Badge className={`mt-1 ${statusColors[selectedLog.status]}`}>
-                      {selectedLog.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Actor</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedLog.actor}</p>
-                    <p className="text-sm text-gray-500">{selectedLog.actorEmail}</p>
+                    <span className="text-gray-600">Timestamp:</span>
+                    <span className="ml-2">{new Date(selectedLog.createdAt).toLocaleString()}</span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">IP Address</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono">{selectedLog.ipAddress}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Action</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedLog.action}</p>
+                    <span className="text-gray-600">Action:</span>
+                    <span className="ml-2 font-semibold">{selectedLog.action}</span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Resource</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedLog.resource}</p>
-                    <p className="text-sm text-gray-500">{selectedLog.resourceId}</p>
+                    <span className="text-gray-600">Resource:</span>
+                    <span className="ml-2 font-semibold">{selectedLog.resource}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Resource ID:</span>
+                    <span className="ml-2 font-mono text-xs">{selectedLog.resourceId || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Status:</span>
+                    <span className="ml-2">
+                      {selectedLog.success ? (
+                        <Badge className="bg-green-100 text-green-800">Success</Badge>
+                      ) : (
+                        <Badge className="bg-red-100 text-red-800">Failed</Badge>
+                      )}
+                    </span>
                   </div>
                 </div>
+              </div>
 
-                {selectedLog.changes && selectedLog.changes.length > 0 && (
+              {/* User Info */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">User Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Changes</label>
-                    <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                      {selectedLog.changes.map((change, idx) => (
-                        <div key={idx} className="text-sm">
-                          <span className="font-medium text-gray-900">{change.field}:</span>
-                          {change.oldValue && (
-                            <span className="text-red-600 line-through ml-2">{change.oldValue}</span>
-                          )}
-                          <span className="text-green-600 ml-2">{change.newValue}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <span className="text-gray-600">User ID:</span>
+                    <span className="ml-2 font-mono text-xs">{selectedLog.userId || 'System'}</span>
                   </div>
-                )}
-
-                {selectedLog.metadata && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Metadata</label>
-                    <pre className="bg-gray-50 rounded-lg p-4 text-sm text-gray-900 overflow-x-auto">
-                      {JSON.stringify(selectedLog.metadata, null, 2)}
-                    </pre>
+                    <span className="text-gray-600">Tenant ID:</span>
+                    <span className="ml-2 font-mono text-xs">{selectedLog.tenantId || 'N/A'}</span>
                   </div>
-                )}
+                  <div>
+                    <span className="text-gray-600">IP Address:</span>
+                    <span className="ml-2 font-mono">{selectedLog.ipAddress || 'N/A'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-600">User Agent:</span>
+                    <span className="ml-2 text-xs break-all">{selectedLog.userAgent || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
 
+              {/* Changes */}
+              {selectedLog.changes && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">User Agent</label>
-                  <p className="mt-1 text-sm text-gray-600 font-mono break-all">
-                    {selectedLog.userAgent}
-                  </p>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Changes</h3>
+                  <pre className="bg-gray-50 p-4 rounded-md text-xs overflow-x-auto">
+                    {JSON.stringify(selectedLog.changes, null, 2)}
+                  </pre>
                 </div>
-              </div>
+              )}
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setSelectedLog(null)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+              {/* Metadata */}
+              {selectedLog.metadata && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Metadata</h3>
+                  <pre className="bg-gray-50 p-4 rounded-md text-xs overflow-x-auto">
+                    {JSON.stringify(selectedLog.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {selectedLog.errorMsg && (
+                <div>
+                  <h3 className="text-sm font-semibold text-red-900 mb-3">Error Message</h3>
+                  <div className="bg-red-50 p-4 rounded-md text-sm text-red-800">
+                    {selectedLog.errorMsg}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
