@@ -14,6 +14,7 @@ import { MatchesModule } from './matches/matches.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { MediaModule } from './media/media.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AuditModule } from './audit/audit.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -39,6 +40,7 @@ import { PrismaModule } from './prisma.module';
     MarketingModule,
     MediaModule,
     AnalyticsModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [

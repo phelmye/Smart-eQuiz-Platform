@@ -12,11 +12,15 @@ import {
   ApiUnauthorizedResponse 
 } from '@nestjs/swagger';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
+import { AuditService, AuditAction } from '../audit/audit.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly auditService: AuditService,
+  ) {}
 
   // Stricter rate limit for login endpoint (5 requests per minute per IP)
   @Throttle(5, 60)
@@ -48,9 +52,27 @@ Authenticates a user with email and password credentials.
   })
   @ApiBadRequestResponse({ description: 'Missing required fields' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
-  async login(@Body() body: LoginDto, @Res({ passthrough: true }) res: Response) {
+  async login(
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
     const user = await this.authService.validateUser(body.email, body.password);
-    if (!user) return { error: 'invalid_credentials' };
+    
+    if (!user) {
+      // Log failed login attempt
+      await this.auditService.logAuth(
+        AuditAction.LOGIN_FAILED,
+        body.email, // Use email as identifier for failed attempts
+        undefined,
+        req.ip,
+        req.headers['user-agent'],
+        false,
+        'Invalid credentials',
+      );
+      return { error: 'invalid_credentials' };
+    }
+    
     const tokens = await this.authService.login(user);
     
     // Fetch full user details for response
@@ -70,6 +92,16 @@ Authenticates a user with email and password credentials.
       currentLevel: 1, // Level calculated from practice progress
       createdAt: fullUser.createdAt,
     };
+    
+    // Log successful login
+    await this.auditService.logAuth(
+      AuditAction.LOGIN,
+      fullUser.id,
+      fullUser.tenantId || undefined,
+      req.ip,
+      req.headers['user-agent'],
+      true,
+    );
     
     // Return refresh token in body only when explicitly enabled for dev/test flows
     if (process.env.RETURN_REFRESH_IN_BODY === 'true') {
