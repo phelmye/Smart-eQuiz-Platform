@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { MarketingContentManager } from '@/components/MarketingContentManager';
 import MarketingSiteConfig from './MarketingConfig';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,7 +23,7 @@ export default function MarketingManagement() {
         </TabsContent>
 
         <TabsContent value="config">
-          <MarketingSiteConfig user={user} />
+          <MarketingSiteConfig />
         </TabsContent>
       </Tabs>
     </div>
