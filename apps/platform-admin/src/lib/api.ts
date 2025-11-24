@@ -131,9 +131,6 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
-export const api = new ApiClient();
-
 // Type-safe API endpoints
 export const endpoints = {
   // Auth
@@ -172,7 +169,11 @@ export const endpoints = {
   auditExport: '/audit/export',
 } as const;
 
-// Create and export singleton instance
+// Create singleton instance
 const apiClient = new ApiClient();
-export { apiClient as api };
+
+// Named export
+export const api = apiClient;
+
+// Default export
 export default apiClient;

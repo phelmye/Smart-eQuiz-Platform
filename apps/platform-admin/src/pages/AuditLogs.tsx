@@ -28,7 +28,7 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import api from '../lib/api';
+import { api } from '../lib/api';
 
 interface AuditLog {
   id: string;
