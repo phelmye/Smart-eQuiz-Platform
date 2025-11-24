@@ -16,6 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Key, BarChart3, Webhook, BookOpen } from 'lucide-react';
 import ApiKeysList from '@/components/ApiManagement/ApiKeysList';
 import CreateApiKeyDialog from '@/components/ApiManagement/CreateApiKeyDialog';
+import ApiUsageAnalytics from '@/components/ApiManagement/ApiUsageAnalytics';
+import WebhookManagement from '@/components/ApiManagement/WebhookManagement';
+import ApiDocumentation from '@/components/ApiManagement/ApiDocumentation';
 import type { User } from '@/lib/mockData';
 
 interface ApiManagementPageProps {
@@ -69,44 +72,17 @@ export default function ApiManagementPage({ user }: ApiManagementPageProps) {
 
         {/* Usage Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Usage Analytics Coming Soon
-            </h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              View detailed analytics about your API usage including request volume,
-              response times, error rates, and more.
-            </p>
-          </div>
+          <ApiUsageAnalytics />
         </TabsContent>
 
         {/* Webhooks Tab */}
         <TabsContent value="webhooks" className="space-y-6">
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <Webhook className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Webhooks Coming Soon
-            </h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              Configure webhooks to receive real-time notifications about events
-              in your account.
-            </p>
-          </div>
+          <WebhookManagement />
         </TabsContent>
 
         {/* Documentation Tab */}
         <TabsContent value="docs" className="space-y-6">
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              API Documentation Coming Soon
-            </h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              View comprehensive API documentation with code examples,
-              authentication guides, and endpoint reference.
-            </p>
-          </div>
+          <ApiDocumentation />
         </TabsContent>
       </Tabs>
 

@@ -18,6 +18,7 @@ import SystemHealth from './pages/SystemHealth';
 import ApiDocumentation from './pages/ApiDocumentation';
 import MarketingManagement from './pages/MarketingManagement';
 import ApiKeys from './pages/ApiKeys';
+import ApiGovernance from './pages/ApiGovernance';
 import { Toaster } from './components/ui/toaster';
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/marketing" element={<MarketingManagement />} />
                     <Route path="/api-keys" element={<ApiKeys />} />
+                    <Route path="/api-governance" element={<ApiGovernance />} />
                     <Route path="/media" element={<Media />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

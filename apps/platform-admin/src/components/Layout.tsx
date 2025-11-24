@@ -58,6 +58,7 @@ const navigation = [
   { name: 'API Docs', href: '/api-docs', icon: Code },
   { name: 'Marketing', href: '/marketing', icon: Globe },
   { name: 'API Keys', href: '/api-keys', icon: Key },
+  { name: 'API Governance', href: '/api-governance', icon: Shield },
   { name: 'Media Library', href: '/media', icon: Image },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
