@@ -245,7 +245,7 @@ export default function Settings() {
                       Restrict access to specific IP addresses
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => alert('Configure IP whitelist')}>
+                  <Button variant="outline" size="sm" onClick={() => console.log('Configure IP whitelist')}>
                     Configure
                   </Button>
                 </div>
