@@ -528,6 +528,8 @@ export interface TenantRoleCustomization {
 export interface Tenant {
   id: string;
   name: string;
+  subdomain: string; // Subdomain for tenant (e.g., "firstbaptist" for firstbaptist.smartequiz.com)
+  customDomain?: string; // Optional custom domain (e.g., "quiz.mychurch.org")
   planId: string; // Reference to plan ID instead of hardcoded plan name
   primaryColor: string;
   logoUrl?: string;
