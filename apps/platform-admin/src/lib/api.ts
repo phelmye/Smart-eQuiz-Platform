@@ -165,4 +165,13 @@ export const endpoints = {
   // Marketing
   marketingContent: '/marketing/content',
   marketingContentById: (id: string) => `/marketing/content/${id}`,
+  
+  // Audit
+  auditLogs: '/audit/logs',
+  auditStats: '/audit/stats',
+  auditExport: '/audit/export',
 } as const;
+
+// Export singleton instance as default AND named export
+export const api = new ApiClient();
+export default api;
