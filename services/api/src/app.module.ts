@@ -15,6 +15,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { MediaModule } from './media/media.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
+import { ChatModule } from './chat/chat.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -22,10 +23,10 @@ import { PrismaModule } from './prisma.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     // Rate limiting - Enterprise SaaS standard
-    ThrottlerModule.forRoot({
-      ttl: 60,          // Time window in seconds
+    ThrottlerModule.forRoot([{
+      ttl: 60000,       // Time window in milliseconds (60 seconds)
       limit: 100,       // Max 100 requests per minute (global default)
-    }),
+    }]),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'uploads'),
       serveRoot: '/uploads',
@@ -41,6 +42,7 @@ import { PrismaModule } from './prisma.module';
     MediaModule,
     AnalyticsModule,
     AuditModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [

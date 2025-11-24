@@ -29,13 +29,12 @@ export class TournamentsController {
     
     // Log tournament creation
     await this.auditService.logMutation(
+      AuditAction.CREATE,
       userId,
       tenantId,
-      AuditAction.CREATE,
       AuditResource.TOURNAMENT,
       tournament.id,
-      null,
-      { name: tournament.name, status: tournament.status },
+      { after: { name: tournament.name, status: tournament.status } },
       req.ip,
     );
     
@@ -69,13 +68,12 @@ export class TournamentsController {
     
     // Log tournament update
     await this.auditService.logMutation(
+      AuditAction.UPDATE,
       userId,
       tenantId,
-      AuditAction.UPDATE,
       AuditResource.TOURNAMENT,
       id,
-      { name: before.name, status: before.status },
-      { name: updated.name, status: updated.status },
+      { before: { name: before.name, status: before.status }, after: { name: updated.name, status: updated.status } },
       req.ip,
     );
     
@@ -93,13 +91,12 @@ export class TournamentsController {
     
     // Log tournament deletion
     await this.auditService.logMutation(
+      AuditAction.DELETE,
       userId,
       tenantId,
-      AuditAction.DELETE,
       AuditResource.TOURNAMENT,
       id,
-      { name: tournament.name, status: tournament.status },
-      null,
+      { before: { name: tournament.name, status: tournament.status } },
       req.ip,
     );
     

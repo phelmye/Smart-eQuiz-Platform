@@ -51,13 +51,12 @@ export class QuestionsController {
     
     // Log question creation
     await this.auditService.logMutation(
+      AuditAction.CREATE,
       userId,
       tenantId,
-      AuditAction.CREATE,
       AuditResource.QUESTION,
       question.id,
-      null,
-      { text: question.questionText, difficulty: question.difficulty },
+      { after: { text: question.prompt, difficulty: question.difficulty } },
       req.ip,
     );
     
@@ -102,13 +101,12 @@ export class QuestionsController {
     
     // Log question update
     await this.auditService.logMutation(
+      AuditAction.UPDATE,
       userId,
       tenantId,
-      AuditAction.UPDATE,
       AuditResource.QUESTION,
       id,
-      { text: before.questionText, difficulty: before.difficulty },
-      { text: updated.questionText, difficulty: updated.difficulty },
+      { before: { text: before.prompt, difficulty: before.difficulty }, after: { text: updated.prompt, difficulty: updated.difficulty } },
       req.ip,
     );
     
@@ -126,13 +124,12 @@ export class QuestionsController {
     
     // Log question deletion
     await this.auditService.logMutation(
+      AuditAction.DELETE,
       userId,
       tenantId,
-      AuditAction.DELETE,
       AuditResource.QUESTION,
       id,
-      { text: question.questionText, difficulty: question.difficulty },
-      null,
+      { before: { text: question.prompt, difficulty: question.difficulty } },
       req.ip,
     );
     

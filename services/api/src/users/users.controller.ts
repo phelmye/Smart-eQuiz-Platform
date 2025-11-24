@@ -24,8 +24,8 @@ export class UsersController {
       req.user.tenantId,
       AuditResource.USER,
       user.id,
-      req.ip,
       true,
+      req.ip,
     );
     
     return { id: user.id, email: user.email, role: user.role };

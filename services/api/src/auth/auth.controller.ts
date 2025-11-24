@@ -22,8 +22,8 @@ export class AuthController {
     private readonly auditService: AuditService,
   ) {}
 
-  // Stricter rate limit for login endpoint (5 requests per minute per IP)
-  @Throttle(5, 60)
+  // Stricter rate limit for login endpoint (5 requests per 60 seconds per IP)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ 
     summary: 'User login',

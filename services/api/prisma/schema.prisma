@@ -54,6 +54,8 @@ model Tenant {
   tournaments Tournament[]
   questions   Question[]
   categories  Category[]
+  chatChannels ChatChannel[]
+  supportTickets SupportTicket[]
 }
 
 model User {
@@ -68,6 +70,17 @@ model User {
   matches           MatchParticipant[]
   practiceProgress  PracticeProgress[]
   badges            UserBadge[]
+  
+  // Chat relations
+  chatMessages      ChatMessage[]
+  chatParticipations ChatParticipant[]
+  createdChannels   ChatChannel[]     @relation("ChannelCreator")
+  assignedChannels  ChatChannel[]     @relation("ChannelAssignee")
+  escalatedChannels ChatChannel[]     @relation("ChannelEscalated")
+  createdTickets    SupportTicket[]   @relation("TicketCreator")
+  assignedTickets   SupportTicket[]   @relation("TicketAssignee")
+  escalatedTickets  SupportTicket[]   @relation("TicketEscalated")
+  resolvedTickets   SupportTicket[]   @relation("TicketResolver")
 }
 
 model UserTenant {
@@ -509,5 +522,165 @@ model AuditLog {
   @@index([resource, createdAt])
   @@index([success, createdAt])
   @@index([createdAt])
+}
+
+// ============================================
+// MULTI-TENANT CHAT SYSTEM
+// ============================================
+
+enum ChannelType {
+  SUPPORT              // Participant → Tenant Support
+  TOURNAMENT           // Participants ↔ Participants (tournament-specific)
+  TEAM                 // Tenant Admin ↔ Management Team
+  PLATFORM_SUPPORT     // Tenant Admin → Super Admin
+}
+
+enum ChannelStatus {
+  ACTIVE
+  RESOLVED
+  ESCALATED
+  ARCHIVED
+}
+
+enum SenderType {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  MANAGEMENT_TEAM
+  PARTICIPANT
+  SYSTEM
+}
+
+enum ParticipantRole {
+  ADMIN    // Can close channel, assign, escalate
+  MEMBER   // Regular participant
+  OBSERVER // Read-only
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketCategory {
+  TECHNICAL
+  BILLING
+  FEATURE_REQUEST
+  TOURNAMENT_ISSUE
+  QUESTION_ISSUE
+  ACCOUNT_ACCESS
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_USER
+  WAITING_ON_ADMIN
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+// Chat channels (conversations with tenant isolation)
+model ChatChannel {
+  id          String        @id @default(cuid())
+  tenantId    String        // CRITICAL: Tenant isolation
+  type        ChannelType
+  contextId   String?       // Tournament ID, Ticket ID, etc.
+  status      ChannelStatus @default(ACTIVE)
+  createdBy   String        // User ID who created channel
+  assignedTo  String?       // Team member assigned (if applicable)
+  escalatedTo String?       // Super admin ID (if escalated)
+  metadata    Json?         // Custom data (priority, tags, etc.)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  messages    ChatMessage[]
+  participants ChatParticipant[]
+  ticket      SupportTicket?
+  
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator     User          @relation("ChannelCreator", fields: [createdBy], references: [id])
+  assignee    User?         @relation("ChannelAssignee", fields: [assignedTo], references: [id])
+  escalatedUser User?       @relation("ChannelEscalated", fields: [escalatedTo], references: [id])
+  
+  @@index([tenantId, status])
+  @@index([assignedTo])
+  @@index([type, tenantId])
+  @@index([createdBy])
+  @@index([contextId])
+}
+
+// Individual chat messages
+model ChatMessage {
+  id          String      @id @default(cuid())
+  channelId   String
+  senderId    String
+  senderType  SenderType
+  content     String      @db.Text
+  metadata    Json?       // Attachments, reactions, mentions
+  readBy      String[]    // User IDs who read message
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender      User        @relation(fields: [senderId], references: [id])
+  
+  @@index([channelId, createdAt])
+  @@index([senderId])
+}
+
+// Channel participants (who has access)
+model ChatParticipant {
+  id          String           @id @default(cuid())
+  channelId   String
+  userId      String
+  userType    SenderType
+  role        ParticipantRole  @default(MEMBER)
+  joinedAt    DateTime         @default(now())
+  lastReadAt  DateTime?
+  leftAt      DateTime?
+  
+  channel     ChatChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@index([channelId, leftAt])
+}
+
+// Support tickets (extends chat channels)
+model SupportTicket {
+  id          String         @id @default(cuid())
+  channelId   String         @unique
+  tenantId    String         // Tenant isolation
+  subject     String
+  priority    TicketPriority @default(MEDIUM)
+  category    TicketCategory
+  status      TicketStatus   @default(OPEN)
+  createdBy   String         // User who created ticket
+  assignedTo  String?        // Team member assigned
+  escalatedTo String?        // Super admin (if escalated)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  resolution  String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  channel     ChatChannel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator     User           @relation("TicketCreator", fields: [createdBy], references: [id])
+  assignee    User?          @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  escalatedUser User?        @relation("TicketEscalated", fields: [escalatedTo], references: [id])
+  resolver    User?          @relation("TicketResolver", fields: [resolvedBy], references: [id])
+  
+  @@index([tenantId, status])
+  @@index([assignedTo])
+  @@index([priority, status])
+  @@index([createdBy])
+  @@index([category])
 }
 
