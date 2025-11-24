@@ -17,13 +17,17 @@ import {
   CreateCategoryDto,
 } from './questions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuditService, AuditAction, AuditResource } from '../audit/audit.service';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 @Controller('questions')
 @UseGuards(JwtAuthGuard)
 export class QuestionsController {
-  constructor(private readonly questionsService: QuestionsService) {}
+  constructor(
+    private readonly questionsService: QuestionsService,
+    private readonly auditService: AuditService,
+  ) {}
 
   // Categories
   @Post('categories')
@@ -40,10 +44,24 @@ export class QuestionsController {
 
   // Questions
   @Post()
-  create(@Request() req, @Body() createQuestionDto: CreateQuestionDto) {
+  async create(@Request() req, @Body() createQuestionDto: CreateQuestionDto) {
     const tenantId = req.user.tenantId || 'default';
     const userId = req.user.sub;
-    return this.questionsService.create(tenantId, userId, createQuestionDto);
+    const question = await this.questionsService.create(tenantId, userId, createQuestionDto);
+    
+    // Log question creation
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.CREATE,
+      AuditResource.QUESTION,
+      question.id,
+      null,
+      { text: question.questionText, difficulty: question.difficulty },
+      req.ip,
+    );
+    
+    return question;
   }
 
   @Get()
@@ -70,18 +88,54 @@ export class QuestionsController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Request() req,
     @Param('id') id: string,
     @Body() updateQuestionDto: UpdateQuestionDto,
   ) {
     const tenantId = req.user.tenantId || 'default';
-    return this.questionsService.update(tenantId, id, updateQuestionDto);
+    const userId = req.user.sub;
+    
+    // Get current state before update
+    const before = await this.questionsService.findOne(tenantId, id);
+    const updated = await this.questionsService.update(tenantId, id, updateQuestionDto);
+    
+    // Log question update
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.UPDATE,
+      AuditResource.QUESTION,
+      id,
+      { text: before.questionText, difficulty: before.difficulty },
+      { text: updated.questionText, difficulty: updated.difficulty },
+      req.ip,
+    );
+    
+    return updated;
   }
 
   @Delete(':id')
-  remove(@Request() req, @Param('id') id: string) {
+  async remove(@Request() req, @Param('id') id: string) {
     const tenantId = req.user.tenantId || 'default';
-    return this.questionsService.remove(tenantId, id);
+    const userId = req.user.sub;
+    
+    // Get question details before deletion
+    const question = await this.questionsService.findOne(tenantId, id);
+    const result = await this.questionsService.remove(tenantId, id);
+    
+    // Log question deletion
+    await this.auditService.logMutation(
+      userId,
+      tenantId,
+      AuditAction.DELETE,
+      AuditResource.QUESTION,
+      id,
+      { text: question.questionText, difficulty: question.difficulty },
+      null,
+      req.ip,
+    );
+    
+    return result;
   }
 }
