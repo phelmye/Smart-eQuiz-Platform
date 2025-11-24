@@ -55,6 +55,24 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     }
   };
 
+  const handleAssign = async () => {
+    if (!selectedChannel) return;
+
+    const assignee = prompt('Enter user email to assign this channel to:');
+    if (!assignee) return;
+
+    try {
+      // TODO: Implement assign channel API endpoint
+      // await chatApi.assignChannel(selectedChannel.id, assignee);
+      console.log('Assigning channel to:', assignee);
+      alert(`Channel assigned to ${assignee} successfully.`);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Failed to assign:', error);
+      alert('Failed to assign channel. Please try again.');
+    }
+  };
+
   const handleResolve = async () => {
     if (!selectedChannel) return;
 
@@ -121,6 +139,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
               currentUserId={currentUserId}
               currentUserName={currentUserName}
               onEscalate={handleEscalate}
+              onAssign={handleAssign}
               onResolve={handleResolve}
               onArchive={handleArchive}
             />

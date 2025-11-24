@@ -39,7 +39,8 @@ import {
   FileText,
   Tags,
   BookTemplate,
-  Globe
+  Globe,
+  MessageCircle
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
@@ -455,6 +456,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       page: 'help',
       requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector'],
       requiredPermission: null,
+      planFeature: null
+    },
+    {
+      id: 'chat',
+      label: 'Messages',
+      icon: MessageCircle,
+      type: 'single',
+      page: 'chat',
+      requiredRoles: ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator', 'participant', 'practice_user'],
+      requiredPermission: 'chat.access',
       planFeature: null
     }
   ];

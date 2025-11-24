@@ -47,6 +47,7 @@ import SecurityCenter from './SecurityCenter';
 import SubscriptionManagement from './SubscriptionManagement';
 import TeamManagement from './TeamManagement';
 import ReportingExports from './ReportingExports';
+import { ChatPage } from '../pages/ChatPage';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
 
 interface DashboardProps {
@@ -650,6 +651,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </Button>
               </div>
               <EmailTemplateManager />
+            </div>
+          </AccessControl>
+        );
+      case 'chat':
+      case 'messages':
+        return (
+          <AccessControl 
+            user={user} 
+            requiredPage="chat"
+            requiredPermission="chat.access"
+            fallbackMessage="You don't have permission to access the chat system."
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" onClick={handleBackToDashboard}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </div>
+              <ChatPage
+                currentUserId={user.id}
+                currentUserName={user.name || user.email}
+                currentUserEmail={user.email}
+                tenantId={user.tenantId}
+              />
             </div>
           </AccessControl>
         );

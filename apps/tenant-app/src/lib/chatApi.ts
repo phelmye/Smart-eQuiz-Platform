@@ -1,4 +1,26 @@
-import api from './api';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+// Create axios instance with auth interceptor
+const chatApiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+chatApiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 export interface ChatChannel {
   id: string;
@@ -56,28 +78,28 @@ export interface CreateChannelRequest {
 
 export const chatApi = {
   // Channels
-  getChannels: () => api.get<ChatChannel[]>('/chat/channels'),
+  getChannels: () => chatApiClient.get<ChatChannel[]>('/chat/channels'),
   
   getChannel: (channelId: string) => 
-    api.get<ChatChannel>(`/chat/channels/${channelId}`),
+    chatApiClient.get<ChatChannel>(`/chat/channels/${channelId}`),
   
   createChannel: (data: CreateChannelRequest) => 
-    api.post<ChatChannel>('/chat/channels', data),
+    chatApiClient.post<ChatChannel>('/chat/channels', data),
   
   // Messages
   sendMessage: (channelId: string, content: string, metadata?: any) =>
-    api.post<ChatMessage>(`/chat/channels/${channelId}/messages`, { content, metadata }),
+    chatApiClient.post<ChatMessage>(`/chat/channels/${channelId}/messages`, { content, metadata }),
   
   // Actions
   escalateChannel: (channelId: string, reason: string) =>
-    api.put<ChatChannel>(`/chat/channels/${channelId}/escalate`, { reason }),
+    chatApiClient.put<ChatChannel>(`/chat/channels/${channelId}/escalate`, { reason }),
   
   assignChannel: (channelId: string, teamMemberId: string) =>
-    api.put<ChatChannel>(`/chat/channels/${channelId}/assign`, { teamMemberId }),
+    chatApiClient.put<ChatChannel>(`/chat/channels/${channelId}/assign`, { teamMemberId }),
   
   resolveChannel: (channelId: string, resolution?: string) =>
-    api.put<ChatChannel>(`/chat/channels/${channelId}/resolve`, { resolution }),
+    chatApiClient.put<ChatChannel>(`/chat/channels/${channelId}/resolve`, { resolution }),
   
   archiveChannel: (channelId: string) =>
-    api.delete(`/chat/channels/${channelId}`),
+    chatApiClient.delete(`/chat/channels/${channelId}`),
 };
