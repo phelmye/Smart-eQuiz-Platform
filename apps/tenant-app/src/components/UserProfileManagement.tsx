@@ -472,7 +472,7 @@ export const UserProfileManagement: React.FC<UserProfileManagementProps> = ({ on
                           <br />
                           Please use the dedicated "Add {fieldLabels.parishSingular}" form in your dashboard to register a new {fieldLabels.parishSingular.toLowerCase()}.
                           <div className="mt-3 space-x-2">
-                            <Button size="sm" onClick={() => {/* Navigate to add parish form */}}>
+                            <Button size="sm" onClick={() => { setShowAddParish(false); onNavigate('add-parish'); }}>
                               Go to Add {fieldLabels.parishSingular} Form
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setShowAddParish(false)}>

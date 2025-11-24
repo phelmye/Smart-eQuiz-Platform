@@ -95,7 +95,7 @@ export default function DocsPage() {
             {popularArticles.map((article, index) => (
               <Link
                 key={index}
-                href="#"
+                href={`/docs/${article.category.toLowerCase().replace(/\s+/g, '-')}/${article.title.toLowerCase().replace(/\s+/g, '-')}`}
                 className="bg-white p-4 rounded-lg border hover:shadow-md transition-shadow"
               >
                 <p className="text-xs text-blue-600 font-semibold mb-2">{article.category}</p>
