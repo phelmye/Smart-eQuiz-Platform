@@ -172,6 +172,7 @@ export const endpoints = {
   auditExport: '/audit/export',
 } as const;
 
-// Export singleton instance as default AND named export
-export const api = new ApiClient();
-export default api;
+// Create and export singleton instance
+const apiClient = new ApiClient();
+export { apiClient as api };
+export default apiClient;

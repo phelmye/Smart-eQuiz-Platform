@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Eye, AlertCircle } from 'lucide-react';
-import { api } from '../lib/api';
+import { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Save, X, AlertCircle } from 'lucide-react';
 
 // Types for marketing content
 interface BlogPost {
