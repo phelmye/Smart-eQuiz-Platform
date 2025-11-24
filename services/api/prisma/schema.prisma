@@ -56,6 +56,8 @@ model Tenant {
   categories  Category[]
   chatChannels ChatChannel[]
   supportTickets SupportTicket[]
+  apiKeys     ApiKey[]
+  webhooks    Webhook[]
 }
 
 model User {
@@ -583,6 +585,50 @@ enum TicketStatus {
   CLOSED
 }
 
+enum ApiKeyType {
+  PUBLIC   // Frontend-safe, read-only
+  SECRET   // Backend only, full access
+  TEST     // Sandbox environment
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum WebhookEvent {
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  TOURNAMENT_CREATED
+  TOURNAMENT_STARTED
+  TOURNAMENT_COMPLETED
+  TOURNAMENT_CANCELLED
+  MATCH_STARTED
+  MATCH_COMPLETED
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  QUESTION_CREATED
+  QUESTION_UPDATED
+  TICKET_CREATED
+  TICKET_RESOLVED
+  TICKET_ESCALATED
+}
+
+enum WebhookStatus {
+  ACTIVE
+  PAUSED
+  FAILED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRYING
+}
+
 // Chat channels (conversations with tenant isolation)
 model ChatChannel {
   id          String        @id @default(cuid())
@@ -682,5 +728,117 @@ model SupportTicket {
   @@index([priority, status])
   @@index([createdBy])
   @@index([category])
+}
+
+// API Key Management
+model ApiKey {
+  id            String        @id @default(cuid())
+  tenantId      String
+  name          String        // "Production Mobile App", "Integration Server"
+  description   String?       @db.Text
+  keyHash       String        @unique  // Hashed API key (bcrypt)
+  keyPrefix     String        // First 8 chars for identification (api_live_sk_abc123)
+  type          ApiKeyType    @default(SECRET)
+  status        ApiKeyStatus  @default(ACTIVE)
+  scopes        String[]      // ['users:read', 'tournaments:write', etc.]
+  rateLimit     Int           @default(60)  // Requests per minute
+  ipWhitelist   String[]      // Allowed IP addresses (empty = all)
+  lastUsedAt    DateTime?
+  lastUsedIp    String?
+  expiresAt     DateTime?
+  createdBy     String        // User ID who created key
+  revokedBy     String?       // User ID who revoked key
+  revokedAt     DateTime?
+  revokedReason String?       @db.Text
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs          ApiLog[]
+  
+  @@index([tenantId, status])
+  @@index([keyHash])
+  @@index([keyPrefix])
+  @@index([status, expiresAt])
+  @@map("api_keys")
+}
+
+// API Usage Logs
+model ApiLog {
+  id              String    @id @default(cuid())
+  tenantId        String
+  apiKeyId        String?
+  endpoint        String
+  method          String
+  statusCode      Int
+  responseTime    Int       // milliseconds
+  requestSize     Int?      // bytes
+  responseSize    Int?      // bytes
+  ipAddress       String
+  userAgent       String?   @db.Text
+  errorMessage    String?   @db.Text
+  metadata        Json?     // Request params, body (sanitized)
+  createdAt       DateTime  @default(now())
+  
+  apiKey          ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  
+  @@index([tenantId, createdAt])
+  @@index([apiKeyId, createdAt])
+  @@index([endpoint])
+  @@index([statusCode, createdAt])
+  @@map("api_logs")
+}
+
+// Webhook Configuration
+model Webhook {
+  id              String          @id @default(cuid())
+  tenantId        String
+  url             String
+  description     String?         @db.Text
+  events          WebhookEvent[]
+  secret          String          // HMAC signing secret (encrypted)
+  status          WebhookStatus   @default(ACTIVE)
+  retryAttempts   Int             @default(3)
+  timeout         Int             @default(30000)  // milliseconds
+  lastTriggeredAt DateTime?
+  lastSuccessAt   DateTime?
+  lastFailureAt   DateTime?
+  failureCount    Int             @default(0)
+  createdBy       String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries      WebhookDelivery[]
+  
+  @@index([tenantId, status])
+  @@index([status])
+  @@map("webhooks")
+}
+
+// Webhook Delivery Logs
+model WebhookDelivery {
+  id              String                  @id @default(cuid())
+  webhookId       String
+  eventType       WebhookEvent
+  eventId         String                  // Unique event identifier for idempotency
+  payload         Json
+  status          WebhookDeliveryStatus   @default(PENDING)
+  statusCode      Int?
+  responseBody    String?                 @db.Text
+  errorMessage    String?                 @db.Text
+  attempts        Int                     @default(0)
+  maxAttempts     Int                     @default(3)
+  nextRetryAt     DateTime?
+  deliveredAt     DateTime?
+  createdAt       DateTime                @default(now())
+  
+  webhook         Webhook                 @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  
+  @@index([webhookId, createdAt])
+  @@index([status, nextRetryAt])
+  @@index([eventId])
+  @@index([eventType, createdAt])
+  @@map("webhook_deliveries")
 }
 

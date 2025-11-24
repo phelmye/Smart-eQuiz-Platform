@@ -16,6 +16,7 @@ import { MediaModule } from './media/media.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
 import { ChatModule } from './chat/chat.module';
+import { ApiManagementModule } from './api-management/api-management.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -43,6 +44,7 @@ import { PrismaModule } from './prisma.module';
     AnalyticsModule,
     AuditModule,
     ChatModule,
+    ApiManagementModule,
   ],
   controllers: [AppController],
   providers: [
