@@ -160,7 +160,10 @@ export default function Settings() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => alert('General settings saved successfully')}>
+                <Button onClick={() => {
+                  // TODO: Implement general settings save functionality
+                  console.log('General settings saved successfully');
+                }}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </Button>
@@ -252,7 +255,10 @@ export default function Settings() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => alert('Security settings saved successfully')}>
+                <Button onClick={() => {
+                  // TODO: Implement security settings save functionality
+                  console.log('Security settings saved successfully');
+                }}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </Button>
@@ -374,7 +380,10 @@ export default function Settings() {
                     Customize email templates sent to users ({emailTemplates.length} templates)
                   </CardDescription>
                 </div>
-                <Button size="sm" onClick={() => alert('Create new email template functionality')}>
+                <Button size="sm" onClick={() => {
+                  // TODO: Implement create new email template functionality
+                  console.log('Create new email template');
+                }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Template
                 </Button>
@@ -419,10 +428,16 @@ export default function Settings() {
                               <p className="text-sm text-gray-500 mt-1">{template.subject}</p>
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => alert(`Edit template: ${template.name}`)}>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                // TODO: Implement edit template functionality
+                                console.log(`Edit template: ${template.name}`);
+                              }}>
                                 Edit
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => alert(`Preview template: ${template.name}`)}>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                // TODO: Implement preview template functionality
+                                console.log(`Preview template: ${template.name}`);
+                              }}>
                                 Preview
                               </Button>
                             </div>

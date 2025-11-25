@@ -107,7 +107,10 @@ export default function Billing() {
               <SelectItem value="1y">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => alert('Export billing data functionality')}>
+          <Button variant="outline" onClick={() => {
+            // TODO: Implement export billing data functionality
+            console.log('Export billing data');
+          }}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -158,7 +161,10 @@ export default function Billing() {
                   <CardTitle>Recent Invoices</CardTitle>
                   <CardDescription>View and manage all platform invoices</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => alert('Filter invoices functionality')}>
+                <Button variant="outline" size="sm" onClick={() => {
+                  // TODO: Implement filter invoices functionality
+                  console.log('Filter invoices');
+                }}>
                   <Filter className="mr-2 h-4 w-4" />
                   Filter
                 </Button>
@@ -219,10 +225,16 @@ export default function Billing() {
                             {new Date(invoice.date).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <Button variant="ghost" size="sm" onClick={() => alert(`View invoice ${invoice.id}`)}>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              // TODO: Implement view invoice functionality
+                              console.log(`View invoice ${invoice.id}`);
+                            }}>
                               View
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => alert(`Download invoice ${invoice.id}`)}>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              // TODO: Implement download invoice functionality
+                              console.log(`Download invoice ${invoice.id}`);
+                            }}>
                               <Download className="h-4 w-4" />
                             </Button>
                           </td>
@@ -276,7 +288,10 @@ export default function Billing() {
                     ))}
                   </ul>
                   <div className="pt-4 space-y-2">
-                    <Button className="w-full" variant="outline" onClick={() => alert(`Edit ${plan.displayName} plan`)}>
+                    <Button className="w-full" variant="outline" onClick={() => {
+                      // TODO: Implement edit plan functionality
+                      console.log(`Edit ${plan.displayName} plan`);
+                    }}>
                       Edit Plan
                     </Button>
                     <p className="text-xs text-center text-gray-500">

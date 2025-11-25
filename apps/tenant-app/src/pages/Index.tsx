@@ -3,6 +3,7 @@ import { AuthSystem, useAuth } from '@/components/AuthSystem';
 import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
 import { initializeMockData, mockTournaments } from '@/lib/mockData';
+import TenantLandingPage from '@/components/TenantLandingPage';
 
 // Dynamic imports for code splitting - components are loaded only when needed
 const Dashboard = lazy(() => import('@/components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -133,17 +134,18 @@ const AppContent: React.FC = () => {
     return <FullScreenLoader text="Initializing..." />;
   }
 
-  // Show auth system if not authenticated
+  // Show tenant landing page for unauthenticated visitors (PUBLIC PAGE)
   if (!isAuthenticated || !user) {
-    console.log('🔍 Index.tsx - Showing auth system because:', { 
-      isAuthenticated, 
-      hasUser: !!user, 
-      isInitializing 
-    });
-    return <AuthSystem onAuthSuccess={() => {
-      console.log('🔍 Index.tsx - onAuthSuccess callback triggered - authentication should be handled by AuthProvider');
-      // Don't manually set page - let the auth state change trigger the re-render naturally
-    }} />;
+    console.log('🔍 Index.tsx - Showing tenant landing page for unauthenticated visitor');
+    return (
+      <TenantLandingPage
+        tenant={mockTenant}
+        onAuthSuccess={() => {
+          console.log('🔍 Index.tsx - Landing page auth success - user should now be authenticated');
+          setCurrentPage('dashboard');
+        }}
+      />
+    );
   }
 
   // Show main application content

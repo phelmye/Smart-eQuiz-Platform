@@ -449,13 +449,19 @@ export default function Reports() {
 
               <div className="flex justify-end space-x-2">
                 <button 
-                  onClick={() => alert('Save report template')}
+                  onClick={() => {
+                    // TODO: Implement save report template functionality
+                    console.log('Save report template');
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Save as Template
                 </button>
                 <button 
-                  onClick={() => alert('Generate custom report')}
+                  onClick={() => {
+                    // TODO: Implement generate custom report functionality
+                    console.log('Generate custom report');
+                  }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Generate Report
