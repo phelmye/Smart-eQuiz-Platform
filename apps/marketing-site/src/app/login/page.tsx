@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { ChevronRight, Mail, Lock, AlertCircle } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+export default function LoginRedirect() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Redirect to platform-login
+    router.replace('/platform-login');
+  }, [router]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting to login...</p>
+      </div>
+    </div>
+  );
+}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
