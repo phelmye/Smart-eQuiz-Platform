@@ -729,11 +729,11 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
 
       {/* Tenant-Specific Legal Pages */}
       {showPrivacyPolicy && (
-        <PrivacyPolicy onBack={() => setShowPrivacyPolicy(false)} />
+        <PrivacyPolicy onBack={() => setShowPrivacyPolicy(false)} tenantId={tenant.id} />
       )}
 
       {showTermsOfService && (
-        <TermsOfService onBack={() => setShowTermsOfService(false)} />
+        <TermsOfService onBack={() => setShowTermsOfService(false)} tenantId={tenant.id} />
       )}
     </div>
   );

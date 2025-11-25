@@ -2,13 +2,20 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { useLegalDocument, LegalDocumentType } from '@/hooks/useLegalDocument';
+import ReactMarkdown from 'react-markdown';
 
 interface PrivacyPolicyProps {
   onBack?: () => void;
+  tenantId?: string;
 }
 
-export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
+export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, tenantId }) => {
+  const { document, loading, error } = useLegalDocument(LegalDocumentType.PRIVACY_POLICY, tenantId);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -21,12 +28,45 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Privacy Policy</CardTitle>
-            <p className="text-sm text-gray-500">Last updated: November 15, 2025</p>
+            <CardTitle className="text-2xl">
+              {document?.title || 'Privacy Policy'}
+            </CardTitle>
+            {document && (
+              <p className="text-sm text-gray-500">
+                Version {document.version} • Last updated: {new Date(document.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-6">
+            {loading && (
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-32 w-full mt-6" />
+              </div>
+            )}
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load privacy policy. Please try again later.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!loading && !error && document && (
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="prose max-w-none">
+                  <ReactMarkdown>{document.content}</ReactMarkdown>
+                </div>
+              </ScrollArea>
+            )}
+
+            {!loading && !error && !document && (
+              <ScrollArea className="h-[600px] pr-4">
+                <div className="space-y-6">
                 <section>
                   <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
                   <p className="text-gray-700 leading-relaxed">
