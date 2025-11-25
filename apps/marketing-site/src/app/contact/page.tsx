@@ -42,75 +42,75 @@ export default function ContactPage() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid md:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div className=\"bg-white rounded-lg shadow-lg p-8\">
-              <h2 className=\"text-2xl font-bold mb-6\">Send Us a Message</h2>
-              <form onSubmit={handleSubmit} className=\"space-y-6\">
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor=\"name\" className=\"block text-sm font-medium text-gray-700 mb-2\">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
                     Your Name *
                   </label>
                   <input
-                    type=\"text\"
-                    id=\"name\"
-                    name=\"name\"
+                    type="text"
+                    id="name"
+                    name="name"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
-                    placeholder=\"John Doe\"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="John Doe"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor=\"email\" className=\"block text-sm font-medium text-gray-700 mb-2\">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address *
                   </label>
                   <input
-                    type=\"email\"
-                    id=\"email\"
-                    name=\"email\"
+                    type="email"
+                    id="email"
+                    name="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
-                    placeholder=\"john@example.com\"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="john@example.com"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor=\"organization\" className=\"block text-sm font-medium text-gray-700 mb-2\">
+                  <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
                     Organization/Church Name
                   </label>
                   <input
-                    type=\"text\"
-                    id=\"organization\"
-                    name=\"organization\"
+                    type="text"
+                    id="organization"
+                    name="organization"
                     value={formData.organization}
                     onChange={(e) => setFormData({...formData, organization: e.target.value})}
-                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
-                    placeholder=\"Your Church Name\"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Your Church Name"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor=\"subject\" className=\"block text-sm font-medium text-gray-700 mb-2\">
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
                     Subject *
                   </label>
                   <select
-                    id=\"subject\"
-                    name=\"subject\"
+                    id="subject"
+                    name="subject"
                     required
                     value={formData.subject}
                     onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                    className=\"w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent\"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value=\"\">Select a subject</option>
-                    <option value=\"sales\">Sales Inquiry</option>
-                    <option value=\"support\">Technical Support</option>
-                    <option value=\"demo\">Schedule a Demo</option>
-                    <option value=\"billing\">Billing Question</option>
-                    <option value=\"partnership\">Partnership Opportunity</option>
-                    <option value=\"other\">Other</option>
+                    <option value="">Select a subject</option>
+                    <option value="sales">Sales Inquiry</option>
+                    <option value="support">Technical Support</option>
+                    <option value="demo">Schedule a Demo</option>
+                    <option value="billing">Billing Question</option>
+                    <option value="partnership">Partnership Opportunity</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
