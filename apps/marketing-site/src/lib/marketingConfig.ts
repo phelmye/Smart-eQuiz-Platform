@@ -46,7 +46,7 @@ export const defaultMarketingConfig: MarketingSiteConfig = {
     { label: 'Demo', href: '/demo' },
     { label: 'Docs', href: '/docs' },
     { label: 'Affiliate Program', href: '/affiliate' },
-    { label: 'Sign In', href: 'http://localhost:5174/login' },
+    { label: 'Sign In', href: 'http://localhost:5174' },
     { label: 'Start Free Trial', href: '/signup', highlighted: true },
   ],
   footerSections: [
