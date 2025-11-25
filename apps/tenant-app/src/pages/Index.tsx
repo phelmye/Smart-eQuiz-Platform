@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthSystem, useAuth } from '@/components/AuthSystem';
 import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { initializeMockData, mockTournaments } from '@/lib/mockData';
+import { initializeMockData, mockTournaments, mockTenants, Tenant } from '@/lib/mockData';
 import TenantLandingPage from '@/components/TenantLandingPage';
 
 // Dynamic imports for code splitting - components are loaded only when needed
@@ -75,9 +75,42 @@ type Page = 'auth' | 'dashboard' | 'practice' | 'tournament-builder' | 'live-mat
 const AppContent: React.FC = () => {
   const { user, isAuthenticated, isInitializing } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
 
-  // Mock tenant data for components that require it
-  const mockTenant = {
+  // Detect tenant from URL
+  useEffect(() => {
+    const detectTenantFromUrl = (): Tenant | null => {
+      const hostname = window.location.hostname;
+      const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+      
+      if (isDevelopment) {
+        // Check URL parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        const tenantParam = urlParams.get('tenant');
+        if (tenantParam) {
+          return mockTenants.find(t => t.id === tenantParam) || mockTenants[0];
+        }
+        // Default to first tenant for development
+        return mockTenants[0];
+      }
+      
+      // Production: subdomain detection
+      const parts = hostname.split('.');
+      if (parts.length >= 3) {
+        const subdomain = parts[0];
+        return mockTenants.find(t => t.subdomain === subdomain) || null;
+      }
+      
+      return null;
+    };
+
+    const tenant = detectTenantFromUrl();
+    setCurrentTenant(tenant);
+    console.log('🔍 Detected tenant:', tenant);
+  }, []);
+
+  // Mock tenant data for components that require it when tenant is detected
+  const mockTenant = currentTenant || {
     id: 'demo-tenant',
     name: 'Demo Organization',
     subdomain: 'demo',
@@ -137,15 +170,24 @@ const AppContent: React.FC = () => {
   // Show tenant landing page for unauthenticated visitors (PUBLIC PAGE)
   if (!isAuthenticated || !user) {
     console.log('🔍 Index.tsx - Showing tenant landing page for unauthenticated visitor');
-    return (
-      <TenantLandingPage
-        tenant={mockTenant}
-        onAuthSuccess={() => {
-          console.log('🔍 Index.tsx - Landing page auth success - user should now be authenticated');
-          setCurrentPage('dashboard');
-        }}
-      />
-    );
+    
+    if (currentTenant) {
+      return (
+        <TenantLandingPage
+          tenant={currentTenant}
+          onAuthSuccess={() => {
+            console.log('🔍 Index.tsx - Landing page auth success - user should now be authenticated');
+            setCurrentPage('dashboard');
+          }}
+        />
+      );
+    }
+    
+    // Fallback to auth system if tenant not detected
+    return <AuthSystem onAuthSuccess={() => {
+      console.log('🔍 Index.tsx - onAuthSuccess callback triggered');
+      setCurrentPage('dashboard');
+    }} />;
   }
 
   // Show main application content
