@@ -100,7 +100,6 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [featuredTournament, setFeaturedTournament] = useState<Tournament | null>(null);
   const [tournamentType, setTournamentType] = useState<'upcoming' | 'past' | null>(null);
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('register');
   const [plan, setPlan] = useState<Plan | null>(null);
   const [landingContent, setLandingContent] = useState<TenantLandingContent>(defaultLandingContent(tenant.name));
 
@@ -155,8 +154,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
     setPlan(tenantPlan || null);
   }, [tenant.id, tenant.planId]);
 
-  const handleCTAClick = (tab: 'login' | 'register' = 'register') => {
-    setActiveTab(tab);
+  const handleCTAClick = () => {
     setShowAuthModal(true);
   };
 
@@ -196,11 +194,11 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
           <TenantAvatar tenant={tenant} size="md" showName={true} />
           
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => handleCTAClick('login')}>
+            <Button variant="ghost" onClick={() => handleCTAClick()}>
               Login
             </Button>
             <Button 
-              onClick={() => handleCTAClick('register')}
+              onClick={() => handleCTAClick()}
               style={{ backgroundColor: tenant.primaryColor || '#2563eb' }}
               className="text-white hover:opacity-90"
             >
@@ -228,7 +226,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
                 size="lg" 
-                onClick={() => handleCTAClick('register')}
+                onClick={() => handleCTAClick()}
                 style={{ backgroundColor: tenant.primaryColor || '#2563eb' }}
                 className="text-white px-8 py-6 text-lg hover:opacity-90"
               >
@@ -238,7 +236,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
               <Button 
                 size="lg" 
                 variant="outline" 
-                onClick={() => handleCTAClick('login')}
+                onClick={() => handleCTAClick()}
                 className="px-8 py-6 text-lg"
               >
                 {landingContent.hero.ctaSecondaryText}
@@ -376,7 +374,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
                         <Button 
                           size="lg"
                           className="flex-1 text-lg py-6"
-                          onClick={() => handleCTAClick('register')}
+                          onClick={() => handleCTAClick()}
                           style={{ backgroundColor: tenant.primaryColor || '#2563eb' }}
                         >
                           <Trophy className="mr-2 h-5 w-5" />
@@ -406,7 +404,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
                         <Button 
                           size="lg"
                           className="flex-1 text-lg py-6"
-                          onClick={() => handleCTAClick('register')}
+                          onClick={() => handleCTAClick()}
                           style={{ backgroundColor: tenant.primaryColor || '#2563eb' }}
                         >
                           Join Next Tournament
@@ -481,7 +479,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
             <div className="text-center">
               <Button 
                 size="lg"
-                onClick={() => handleCTAClick('register')}
+                onClick={() => handleCTAClick()}
                 style={{ backgroundColor: tenant.primaryColor || '#2563eb' }}
                 className="text-white px-8 py-6 text-lg"
               >
@@ -534,7 +532,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
           </p>
           <Button 
             size="lg"
-            onClick={() => handleCTAClick('register')}
+            onClick={() => handleCTAClick()}
             className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-6 text-lg"
           >
             Join {tenant.name} Today
@@ -571,7 +569,6 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
               setShowAuthModal(false);
               onAuthSuccess();
             }}
-            defaultTab={activeTab}
           />
         </DialogContent>
       </Dialog>
