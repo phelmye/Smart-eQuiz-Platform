@@ -227,6 +227,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setTenant(null);
     storage.remove(STORAGE_KEYS.CURRENT_USER);
+    // Redirect to marketing site after logout
+    window.location.href = 'http://localhost:3000';
   };
 
   const isAuthenticated = !!user;
@@ -430,91 +432,30 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                   />
                 </div>
                 
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="remember"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-700">Remember me</span>
+                  </label>
+                  <a
+                    href="http://localhost:3000/forgot-password"
+                    className="text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+                
                 <Button 
                   type="submit" 
                   className="w-full" 
                   disabled={isLoading}
-                  onClick={() => console.log('🔍 Sign In button clicked!')}
                 >
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
-
-                {/* Test buttons for debugging */}
-                <div className="border-t pt-4 mt-4">
-                  <p className="text-sm text-gray-600 mb-2">Debug tools:</p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      console.log('🧪 TEST BUTTON CLICKED!');
-                      alert('Test button clicked! Check console for details.');
-                      
-                      try {
-                        console.log('🧪 Calling login function directly with test credentials...');
-                        const success = await login('admin@church.com', 'password');
-                        console.log('🧪 Test login result:', success);
-                        
-                        if (success) {
-                          console.log('🧪 Test login successful!');
-                          alert('Test login successful! Should navigate to dashboard.');
-                        } else {
-                          console.log('🧪 Test login failed');
-                          alert('Test login failed - check console for details.');
-                        }
-                      } catch (err) {
-                        console.error('🧪 Test login error:', err);
-                        alert('Test login error: ' + err);
-                      }
-                    }}
-                    style={{ 
-                      padding: '8px 16px', 
-                      backgroundColor: '#10b981', 
-                      color: 'white', 
-                      border: 'none', 
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      width: '100%',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    🧪 Test Login (Bypass Form)
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      console.log('=== 🔍 AUTH DEBUG INFO ===');
-                      console.log('Current URL:', window.location.href);
-                      console.log('URL Hash:', window.location.hash);
-                      console.log('LocalStorage current user:', localStorage.getItem(STORAGE_KEYS.CURRENT_USER));
-                      console.log('SessionStorage current user:', sessionStorage.getItem(STORAGE_KEYS.CURRENT_USER));
-                      console.log('AuthProvider user:', user?.email);
-                      console.log('AuthProvider authenticated:', user ? true : false);
-                      console.log('=== END DEBUG INFO ===');
-                      
-                      // Show alert with summary
-                      const currentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-                      const summary = `Debug Info:
-- User in storage: ${currentUser ? 'YES' : 'NO'}
-- User in AuthProvider: ${user?.email || 'NONE'}
-- Is Authenticated: ${user ? 'YES' : 'NO'}
-- URL: ${window.location.href}
-
-Check browser console (F12) for detailed debug info.`;
-                      alert(summary);
-                    }}
-                    style={{
-                      padding: '8px 16px',
-                      background: '#f3f4f6',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      width: '100%',
-                      fontSize: '12px'
-                    }}
-                  >
-                    🔍 Debug Auth State
-                  </button>
-                </div>
                 
                 {error && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, Trophy, BookOpen, ArrowRight, Star, Zap, Award } from 'lucide-react';
+import { Calendar, Users, Trophy, BookOpen, ArrowRight, Star, Zap, Award, HelpCircle, LifeBuoy, CheckCircle } from 'lucide-react';
 import { Tenant, Tournament, Plan, storage, STORAGE_KEYS, mockTournaments, defaultPlans } from '@/lib/mockData';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AuthSystem } from '@/components/AuthSystem';
@@ -194,6 +194,18 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
           <TenantAvatar tenant={tenant} size="md" showName={true} />
           
           <div className="flex items-center gap-3">
+            {/* Platform Status Indicator */}
+            <Badge variant="outline" className="flex items-center gap-1.5 bg-green-50 text-green-700 border-green-200">
+              <CheckCircle className="h-3 w-3" />
+              <span className="text-xs">All Systems Operational</span>
+            </Badge>
+            
+            {/* Help & Support */}
+            <Button variant="ghost" size="sm" onClick={() => console.log('Navigate to help center')}>
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Help
+            </Button>
+            
             <Button variant="ghost" onClick={() => handleCTAClick()}>
               Login
             </Button>
@@ -545,19 +557,95 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-8">
-        <div className="container mx-auto px-4 text-center">
-          {plan?.features?.some(f => f.includes('White-label') || f.includes('Full custom branding') || f.includes('Custom branding')) ? (
-            <p className="text-sm">
-              © {new Date().getFullYear()} {tenant.name}. All rights reserved.
-            </p>
-          ) : (
-            <p className="text-sm">
-              © {new Date().getFullYear()} Smart eQuiz Platform. All rights reserved.
-              <br />
-              <span className="text-gray-500 text-xs mt-1 inline-block">Powering {tenant.name}</span>
-            </p>
-          )}
+      <footer className="bg-gray-900 text-gray-300 py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* About Section */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">About {tenant.name}</h4>
+              <p className="text-sm text-gray-400">
+                Join our Bible quiz community and test your knowledge while growing in faith.
+              </p>
+            </div>
+            
+            {/* Quick Links */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button onClick={() => handleCTAClick()} className="text-gray-400 hover:text-white transition-colors">
+                    Tournaments
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleCTAClick()} className="text-gray-400 hover:text-white transition-colors">
+                    Practice Mode
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => handleCTAClick()} className="text-gray-400 hover:text-white transition-colors">
+                    Leaderboard
+                  </button>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Support */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button onClick={() => console.log('Navigate to help center')} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    Help Center
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => console.log('Navigate to contact support')} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                    <LifeBuoy className="h-4 w-4" />
+                    Contact Support
+                  </button>
+                </li>
+                <li>
+                  <a href="http://localhost:3000" className="text-gray-400 hover:text-white transition-colors">
+                    Platform Status
+                  </a>
+                </li>
+              </ul>
+            </div>
+            
+            {/* Legal */}
+            <div>
+              <h4 className="text-white font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a href="http://localhost:3000/terms" className="text-gray-400 hover:text-white transition-colors">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="http://localhost:3000/privacy" className="text-gray-400 hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          {/* Copyright */}
+          <div className="border-t border-gray-800 pt-8 text-center">
+            {plan?.features?.some(f => f.includes('White-label') || f.includes('Full custom branding') || f.includes('Custom branding')) ? (
+              <p className="text-sm">
+                © {new Date().getFullYear()} {tenant.name}. All rights reserved.
+              </p>
+            ) : (
+              <p className="text-sm">
+                © {new Date().getFullYear()} Smart eQuiz Platform. All rights reserved.
+                <br />
+                <span className="text-gray-500 text-xs mt-1 inline-block">Powering {tenant.name}</span>
+              </p>
+            )}
+          </div>
         </div>
       </footer>
 

@@ -148,7 +148,8 @@ const AppContent: React.FC = () => {
   }, [isAuthenticated, user, isInitializing]);
 
   const handleLogout = () => {
-    setCurrentPage('auth');
+    // Redirect to marketing site instead of tenant landing page
+    window.location.href = 'http://localhost:3000';
   };
 
   const handleNavigate = (page: Page) => {
