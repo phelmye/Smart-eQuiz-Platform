@@ -55,7 +55,11 @@ Smart-eQuiz-Platform/
 ├── workspace/
 │   └── shadcn-ui/            # Current monolithic app (being migrated)
 ├── ARCHITECTURE.md           # System architecture documentation
+├── AUTHENTICATION_FLOW.md    # 🚨 Auth/navigation rules (READ FIRST!)
 ├── MIGRATION_GUIDE.md        # Step-by-step migration guide
+├── .github/
+│   ├── PULL_REQUEST_TEMPLATE.md  # PR template with arch checks
+│   └── CODE_REVIEW_CHECKLIST.md  # Review checklist
 └── README.md                 # This file
 ```
 
