@@ -98,6 +98,7 @@ interface TenantLandingPageProps {
 
 export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, onAuthSuccess }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [featuredTournament, setFeaturedTournament] = useState<Tournament | null>(null);
   const [tournamentType, setTournamentType] = useState<'upcoming' | 'past' | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -201,7 +202,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
             </Badge>
             
             {/* Help & Support */}
-            <Button variant="ghost" size="sm" onClick={() => console.log('Navigate to help center')}>
+            <Button variant="ghost" size="sm" onClick={() => setShowHelpModal(true)}>
               <HelpCircle className="h-4 w-4 mr-1" />
               Help
             </Button>
@@ -396,7 +397,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
                           size="lg"
                           variant="outline"
                           className="flex-1 text-lg py-6"
-                          onClick={() => console.log('View tournament details')}
+                          onClick={() => handleCTAClick()}
                         >
                           View Details
                           <ArrowRight className="ml-2 h-5 w-5" />
@@ -408,7 +409,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
                           size="lg"
                           variant="outline"
                           className="flex-1 text-lg py-6"
-                          onClick={() => console.log('View tournament results')}
+                          onClick={() => handleCTAClick()}
                         >
                           <Trophy className="mr-2 h-5 w-5" />
                           View Results
@@ -595,13 +596,13 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
               <h4 className="text-white font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button onClick={() => console.log('Navigate to help center')} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                  <button onClick={() => setShowHelpModal(true)} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
                     <HelpCircle className="h-4 w-4" />
                     Help Center
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => console.log('Navigate to contact support')} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                  <button onClick={() => handleCTAClick()} className="text-gray-400 hover:text-white transition-colors flex items-center gap-2">
                     <LifeBuoy className="h-4 w-4" />
                     Contact Support
                   </button>
@@ -648,6 +649,67 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
           </div>
         </div>
       </footer>
+
+      {/* Help Modal */}
+      <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
+        <DialogContent className="max-w-2xl">
+          <div className="p-6">
+            <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+              <HelpCircle className="h-6 w-6 text-blue-600" />
+              Help & Support
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Get help with using {tenant.name}'s Bible Quiz platform.
+            </p>
+            
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <Card className="p-4 cursor-pointer hover:border-blue-500 transition-colors" onClick={() => handleCTAClick()}>
+                <div className="flex items-start gap-3">
+                  <BookOpen className="h-8 w-8 text-blue-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Getting Started Guide</h4>
+                    <p className="text-sm text-gray-600">Learn how to participate in tournaments and practice quizzes</p>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-4 cursor-pointer hover:border-blue-500 transition-colors" onClick={() => handleCTAClick()}>
+                <div className="flex items-start gap-3">
+                  <LifeBuoy className="h-8 w-8 text-green-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Contact Support</h4>
+                    <p className="text-sm text-gray-600">Create a support ticket for technical assistance</p>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-4 cursor-pointer hover:border-blue-500 transition-colors" onClick={() => handleCTAClick()}>
+                <div className="flex items-start gap-3">
+                  <Users className="h-8 w-8 text-purple-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold mb-1">FAQs</h4>
+                    <p className="text-sm text-gray-600">Find answers to commonly asked questions</p>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-4 cursor-pointer hover:border-blue-500 transition-colors" onClick={() => handleCTAClick()}>
+                <div className="flex items-start gap-3">
+                  <Trophy className="h-8 w-8 text-yellow-600 mt-1" />
+                  <div>
+                    <h4 className="font-semibold mb-1">Tournament Rules</h4>
+                    <p className="text-sm text-gray-600">Understand tournament formats and scoring</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+            
+            <div className="text-center text-sm text-gray-500">
+              Sign in to access full help resources and contact support
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Auth Modal */}
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>

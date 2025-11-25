@@ -367,7 +367,7 @@ export default function CreateApiKeyDialog({
                           ...Object.values(API_SCOPES.PAYMENTS),
                           ...Object.values(API_SCOPES.WEBHOOKS)
                         ]
-                          .filter(scope => !scope.endsWith(':*') && scope !== 'admin:full')
+                          .filter(scope => !scope.endsWith(':*'))
                           .map(scope => (
                             <div key={scope} className="flex items-start gap-3">
                               <Checkbox
