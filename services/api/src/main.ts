@@ -120,10 +120,11 @@ while tenant-level users are automatically scoped to their organization.
       },
     });
     
-    console.log('📚 API Documentation available at http://localhost:3000/api/docs');
+    const port = process.env.PORT || 3001;
+    console.log(`📚 API Documentation available at http://localhost:${port}/api/docs`);
     
-    await app.listen(3000);
-    console.log('API server listening on http://localhost:3000');
+    await app.listen(port);
+    console.log(`API server listening on http://localhost:${port}`);
     
     // Keep process alive and handle graceful shutdown
     process.on('SIGINT', async () => {

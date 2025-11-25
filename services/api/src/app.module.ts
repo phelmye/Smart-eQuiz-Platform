@@ -1,6 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ServeStaticModule } from '@nestjs/serve-static';
+// import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { join } from 'path';
@@ -28,10 +28,12 @@ import { PrismaModule } from './prisma.module';
       ttl: 60000,       // Time window in milliseconds (60 seconds)
       limit: 100,       // Max 100 requests per minute (global default)
     }]),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'uploads'),
-      serveRoot: '/uploads',
-    }),
+    // TODO: Fix ServeStaticModule path-to-regexp error
+    // ServeStaticModule.forRoot({
+    //   rootPath: join(__dirname, '..', '..', 'uploads'),
+    //   serveRoot: '/uploads',
+    //   exclude: ['/api(.*)'],
+    // }),
     PrismaModule,
     AuthModule,
     UsersModule,
