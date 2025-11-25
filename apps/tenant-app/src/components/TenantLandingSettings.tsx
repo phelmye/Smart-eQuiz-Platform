@@ -146,6 +146,9 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
   }, [tenant.id]);
 
   const loadContent = () => {
+    // ⚠️ DEPRECATED: localStorage pattern
+    // TODO: Migrate to Landing Page CMS API (see ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md)
+    // Use: const { content } = useLandingPageContent(tenant.id);
     try {
       setLoading(true);
       const storageKey = `tenant_landing_${tenant.id}`;
@@ -177,6 +180,10 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
   };
 
   const handleSave = async () => {
+    // ⚠️ DEPRECATED: localStorage pattern
+    // TODO: Migrate to Landing Page CMS API (see ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md)
+    // Use: await createLandingPageContent(tenant.id, section, content);
+    //      await activateLandingPageContent(tenant.id, contentId);
     try {
       setSaving(true);
       setMessage(null);

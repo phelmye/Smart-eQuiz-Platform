@@ -1,5 +1,39 @@
 # Smart eQuiz Platform - AI Agent Instructions
 
+## 🚨 CRITICAL: Architecture Decision Records - DO NOT REGRESS!
+
+**Before making ANY changes to these systems, read their ADRs:**
+
+### 1. Authentication & Navigation
+**Read**: `AUTHENTICATION_FLOW.md`  
+**If working on**: Login/signup, navigation between apps, tenant detection
+
+### 2. Landing Page Content Management 🆕
+**Read**: `ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md`  
+**If working on**: Tenant landing pages, content management
+
+**🚨 FORBIDDEN PATTERNS**:
+- ❌ **NEVER** use `localStorage` for landing page content
+- ❌ **NEVER** revert to localStorage pattern (causes data loss, no version control)
+- ✅ **ALWAYS** use Landing Page CMS API (`useLandingPageContent` hook)
+
+```typescript
+// ❌ FORBIDDEN - Will be blocked in code review
+localStorage.setItem(`tenant_landing_${tenant.id}`, JSON.stringify(content));
+
+// ✅ REQUIRED - Use API with version control
+const { content, loading, error } = useLandingPageContent(tenant.id);
+await createLandingPageContent(tenantId, section, content);
+```
+
+**Why forbidden**: No version control, no audit trail, data loss on browser clear, no backup, not production-ready.
+
+### 3. Legal Documents
+**Read**: `LEGAL_DOCUMENTS_CMS_GUIDE.md`  
+**If working on**: Terms, Privacy Policy, legal content
+
+---
+
 ## 🚨 CRITICAL: Read AUTHENTICATION_FLOW.md Before Auth/Navigation Changes!
 
 **STOP and read `AUTHENTICATION_FLOW.md` if working on:**
