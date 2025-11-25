@@ -45,53 +45,56 @@ model Plan {
 }
 
 model Tenant {
-  id          String       @id @default(cuid())
-  name        String
-  planId      String?
-  plan        Plan?        @relation(fields: [planId], references: [id])
-  createdAt   DateTime     @default(now())
-  users       UserTenant[]
-  tournaments Tournament[]
-  questions   Question[]
-  categories  Category[]
-  chatChannels ChatChannel[]
+  id             String          @id @default(cuid())
+  name           String
+  planId         String?
+  plan           Plan?           @relation(fields: [planId], references: [id])
+  createdAt      DateTime        @default(now())
+  users          UserTenant[]
+  tournaments    Tournament[]
+  questions      Question[]
+  categories     Category[]
+  chatChannels   ChatChannel[]
   supportTickets SupportTicket[]
-  apiKeys     ApiKey[]
-  webhooks    Webhook[]
+  apiKeys        ApiKey[]
+  webhooks       Webhook[]
+  legalDocuments LegalDocument[]
 }
 
 model User {
-  id                String            @id @default(cuid())
-  email             String            @unique
+  id                String             @id @default(cuid())
+  email             String             @unique
   passwordHash      String
   refreshTokenHash  String?
-  role              Role              @default(PARTICIPANT)
-  createdAt         DateTime          @default(now())
+  role              Role               @default(PARTICIPANT)
+  createdAt         DateTime           @default(now())
   tenants           UserTenant[]
   tournamentEntries TournamentEntry[]
   matches           MatchParticipant[]
   practiceProgress  PracticeProgress[]
   badges            UserBadge[]
-  
+
   // Chat relations
-  chatMessages      ChatMessage[]
+  chatMessages       ChatMessage[]
   chatParticipations ChatParticipant[]
-  createdChannels   ChatChannel[]     @relation("ChannelCreator")
-  assignedChannels  ChatChannel[]     @relation("ChannelAssignee")
-  escalatedChannels ChatChannel[]     @relation("ChannelEscalated")
-  createdTickets    SupportTicket[]   @relation("TicketCreator")
-  assignedTickets   SupportTicket[]   @relation("TicketAssignee")
-  escalatedTickets  SupportTicket[]   @relation("TicketEscalated")
-  resolvedTickets   SupportTicket[]   @relation("TicketResolver")
+  createdChannels    ChatChannel[]             @relation("ChannelCreator")
+  assignedChannels   ChatChannel[]             @relation("ChannelAssignee")
+  escalatedChannels  ChatChannel[]             @relation("ChannelEscalated")
+  createdTickets     SupportTicket[]           @relation("TicketCreator")
+  assignedTickets    SupportTicket[]           @relation("TicketAssignee")
+  escalatedTickets   SupportTicket[]           @relation("TicketEscalated")
+  resolvedTickets    SupportTicket[]           @relation("TicketResolver")
+  legalAcceptances   LegalDocumentAcceptance[]
 }
 
 model UserTenant {
-  id        String  @id @default(cuid())
-  userId    String
-  tenantId  String
-  role      Role    @default(PARTICIPANT)
-  user      User    @relation(fields: [userId], references: [id])
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  id       String @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role   @default(PARTICIPANT)
+  user     User   @relation(fields: [userId], references: [id])
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   @@unique([userId, tenantId])
 }
 
@@ -103,52 +106,55 @@ model Category {
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   questions Question[]
   createdAt DateTime   @default(now())
+
   @@unique([tenantId, name])
 }
 
 // Question bank
 model Question {
-  id              String     @id @default(cuid())
+  id              String               @id @default(cuid())
   tenantId        String
   categoryId      String
-  prompt          String     @db.Text
+  prompt          String               @db.Text
   correctAnswer   String
-  wrongAnswers    Json       // Array of wrong answer strings
-  difficulty      Difficulty @default(MEDIUM)
-  points          Int        @default(10)
-  timeLimit       Int        @default(30) // seconds
-  explanation     String?    @db.Text
-  isActive        Boolean    @default(true)
+  wrongAnswers    Json // Array of wrong answer strings
+  difficulty      Difficulty           @default(MEDIUM)
+  points          Int                  @default(10)
+  timeLimit       Int                  @default(30) // seconds
+  explanation     String?              @db.Text
+  isActive        Boolean              @default(true)
   createdBy       String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  tenant          Tenant     @relation(fields: [tenantId], references: [id])
-  category        Category   @relation(fields: [categoryId], references: [id])
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  category        Category             @relation(fields: [categoryId], references: [id])
   tournaments     TournamentQuestion[]
   practiceAnswers PracticeAnswer[]
+
   @@index([tenantId, categoryId])
   @@index([difficulty])
 }
 
 // Tournament
 model Tournament {
-  id                String              @id @default(cuid())
-  tenantId          String
-  name              String
-  description       String?             @db.Text
-  entryFee          Float               @default(0)
-  prizePool         Float               @default(0)
-  maxParticipants   Int                 @default(50)
-  status            TournamentStatus    @default(DRAFT)
-  startDate         DateTime
-  endDate           DateTime
-  createdBy         String?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  tenant            Tenant              @relation(fields: [tenantId], references: [id])
-  questions         TournamentQuestion[]
-  entries           TournamentEntry[]
-  matches           Match[]
+  id              String               @id @default(cuid())
+  tenantId        String
+  name            String
+  description     String?              @db.Text
+  entryFee        Float                @default(0)
+  prizePool       Float                @default(0)
+  maxParticipants Int                  @default(50)
+  status          TournamentStatus     @default(DRAFT)
+  startDate       DateTime
+  endDate         DateTime
+  createdBy       String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  questions       TournamentQuestion[]
+  entries         TournamentEntry[]
+  matches         Match[]
+
   @@index([tenantId, status])
   @@index([startDate, endDate])
 }
@@ -161,6 +167,7 @@ model TournamentQuestion {
   orderIndex   Int        @default(0)
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   question     Question   @relation(fields: [questionId], references: [id])
+
   @@unique([tournamentId, questionId])
   @@index([tournamentId, orderIndex])
 }
@@ -174,6 +181,7 @@ model TournamentEntry {
   enteredAt    DateTime   @default(now())
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id])
+
   @@unique([tournamentId, userId])
   @@index([tournamentId])
 }
@@ -189,6 +197,7 @@ model Match {
   createdAt    DateTime           @default(now())
   tournament   Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   participants MatchParticipant[]
+
   @@index([tournamentId, roundNumber])
 }
 
@@ -202,41 +211,44 @@ model MatchParticipant {
   createdAt DateTime @default(now())
   match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
+
   @@unique([matchId, userId])
   @@index([matchId, score])
 }
 
 // Practice mode progress
 model PracticeProgress {
-  id            String   @id @default(cuid())
-  userId        String
-  categoryId    String?
-  totalXp       Int      @default(0)
-  currentLevel  Int      @default(1)
-  questionsAnswered Int  @default(0)
-  correctAnswers    Int  @default(0)
-  currentStreak     Int  @default(0)
-  longestStreak     Int  @default(0)
+  id                String           @id @default(cuid())
+  userId            String
+  categoryId        String?
+  totalXp           Int              @default(0)
+  currentLevel      Int              @default(1)
+  questionsAnswered Int              @default(0)
+  correctAnswers    Int              @default(0)
+  currentStreak     Int              @default(0)
+  longestStreak     Int              @default(0)
   lastPracticeAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id])
-  answers       PracticeAnswer[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation(fields: [userId], references: [id])
+  answers           PracticeAnswer[]
+
   @@unique([userId, categoryId])
   @@index([userId])
 }
 
 // Practice answer records
 model PracticeAnswer {
-  id          String           @id @default(cuid())
-  progressId  String
-  questionId  String
-  isCorrect   Boolean
-  timeSpent   Int              // seconds
-  xpEarned    Int              @default(0)
-  answeredAt  DateTime         @default(now())
-  progress    PracticeProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
-  question    Question         @relation(fields: [questionId], references: [id])
+  id         String           @id @default(cuid())
+  progressId String
+  questionId String
+  isCorrect  Boolean
+  timeSpent  Int // seconds
+  xpEarned   Int              @default(0)
+  answeredAt DateTime         @default(now())
+  progress   PracticeProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  question   Question         @relation(fields: [questionId], references: [id])
+
   @@index([progressId, answeredAt])
 }
 
@@ -252,69 +264,73 @@ model Badge {
 
 // User badges (earned)
 model UserBadge {
-  id        String   @id @default(cuid())
-  userId    String
-  badgeId   String
-  earnedAt  DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  badge     Badge    @relation(fields: [badgeId], references: [id])
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id])
+  badge    Badge    @relation(fields: [badgeId], references: [id])
+
   @@unique([userId, badgeId])
   @@index([userId])
 }
 
 // Marketing content management
 model MarketingContent {
-  id            String   @id @default(cuid())
-  contentJson   String   @db.Text  // Stores full MarketingContent JSON
-  version       Int      @default(1)
-  isActive      Boolean  @default(true)
-  updatedBy     String   // User ID who made the update
-  updatedByEmail String  // Email for audit trail
-  changeNotes   String?  // Optional notes about the change
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  auditLogs     MarketingContentAuditLog[]
+  id             String                     @id @default(cuid())
+  contentJson    String                     @db.Text // Stores full MarketingContent JSON
+  version        Int                        @default(1)
+  isActive       Boolean                    @default(true)
+  updatedBy      String // User ID who made the update
+  updatedByEmail String // Email for audit trail
+  changeNotes    String? // Optional notes about the change
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  auditLogs      MarketingContentAuditLog[]
+
   @@index([isActive, version])
   @@index([createdAt])
 }
 
 // Marketing content audit log
 model MarketingContentAuditLog {
-  id                  String            @id @default(cuid())
-  marketingContentId  String
-  action              String            // create, update, rollback
-  changes             String            @db.Text
-  userId              String
-  userEmail           String
-  previousVersion     Int?
-  newVersion          Int
-  createdAt           DateTime          @default(now())
-  marketingContent    MarketingContent  @relation(fields: [marketingContentId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(cuid())
+  marketingContentId String
+  action             String // create, update, rollback
+  changes            String           @db.Text
+  userId             String
+  userEmail          String
+  previousVersion    Int?
+  newVersion         Int
+  createdAt          DateTime         @default(now())
+  marketingContent   MarketingContent @relation(fields: [marketingContentId], references: [id], onDelete: Cascade)
+
   @@index([marketingContentId])
   @@index([createdAt])
 }
 
 // Media library for marketing content
 model MediaAsset {
-  id          String   @id @default(cuid())
-  filename    String
-  originalName String
-  mimeType    String
-  size        Int      // bytes
-  width       Int?
-  height      Int?
-  url         String   // Full URL to the asset
-  thumbnailUrl String? // Optimized thumbnail
-  storageKey  String   // S3/Cloud storage key
-  category    String   // avatar, feature-icon, hero-bg, blog-image, etc.
-  altText     String?
-  uploadedBy  String   // User ID
+  id              String   @id @default(cuid())
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int // bytes
+  width           Int?
+  height          Int?
+  url             String // Full URL to the asset
+  thumbnailUrl    String? // Optimized thumbnail
+  storageKey      String // S3/Cloud storage key
+  category        String // avatar, feature-icon, hero-bg, blog-image, etc.
+  altText         String?
+  uploadedBy      String // User ID
   uploadedByEmail String
-  tenantId    String?  // Optional: for multi-tenant support
-  usageCount  Int      @default(0)
-  tags        String[] // Searchable tags
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tenantId        String? // Optional: for multi-tenant support
+  usageCount      Int      @default(0)
+  tags            String[] // Searchable tags
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
   @@index([category])
   @@index([uploadedBy])
   @@index([tenantId])
@@ -323,39 +339,39 @@ model MediaAsset {
 
 // Marketing analytics tracking
 model AnalyticsEvent {
-  id            String   @id @default(cuid())
-  eventType     String   // cta_click, page_view, form_submit, video_play, etc.
-  eventCategory String   // marketing, engagement, conversion
-  eventLabel    String?  // Specific label (e.g., "Get Started CTA")
-  eventValue    Float?   // Optional numeric value
-  
+  id            String  @id @default(cuid())
+  eventType     String // cta_click, page_view, form_submit, video_play, etc.
+  eventCategory String // marketing, engagement, conversion
+  eventLabel    String? // Specific label (e.g., "Get Started CTA")
+  eventValue    Float? // Optional numeric value
+
   // Session information
-  sessionId     String?  // Browser session ID
-  userId        String?  // If user is logged in
-  visitorId     String?  // Anonymous visitor ID (cookie)
-  
+  sessionId String? // Browser session ID
+  userId    String? // If user is logged in
+  visitorId String? // Anonymous visitor ID (cookie)
+
   // Page context
-  pageUrl       String
-  pageTitle     String?
-  referrer      String?
-  
+  pageUrl   String
+  pageTitle String?
+  referrer  String?
+
   // Device/Browser information
-  userAgent     String?
-  deviceType    String?  // desktop, tablet, mobile
-  browser       String?
-  operatingSystem String?
+  userAgent        String?
+  deviceType       String? // desktop, tablet, mobile
+  browser          String?
+  operatingSystem  String?
   screenResolution String?
-  
+
   // Geographic information
-  country       String?
-  city          String?
-  ipAddress     String?
-  
+  country   String?
+  city      String?
+  ipAddress String?
+
   // Metadata
-  metadata      Json?    // Additional custom data
-  
-  createdAt     DateTime @default(now())
-  
+  metadata Json? // Additional custom data
+
+  createdAt DateTime @default(now())
+
   @@index([eventType, eventCategory])
   @@index([sessionId])
   @@index([userId])
@@ -365,29 +381,29 @@ model AnalyticsEvent {
 
 // Conversion tracking
 model Conversion {
-  id                String   @id @default(cuid())
-  conversionType    String   // signup, trial_start, subscription, contact_form
-  conversionValue   Float?   // Monetary value or points
-  
+  id              String @id @default(cuid())
+  conversionType  String // signup, trial_start, subscription, contact_form
+  conversionValue Float? // Monetary value or points
+
   // User identification
-  userId            String?
-  visitorId         String?
-  sessionId         String?
-  
+  userId    String?
+  visitorId String?
+  sessionId String?
+
   // Attribution
-  source            String?  // google, facebook, direct, etc.
-  medium            String?  // cpc, organic, referral, email
-  campaign          String?  // Campaign name
-  
+  source   String? // google, facebook, direct, etc.
+  medium   String? // cpc, organic, referral, email
+  campaign String? // Campaign name
+
   // Funnel tracking
-  funnelStep        Int?     // Which step in the funnel
-  funnelStage       String?  // awareness, consideration, decision
-  
+  funnelStep  Int? // Which step in the funnel
+  funnelStage String? // awareness, consideration, decision
+
   // Metadata
-  metadata          Json?
-  
-  createdAt         DateTime @default(now())
-  
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
   @@index([conversionType])
   @@index([userId])
   @@index([visitorId])
@@ -398,60 +414,60 @@ model Conversion {
 
 // A/B test experiments
 model ABTest {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
   // Test configuration
-  variantA        Json     // Control variant configuration
-  variantB        Json     // Test variant configuration
-  
+  variantA Json // Control variant configuration
+  variantB Json // Test variant configuration
+
   // Traffic split (percentage)
-  trafficSplitA   Int      @default(50)  // Percentage for variant A
-  trafficSplitB   Int      @default(50)  // Percentage for variant B
-  
+  trafficSplitA Int @default(50) // Percentage for variant A
+  trafficSplitB Int @default(50) // Percentage for variant B
+
   // Test status
-  status          String   // draft, active, paused, completed
-  
+  status String // draft, active, paused, completed
+
   // Goals
-  primaryGoal     String   // Which metric to optimize (cta_clicks, signups, etc.)
-  
+  primaryGoal String // Which metric to optimize (cta_clicks, signups, etc.)
+
   // Results
-  totalVisitors   Int      @default(0)
-  visitorsA       Int      @default(0)
-  visitorsB       Int      @default(0)
-  conversionsA    Int      @default(0)
-  conversionsB    Int      @default(0)
-  
+  totalVisitors Int @default(0)
+  visitorsA     Int @default(0)
+  visitorsB     Int @default(0)
+  conversionsA  Int @default(0)
+  conversionsB  Int @default(0)
+
   // Statistical significance
-  confidenceLevel Float?   // 0-100 percentage
-  winner          String?  // A, B, or null if inconclusive
-  
+  confidenceLevel Float? // 0-100 percentage
+  winner          String? // A, B, or null if inconclusive
+
   // Dates
-  startDate       DateTime?
-  endDate         DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
   // Relations
-  variants        ABTestVariant[]
-  
+  variants ABTestVariant[]
+
   @@index([status])
   @@index([createdAt])
 }
 
 // Individual visitor participation in A/B tests
 model ABTestVariant {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   testId      String
   visitorId   String
-  variant     String   // A or B
-  assigned    DateTime @default(now())
-  converted   Boolean  @default(false)
+  variant     String // A or B
+  assigned    DateTime  @default(now())
+  converted   Boolean   @default(false)
   convertedAt DateTime?
-  
-  test        ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
-  
+
+  test ABTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+
   @@unique([testId, visitorId])
   @@index([testId, variant])
   @@index([visitorId])
@@ -459,31 +475,31 @@ model ABTestVariant {
 
 // Aggregated analytics metrics (for performance)
 model AnalyticsMetric {
-  id              String   @id @default(cuid())
-  metricType      String   // daily_pageviews, daily_conversions, weekly_signups, etc.
-  metricDate      DateTime // Date for the metric
-  
+  id         String   @id @default(cuid())
+  metricType String // daily_pageviews, daily_conversions, weekly_signups, etc.
+  metricDate DateTime // Date for the metric
+
   // Dimensions
-  dimension1      String?  // e.g., page_url, campaign_name
-  dimension2      String?  // e.g., device_type, country
-  
+  dimension1 String? // e.g., page_url, campaign_name
+  dimension2 String? // e.g., device_type, country
+
   // Metrics
-  totalCount      Int      @default(0)
-  uniqueCount     Int      @default(0)
-  totalValue      Float?
-  averageValue    Float?
-  
+  totalCount   Int    @default(0)
+  uniqueCount  Int    @default(0)
+  totalValue   Float?
+  averageValue Float?
+
   // Calculated fields
-  conversionRate  Float?
-  bounceRate      Float?
-  avgTimeOnPage   Float?   // seconds
-  
+  conversionRate Float?
+  bounceRate     Float?
+  avgTimeOnPage  Float? // seconds
+
   // Metadata
-  metadata        Json?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([metricType, metricDate, dimension1, dimension2])
   @@index([metricType, metricDate])
   @@index([metricDate])
@@ -491,32 +507,32 @@ model AnalyticsMetric {
 
 // Audit log for enterprise compliance (SOC 2, GDPR)
 model AuditLog {
-  id          String   @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Who performed the action
-  userId      String?  // Null for system actions or failed logins
-  tenantId    String?  // Null for super_admin operations
-  
+  userId   String? // Null for system actions or failed logins
+  tenantId String? // Null for super_admin operations
+
   // What action was performed
-  action      String   // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
-  resource    String   // USER, TOURNAMENT, QUESTION, etc.
-  resourceId  String?  // ID of the affected resource
-  
+  action     String // LOGIN, LOGOUT, CREATE, UPDATE, DELETE, etc.
+  resource   String // USER, TOURNAMENT, QUESTION, etc.
+  resourceId String? // ID of the affected resource
+
   // Details
-  changes     Json?    // Before/after snapshots for data mutations
-  metadata    Json?    // Additional context (e.g., IP, user agent, reason)
-  
+  changes  Json? // Before/after snapshots for data mutations
+  metadata Json? // Additional context (e.g., IP, user agent, reason)
+
   // Result
-  success     Boolean  @default(true)
-  errorMsg    String?  // Error message if action failed
-  
+  success  Boolean @default(true)
+  errorMsg String? // Error message if action failed
+
   // IP tracking
-  ipAddress   String?
-  userAgent   String?
-  
+  ipAddress String?
+  userAgent String?
+
   // Timestamp
-  createdAt   DateTime @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Indexes for compliance queries
   @@index([tenantId, createdAt])
   @@index([userId, createdAt])
@@ -531,10 +547,10 @@ model AuditLog {
 // ============================================
 
 enum ChannelType {
-  SUPPORT              // Participant → Tenant Support
-  TOURNAMENT           // Participants ↔ Participants (tournament-specific)
-  TEAM                 // Tenant Admin ↔ Management Team
-  PLATFORM_SUPPORT     // Tenant Admin → Super Admin
+  SUPPORT // Participant → Tenant Support
+  TOURNAMENT // Participants ↔ Participants (tournament-specific)
+  TEAM // Tenant Admin ↔ Management Team
+  PLATFORM_SUPPORT // Tenant Admin → Super Admin
 }
 
 enum ChannelStatus {
@@ -553,8 +569,8 @@ enum SenderType {
 }
 
 enum ParticipantRole {
-  ADMIN    // Can close channel, assign, escalate
-  MEMBER   // Regular participant
+  ADMIN // Can close channel, assign, escalate
+  MEMBER // Regular participant
   OBSERVER // Read-only
 }
 
@@ -586,9 +602,9 @@ enum TicketStatus {
 }
 
 enum ApiKeyType {
-  PUBLIC   // Frontend-safe, read-only
-  SECRET   // Backend only, full access
-  TEST     // Sandbox environment
+  PUBLIC // Frontend-safe, read-only
+  SECRET // Backend only, full access
+  TEST // Sandbox environment
 }
 
 enum ApiKeyStatus {
@@ -629,29 +645,38 @@ enum WebhookDeliveryStatus {
   RETRYING
 }
 
+enum LegalDocumentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  COOKIE_POLICY
+  ACCEPTABLE_USE_POLICY
+  DATA_PROCESSING_AGREEMENT
+  SERVICE_LEVEL_AGREEMENT
+}
+
 // Chat channels (conversations with tenant isolation)
 model ChatChannel {
   id          String        @id @default(cuid())
-  tenantId    String        // CRITICAL: Tenant isolation
+  tenantId    String // CRITICAL: Tenant isolation
   type        ChannelType
-  contextId   String?       // Tournament ID, Ticket ID, etc.
+  contextId   String? // Tournament ID, Ticket ID, etc.
   status      ChannelStatus @default(ACTIVE)
-  createdBy   String        // User ID who created channel
-  assignedTo  String?       // Team member assigned (if applicable)
-  escalatedTo String?       // Super admin ID (if escalated)
-  metadata    Json?         // Custom data (priority, tags, etc.)
+  createdBy   String // User ID who created channel
+  assignedTo  String? // Team member assigned (if applicable)
+  escalatedTo String? // Super admin ID (if escalated)
+  metadata    Json? // Custom data (priority, tags, etc.)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  
-  messages    ChatMessage[]
+
+  messages     ChatMessage[]
   participants ChatParticipant[]
-  ticket      SupportTicket?
-  
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  creator     User          @relation("ChannelCreator", fields: [createdBy], references: [id])
-  assignee    User?         @relation("ChannelAssignee", fields: [assignedTo], references: [id])
-  escalatedUser User?       @relation("ChannelEscalated", fields: [escalatedTo], references: [id])
-  
+  ticket       SupportTicket?
+
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator       User   @relation("ChannelCreator", fields: [createdBy], references: [id])
+  assignee      User?  @relation("ChannelAssignee", fields: [assignedTo], references: [id])
+  escalatedUser User?  @relation("ChannelEscalated", fields: [escalatedTo], references: [id])
+
   @@index([tenantId, status])
   @@index([assignedTo])
   @@index([type, tenantId])
@@ -661,38 +686,38 @@ model ChatChannel {
 
 // Individual chat messages
 model ChatMessage {
-  id          String      @id @default(cuid())
-  channelId   String
-  senderId    String
-  senderType  SenderType
-  content     String      @db.Text
-  metadata    Json?       // Attachments, reactions, mentions
-  readBy      String[]    // User IDs who read message
-  editedAt    DateTime?
-  deletedAt   DateTime?
-  createdAt   DateTime    @default(now())
-  
-  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  sender      User        @relation(fields: [senderId], references: [id])
-  
+  id         String     @id @default(cuid())
+  channelId  String
+  senderId   String
+  senderType SenderType
+  content    String     @db.Text
+  metadata   Json? // Attachments, reactions, mentions
+  readBy     String[] // User IDs who read message
+  editedAt   DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  sender  User        @relation(fields: [senderId], references: [id])
+
   @@index([channelId, createdAt])
   @@index([senderId])
 }
 
 // Channel participants (who has access)
 model ChatParticipant {
-  id          String           @id @default(cuid())
-  channelId   String
-  userId      String
-  userType    SenderType
-  role        ParticipantRole  @default(MEMBER)
-  joinedAt    DateTime         @default(now())
-  lastReadAt  DateTime?
-  leftAt      DateTime?
-  
-  channel     ChatChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id         String          @id @default(cuid())
+  channelId  String
+  userId     String
+  userType   SenderType
+  role       ParticipantRole @default(MEMBER)
+  joinedAt   DateTime        @default(now())
+  lastReadAt DateTime?
+  leftAt     DateTime?
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([channelId, userId])
   @@index([userId])
   @@index([channelId, leftAt])
@@ -702,27 +727,27 @@ model ChatParticipant {
 model SupportTicket {
   id          String         @id @default(cuid())
   channelId   String         @unique
-  tenantId    String         // Tenant isolation
+  tenantId    String // Tenant isolation
   subject     String
   priority    TicketPriority @default(MEDIUM)
   category    TicketCategory
   status      TicketStatus   @default(OPEN)
-  createdBy   String         // User who created ticket
-  assignedTo  String?        // Team member assigned
-  escalatedTo String?        // Super admin (if escalated)
+  createdBy   String // User who created ticket
+  assignedTo  String? // Team member assigned
+  escalatedTo String? // Super admin (if escalated)
   resolvedAt  DateTime?
   resolvedBy  String?
   resolution  String?        @db.Text
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  
-  channel     ChatChannel    @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  creator     User           @relation("TicketCreator", fields: [createdBy], references: [id])
-  assignee    User?          @relation("TicketAssignee", fields: [assignedTo], references: [id])
-  escalatedUser User?        @relation("TicketEscalated", fields: [escalatedTo], references: [id])
-  resolver    User?          @relation("TicketResolver", fields: [resolvedBy], references: [id])
-  
+
+  channel       ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  tenant        Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creator       User        @relation("TicketCreator", fields: [createdBy], references: [id])
+  assignee      User?       @relation("TicketAssignee", fields: [assignedTo], references: [id])
+  escalatedUser User?       @relation("TicketEscalated", fields: [escalatedTo], references: [id])
+  resolver      User?       @relation("TicketResolver", fields: [resolvedBy], references: [id])
+
   @@index([tenantId, status])
   @@index([assignedTo])
   @@index([priority, status])
@@ -732,30 +757,30 @@ model SupportTicket {
 
 // API Key Management
 model ApiKey {
-  id            String        @id @default(cuid())
+  id            String       @id @default(cuid())
   tenantId      String
-  name          String        // "Production Mobile App", "Integration Server"
-  description   String?       @db.Text
-  keyHash       String        @unique  // Hashed API key (bcrypt)
-  keyPrefix     String        // First 8 chars for identification (api_live_sk_abc123)
-  type          ApiKeyType    @default(SECRET)
-  status        ApiKeyStatus  @default(ACTIVE)
-  scopes        String[]      // ['users:read', 'tournaments:write', etc.]
-  rateLimit     Int           @default(60)  // Requests per minute
-  ipWhitelist   String[]      // Allowed IP addresses (empty = all)
+  name          String // "Production Mobile App", "Integration Server"
+  description   String?      @db.Text
+  keyHash       String       @unique // Hashed API key (bcrypt)
+  keyPrefix     String // First 8 chars for identification (api_live_sk_abc123)
+  type          ApiKeyType   @default(SECRET)
+  status        ApiKeyStatus @default(ACTIVE)
+  scopes        String[] // ['users:read', 'tournaments:write', etc.]
+  rateLimit     Int          @default(60) // Requests per minute
+  ipWhitelist   String[] // Allowed IP addresses (empty = all)
   lastUsedAt    DateTime?
   lastUsedIp    String?
   expiresAt     DateTime?
-  createdBy     String        // User ID who created key
-  revokedBy     String?       // User ID who revoked key
+  createdBy     String // User ID who created key
+  revokedBy     String? // User ID who revoked key
   revokedAt     DateTime?
-  revokedReason String?       @db.Text
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  logs          ApiLog[]
-  
+  revokedReason String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  tenant Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  logs   ApiLog[]
+
   @@index([tenantId, status])
   @@index([keyHash])
   @@index([keyPrefix])
@@ -765,23 +790,23 @@ model ApiKey {
 
 // API Usage Logs
 model ApiLog {
-  id              String    @id @default(cuid())
-  tenantId        String
-  apiKeyId        String?
-  endpoint        String
-  method          String
-  statusCode      Int
-  responseTime    Int       // milliseconds
-  requestSize     Int?      // bytes
-  responseSize    Int?      // bytes
-  ipAddress       String
-  userAgent       String?   @db.Text
-  errorMessage    String?   @db.Text
-  metadata        Json?     // Request params, body (sanitized)
-  createdAt       DateTime  @default(now())
-  
-  apiKey          ApiKey?   @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
-  
+  id           String   @id @default(cuid())
+  tenantId     String
+  apiKeyId     String?
+  endpoint     String
+  method       String
+  statusCode   Int
+  responseTime Int // milliseconds
+  requestSize  Int? // bytes
+  responseSize Int? // bytes
+  ipAddress    String
+  userAgent    String?  @db.Text
+  errorMessage String?  @db.Text
+  metadata     Json? // Request params, body (sanitized)
+  createdAt    DateTime @default(now())
+
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
   @@index([tenantId, createdAt])
   @@index([apiKeyId, createdAt])
   @@index([endpoint])
@@ -791,26 +816,26 @@ model ApiLog {
 
 // Webhook Configuration
 model Webhook {
-  id              String          @id @default(cuid())
+  id              String         @id @default(cuid())
   tenantId        String
   url             String
-  description     String?         @db.Text
+  description     String?        @db.Text
   events          WebhookEvent[]
-  secret          String          // HMAC signing secret (encrypted)
-  status          WebhookStatus   @default(ACTIVE)
-  retryAttempts   Int             @default(3)
-  timeout         Int             @default(30000)  // milliseconds
+  secret          String // HMAC signing secret (encrypted)
+  status          WebhookStatus  @default(ACTIVE)
+  retryAttempts   Int            @default(3)
+  timeout         Int            @default(30000) // milliseconds
   lastTriggeredAt DateTime?
   lastSuccessAt   DateTime?
   lastFailureAt   DateTime?
-  failureCount    Int             @default(0)
+  failureCount    Int            @default(0)
   createdBy       String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
-  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  deliveries      WebhookDelivery[]
-  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
   @@index([tenantId, status])
   @@index([status])
   @@map("webhooks")
@@ -818,23 +843,23 @@ model Webhook {
 
 // Webhook Delivery Logs
 model WebhookDelivery {
-  id              String                  @id @default(cuid())
-  webhookId       String
-  eventType       WebhookEvent
-  eventId         String                  // Unique event identifier for idempotency
-  payload         Json
-  status          WebhookDeliveryStatus   @default(PENDING)
-  statusCode      Int?
-  responseBody    String?                 @db.Text
-  errorMessage    String?                 @db.Text
-  attempts        Int                     @default(0)
-  maxAttempts     Int                     @default(3)
-  nextRetryAt     DateTime?
-  deliveredAt     DateTime?
-  createdAt       DateTime                @default(now())
-  
-  webhook         Webhook                 @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-  
+  id           String                @id @default(cuid())
+  webhookId    String
+  eventType    WebhookEvent
+  eventId      String // Unique event identifier for idempotency
+  payload      Json
+  status       WebhookDeliveryStatus @default(PENDING)
+  statusCode   Int?
+  responseBody String?               @db.Text
+  errorMessage String?               @db.Text
+  attempts     Int                   @default(0)
+  maxAttempts  Int                   @default(3)
+  nextRetryAt  DateTime?
+  deliveredAt  DateTime?
+  createdAt    DateTime              @default(now())
+
+  webhook Webhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
   @@index([webhookId, createdAt])
   @@index([status, nextRetryAt])
   @@index([eventId])
@@ -842,3 +867,45 @@ model WebhookDelivery {
   @@map("webhook_deliveries")
 }
 
+// Legal Documents (Terms of Service, Privacy Policy, etc.)
+model LegalDocument {
+  id                 String            @id @default(cuid())
+  tenantId           String
+  type               LegalDocumentType
+  title              String
+  content            String            @db.Text // HTML or Markdown content
+  version            Int               @default(1)
+  isActive           Boolean           @default(false) // Only one active version per type
+  requiresAcceptance Boolean           @default(true) // Require users to accept
+  effectiveDate      DateTime // When this version takes effect
+  createdBy          String // User ID who created this version
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  tenant      Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  acceptances LegalDocumentAcceptance[]
+
+  @@unique([tenantId, type, version])
+  @@index([tenantId, type, isActive])
+  @@index([tenantId, type, effectiveDate])
+  @@map("legal_documents")
+}
+
+// User Acceptance of Legal Documents
+model LegalDocumentAcceptance {
+  id              String   @id @default(cuid())
+  userId          String
+  documentId      String
+  documentVersion Int
+  ipAddress       String? // IP address at time of acceptance
+  userAgent       String?  @db.Text
+  acceptedAt      DateTime @default(now())
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document LegalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([userId, acceptedAt])
+  @@index([documentId, acceptedAt])
+  @@map("legal_document_acceptances")
+}
