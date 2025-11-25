@@ -45,20 +45,21 @@ model Plan {
 }
 
 model Tenant {
-  id             String          @id @default(cuid())
-  name           String
-  planId         String?
-  plan           Plan?           @relation(fields: [planId], references: [id])
-  createdAt      DateTime        @default(now())
-  users          UserTenant[]
-  tournaments    Tournament[]
-  questions      Question[]
-  categories     Category[]
-  chatChannels   ChatChannel[]
-  supportTickets SupportTicket[]
-  apiKeys        ApiKey[]
-  webhooks       Webhook[]
-  legalDocuments LegalDocument[]
+  id                  String               @id @default(cuid())
+  name                String
+  planId              String?
+  plan                Plan?                @relation(fields: [planId], references: [id])
+  createdAt           DateTime             @default(now())
+  users               UserTenant[]
+  tournaments         Tournament[]
+  questions           Question[]
+  categories          Category[]
+  chatChannels        ChatChannel[]
+  supportTickets      SupportTicket[]
+  apiKeys             ApiKey[]
+  webhooks            Webhook[]
+  legalDocuments      LegalDocument[]
+  landingPageContents LandingPageContent[]
 }
 
 model User {
@@ -654,6 +655,14 @@ enum LegalDocumentType {
   SERVICE_LEVEL_AGREEMENT
 }
 
+enum LandingPageSection {
+  HERO
+  STATS
+  FEATURES
+  TESTIMONIALS
+  BRANDING
+}
+
 // Chat channels (conversations with tenant isolation)
 model ChatChannel {
   id          String        @id @default(cuid())
@@ -909,3 +918,25 @@ model LegalDocumentAcceptance {
   @@index([documentId, acceptedAt])
   @@map("legal_document_acceptances")
 }
+
+// Landing Page Content Management System
+model LandingPageContent {
+  id            String              @id @default(cuid())
+  tenantId      String
+  section       LandingPageSection
+  content       Json // Flexible JSON structure for different section types
+  version       Int                 @default(1)
+  isActive      Boolean             @default(false) // Only one active version per section
+  effectiveDate DateTime // When this version takes effect
+  createdBy     String // User ID who created this version
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, section, version])
+  @@index([tenantId, section, isActive])
+  @@index([tenantId, section, effectiveDate])
+  @@map("landing_page_contents")
+}
+
