@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, Trophy, BookOpen, ArrowRight, Star, Zap, Award, HelpCircle, LifeBuoy, CheckCircle } from 'lucide-react';
+import { Calendar, Users, Trophy, BookOpen, ArrowRight, Star, Zap, Award, HelpCircle, LifeBuoy, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { Tenant, Tournament, Plan, storage, STORAGE_KEYS, mockTournaments, defaultPlans } from '@/lib/mockData';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AuthSystem } from '@/components/AuthSystem';
 import { TenantAvatar } from '@/components/TenantAvatar';
 import { PrivacyPolicy } from '@/components/PrivacyPolicy';
 import { TermsOfService } from '@/components/TermsOfService';
+import { useLandingPageContent } from '@/hooks/useLandingPageContent';
 
 // Local currency formatter
 const formatCurrency = (amount: number, currency: string = 'USD', locale: string = 'en-US'): string => {
@@ -106,24 +107,18 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
   const [featuredTournament, setFeaturedTournament] = useState<Tournament | null>(null);
   const [tournamentType, setTournamentType] = useState<'upcoming' | 'past' | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [landingContent, setLandingContent] = useState<TenantLandingContent>(defaultLandingContent(tenant.name));
 
-  useEffect(() => {
-    // Load custom landing page content from storage
-    try {
-      const storageKey = `tenant_landing_${tenant.id}`;
-      const savedContent = storage.get(storageKey);
-      
-      if (savedContent) {
-        setLandingContent(savedContent);
-      } else {
-        setLandingContent(defaultLandingContent(tenant.name));
-      }
-    } catch (error) {
-      console.error('Failed to load landing page content:', error);
-      setLandingContent(defaultLandingContent(tenant.name));
-    }
-  }, [tenant.id, tenant.name]);
+  // ✅ NEW: Use Landing Page CMS API instead of localStorage
+  // See: ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md
+  const { content: apiContent, loading: contentLoading, error: contentError } = useLandingPageContent(tenant.id);
+  
+  // Merge API content with defaults for backward compatibility
+  const landingContent: TenantLandingContent = {
+    hero: (apiContent.HERO?.content as TenantLandingContent['hero']) || defaultLandingContent(tenant.name).hero,
+    stats: (apiContent.STATS?.content as TenantLandingContent['stats']) || defaultLandingContent(tenant.name).stats,
+    features: (apiContent.FEATURES?.content as TenantLandingContent['features']) || defaultLandingContent(tenant.name).features,
+    branding: (apiContent.BRANDING?.content as TenantLandingContent['branding']) || defaultLandingContent(tenant.name).branding,
+  };
 
   useEffect(() => {
     // Load tournaments for this tenant
@@ -191,8 +186,34 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
     return { label: 'Active', color: 'bg-purple-500' };
   };
 
+  // Show loading state while fetching content
+  if (contentLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-lg text-gray-600">Loading {tenant.name}'s landing page...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Error Banner */}
+      {contentError && (
+        <div className="bg-red-50 border-b border-red-200 py-3">
+          <div className="container mx-auto px-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-red-800">
+              <AlertCircle className="h-5 w-5" />
+              <span className="text-sm">
+                Failed to load custom content. Showing defaults. Error: {contentError.message}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

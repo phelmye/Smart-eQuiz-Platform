@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { User, Tenant, storage, STORAGE_KEYS } from '@/lib/mockData';
 import { hasPermission } from '@/lib/mockData';
+import { useLandingPageContent, createLandingPageContent, activateLandingPageContent } from '@/hooks/useLandingPageContent';
 
 interface TenantLandingContent {
   hero: {
@@ -134,75 +135,91 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
     );
   }
 
-  const [content, setContent] = useState<TenantLandingContent>(defaultContent);
-  const [loading, setLoading] = useState(true);
+  // ✅ NEW: Use Landing Page CMS API instead of localStorage
+  // See: ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md
+  const { content: apiContent, loading, error, refetch } = useLandingPageContent(tenant.id);
+  
+  // Working copy for editing (merged with defaults)
+  const [content, setContent] = useState<TenantLandingContent>({
+    hero: (apiContent.HERO?.content as TenantLandingContent['hero']) || {
+      ...defaultContent.hero,
+      headline: `Join ${tenant.name}'s Bible Quiz Community`
+    },
+    stats: (apiContent.STATS?.content as TenantLandingContent['stats']) || defaultContent.stats,
+    features: (apiContent.FEATURES?.content as TenantLandingContent['features']) || defaultContent.features,
+    testimonials: (apiContent.TESTIMONIALS?.content as TenantLandingContent['testimonials']) || defaultContent.testimonials,
+    branding: (apiContent.BRANDING?.content as TenantLandingContent['branding']) || defaultContent.branding,
+    metadata: {
+      lastUpdated: new Date().toISOString(),
+      updatedBy: user.name
+    }
+  });
+  
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
 
+  // Update content when API data changes
   useEffect(() => {
-    loadContent();
-    setPreviewUrl(`${window.location.origin}/landing`); // Will show tenant landing page
-  }, [tenant.id]);
-
-  const loadContent = () => {
-    // ⚠️ DEPRECATED: localStorage pattern
-    // TODO: Migrate to Landing Page CMS API (see ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md)
-    // Use: const { content } = useLandingPageContent(tenant.id);
-    try {
-      setLoading(true);
-      const storageKey = `tenant_landing_${tenant.id}`;
-      const savedContent = localStorage.getItem(storageKey);
-      
-      if (savedContent) {
-        setContent(JSON.parse(savedContent));
-      } else {
-        // Initialize with defaults
-        const initialContent = {
-          ...defaultContent,
-          hero: {
-            ...defaultContent.hero,
-            headline: `Join ${tenant.name}'s Bible Quiz Community`
-          },
-          metadata: {
-            lastUpdated: new Date().toISOString(),
-            updatedBy: user.name
-          }
-        };
-        setContent(initialContent);
-        localStorage.setItem(storageKey, JSON.stringify(initialContent));
-      }
-    } catch (error) {
-      showMessage('error', 'Failed to load landing page content');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    // ⚠️ DEPRECATED: localStorage pattern
-    // TODO: Migrate to Landing Page CMS API (see ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md)
-    // Use: await createLandingPageContent(tenant.id, section, content);
-    //      await activateLandingPageContent(tenant.id, contentId);
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      const updatedContent = {
-        ...content,
+    if (!loading && !error) {
+      setContent({
+        hero: (apiContent.HERO?.content as TenantLandingContent['hero']) || {
+          ...defaultContent.hero,
+          headline: `Join ${tenant.name}'s Bible Quiz Community`
+        },
+        stats: (apiContent.STATS?.content as TenantLandingContent['stats']) || defaultContent.stats,
+        features: (apiContent.FEATURES?.content as TenantLandingContent['features']) || defaultContent.features,
+        testimonials: (apiContent.TESTIMONIALS?.content as TenantLandingContent['testimonials']) || defaultContent.testimonials,
+        branding: (apiContent.BRANDING?.content as TenantLandingContent['branding']) || defaultContent.branding,
         metadata: {
           lastUpdated: new Date().toISOString(),
           updatedBy: user.name
         }
-      };
+      });
+    }
+    setPreviewUrl(`${window.location.origin}/landing`);
+  }, [apiContent, loading, error, tenant.id, tenant.name, user.name]);
 
-      const storageKey = `tenant_landing_${tenant.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(updatedContent));
-      setContent(updatedContent);
+  const handleSave = async () => {
+    // ✅ NEW: Use Landing Page CMS API with version control
+    // See: ARCHITECTURE_DECISION_RECORD_LANDING_PAGE_CMS.md
+    try {
+      setSaving(true);
+      setMessage(null);
 
-      showMessage('success', 'Landing page content saved successfully!');
+      // Create new versions for each section
+      const sections = [
+        { section: 'HERO', content: content.hero },
+        { section: 'STATS', content: content.stats },
+        { section: 'FEATURES', content: content.features },
+        { section: 'TESTIMONIALS', content: content.testimonials },
+        { section: 'BRANDING', content: content.branding }
+      ];
+
+      // Create all content versions
+      const createdIds: string[] = [];
+      for (const { section, content: sectionContent } of sections) {
+        const response = await createLandingPageContent(
+          tenant.id,
+          section,
+          sectionContent,
+          user.id
+        );
+        createdIds.push(response.id);
+      }
+
+      // Activate all new versions (publish)
+      for (const id of createdIds) {
+        await activateLandingPageContent(tenant.id, id);
+      }
+
+      // Refresh data from API
+      await refetch();
+
+      showMessage('success', 'Landing page content published successfully!');
     } catch (error) {
-      showMessage('error', 'Failed to save landing page content');
+      console.error('Failed to save landing page:', error);
+      showMessage('error', `Failed to save landing page content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -262,6 +279,26 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
         <CardContent className="p-8 text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-3 text-gray-400" />
           <p className="text-gray-500">Loading landing page settings...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="text-center space-y-4">
+            <AlertCircle className="h-12 w-12 mx-auto text-red-500" />
+            <div>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Settings</h3>
+              <p className="text-gray-600 mb-4">{error.message}</p>
+              <Button onClick={() => refetch()} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
