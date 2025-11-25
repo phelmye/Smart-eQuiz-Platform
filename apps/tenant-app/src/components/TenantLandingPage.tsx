@@ -7,6 +7,8 @@ import { Tenant, Tournament, Plan, storage, STORAGE_KEYS, mockTournaments, defau
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AuthSystem } from '@/components/AuthSystem';
 import { TenantAvatar } from '@/components/TenantAvatar';
+import { PrivacyPolicy } from '@/components/PrivacyPolicy';
+import { TermsOfService } from '@/components/TermsOfService';
 
 // Local currency formatter
 const formatCurrency = (amount: number, currency: string = 'USD', locale: string = 'en-US'): string => {
@@ -99,6 +101,8 @@ interface TenantLandingPageProps {
 export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, onAuthSuccess }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
+  const [showTermsOfService, setShowTermsOfService] = useState(false);
   const [featuredTournament, setFeaturedTournament] = useState<Tournament | null>(null);
   const [tournamentType, setTournamentType] = useState<'upcoming' | 'past' | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -620,14 +624,14 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
               <h4 className="text-white font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="http://localhost:3000/terms" className="text-gray-400 hover:text-white transition-colors">
+                  <button onClick={() => setShowTermsOfService(true)} className="text-gray-400 hover:text-white transition-colors">
                     Terms of Service
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="http://localhost:3000/privacy" className="text-gray-400 hover:text-white transition-colors">
+                  <button onClick={() => setShowPrivacyPolicy(true)} className="text-gray-400 hover:text-white transition-colors">
                     Privacy Policy
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -722,6 +726,15 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
           />
         </DialogContent>
       </Dialog>
+
+      {/* Tenant-Specific Legal Pages */}
+      {showPrivacyPolicy && (
+        <PrivacyPolicy onBack={() => setShowPrivacyPolicy(false)} />
+      )}
+
+      {showTermsOfService && (
+        <TermsOfService onBack={() => setShowTermsOfService(false)} />
+      )}
     </div>
   );
 };
