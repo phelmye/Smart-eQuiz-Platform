@@ -1,5 +1,20 @@
 # Smart eQuiz Platform - AI Agent Instructions
 
+## 🚨 CRITICAL: Read AUTHENTICATION_FLOW.md Before Auth/Navigation Changes!
+
+**STOP and read `AUTHENTICATION_FLOW.md` if working on:**
+- Login/signup flows
+- Navigation between apps
+- Tenant detection
+- Any linking from marketing site
+
+**Quick Architecture Rules:**
+1. ❌ NEVER link marketing site directly to tenant app
+2. ✅ ALWAYS use `/platform-login` for "Sign In" from marketing
+3. ❌ NEVER hardcode tenant data in tenant app (`mockTenant = { ... }`)
+4. ✅ ALWAYS detect tenant dynamically from URL
+5. ❌ NEVER break tenant isolation (all queries need `tenant_id` filter)
+
 ## Project Overview
 
 Multi-tenant SaaS platform for Bible quiz competitions with **three separate applications** and shared packages in a pnpm monorepo.
