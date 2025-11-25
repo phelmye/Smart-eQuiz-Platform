@@ -20,8 +20,25 @@ import {
   Search,
   Filter,
   Eye,
-  Settings
+  Settings,
+  Ban,
+  CheckCircle,
+  HardDrive,
+  Activity,
+  AlertCircle
 } from 'lucide-react';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Tenant, 
   User, 
@@ -29,7 +46,8 @@ import {
   STORAGE_KEYS, 
   storage, 
   getUsersByTenant,
-  formatCurrency
+  formatCurrency,
+  logAuditEvent
 } from '@/lib/mockData';
 
 interface TenantManagementForSuperAdminProps {
@@ -42,6 +60,10 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
   const [plans, setPlans] = useState<Plan[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended'>('all');
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [suspensionReason, setSuspensionReason] = useState('');
 
   useEffect(() => {
     loadTenants();
@@ -68,7 +90,7 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
 
   const getTenantAdmins = (tenantId: string) => {
     const tenantUsers = getUsersByTenant(tenantId);
-    return tenantUsers.filter(user => user.role === 'org_admin');
+    return tenantUsers.filter(user => user.role?.toLowerCase() === 'org_admin');
   };
 
   const handleLoginAs = (tenant: Tenant) => {
@@ -93,12 +115,98 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
     console.log(`🔄 Super admin logged in as ${primaryAdmin.name} (${tenant.name})`);
   };
 
+  const handleSuspendTenant = () => {
+    if (!selectedTenant || !suspensionReason.trim()) {
+      alert('Please provide a reason for suspension');
+      return;
+    }
+
+    const updatedTenants = tenants.map(t => 
+      t.id === selectedTenant.id 
+        ? {
+            ...t,
+            status: 'suspended' as const,
+            suspendedAt: new Date().toISOString(),
+            suspendedBy: user.id,
+            suspensionReason: suspensionReason
+          }
+        : t
+    );
+
+    storage.set(STORAGE_KEYS.TENANTS, updatedTenants);
+    setTenants(updatedTenants);
+    
+    // Log audit event
+    logAuditEvent({
+      tenantId: selectedTenant.id,
+      userId: user.id,
+      action: 'tenant.suspend',
+      entityType: 'tenant',
+      entityId: selectedTenant.id,
+      details: {
+        reason: suspensionReason,
+        tenantName: selectedTenant.name
+      }
+    });
+    
+    setShowSuspendDialog(false);
+    setSuspensionReason('');
+    setSelectedTenant(null);
+  };
+
+  const handleReactivateTenant = (tenant: Tenant) => {
+    if (!window.confirm(`Reactivate ${tenant.name}?`)) return;
+
+    const updatedTenants = tenants.map(t => 
+      t.id === tenant.id 
+        ? {
+            ...t,
+            status: 'active' as const,
+            suspendedAt: undefined,
+            suspendedBy: undefined,
+            suspensionReason: undefined
+          }
+        : t
+    );
+
+    storage.set(STORAGE_KEYS.TENANTS, updatedTenants);
+    setTenants(updatedTenants);
+    
+    // Log audit event
+    logAuditEvent({
+      tenantId: tenant.id,
+      userId: user.id,
+      action: 'tenant.reactivate',
+      entityType: 'tenant',
+      entityId: tenant.id,
+      details: {
+        previousStatus: 'suspended',
+        tenantName: tenant.name
+      }
+    });
+  };
+
+  const openSuspendDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setShowSuspendDialog(true);
+  };
+
+  const openDetailsDialog = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setShowDetailsDialog(true);
+  };
+
   const getStatusBadge = (tenant: Tenant) => {
-    // For now, assume all tenants are active since the interface doesn't have isActive
-    const isActive = true; // You might want to add isActive to the Tenant interface
+    const status = tenant.status || 'active';
+    const variants = {
+      active: 'default',
+      suspended: 'destructive',
+      deactivated: 'secondary'
+    };
+    
     return (
-      <Badge variant={isActive ? "default" : "secondary"}>
-        {isActive ? 'Active' : 'Suspended'}
+      <Badge variant={variants[status] as any}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
   };
@@ -122,12 +230,8 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
 
   const filteredTenants = tenants.filter(tenant => {
     const matchesSearch = tenant.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // For now, all tenants are considered active since isActive is not in the interface
-    const isActive = true;
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && isActive) ||
-                         (statusFilter === 'suspended' && !isActive);
+    const tenantStatus = tenant.status || 'active';
+    const matchesStatus = statusFilter === 'all' || statusFilter === tenantStatus;
     
     return matchesSearch && matchesStatus;
   });
@@ -189,10 +293,10 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-orange-600" />
+              <Activity className="w-8 h-8 text-orange-600" />
               <div>
                 <div className="text-2xl font-bold">
-                  {tenants.length}
+                  {tenants.filter(t => (t.status || 'active') === 'active').length}
                 </div>
                 <div className="text-sm text-gray-500">Active Tenants</div>
               </div>
@@ -245,9 +349,9 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                 <TableHead>Organization</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Users</TableHead>
+                <TableHead>Usage</TableHead>
                 <TableHead>Admin</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -257,6 +361,7 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                 const userCount = getTenantUserCount(tenant.id);
                 const admins = getTenantAdmins(tenant.id);
                 const primaryAdmin = admins[0];
+                const tenantStatus = tenant.status || 'active';
                 
                 return (
                   <TableRow key={tenant.id}>
@@ -277,9 +382,26 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-gray-400" />
-                        <span>{userCount}</span>
-                        {plan && (
+                        <span>{tenant.currentUsers || userCount}</span>
+                        {plan && plan.maxUsers !== -1 && (
                           <span className="text-xs text-gray-500">/ {plan.maxUsers}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-600">
+                          Tournaments: {tenant.currentTournaments || 0}
+                          {plan && plan.maxTournaments !== -1 && `/ ${plan.maxTournaments}`}
+                        </div>
+                        <div className="text-xs text-gray-600 flex items-center gap-1">
+                          <HardDrive className="w-3 h-3" />
+                          {tenant.storageUsedMB?.toFixed(1) || 0} MB
+                        </div>
+                        {tenant.lastActivityAt && (
+                          <div className="text-xs text-gray-500">
+                            Active {new Date(tenant.lastActivityAt).toLocaleDateString()}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -294,33 +416,22 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                       )}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(tenant)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(tenant.createdAt).toLocaleDateString()}
+                      <div className="space-y-1">
+                        {getStatusBadge(tenant)}
+                        {tenant.suspensionReason && (
+                          <div className="text-xs text-gray-500 max-w-xs truncate\" title={tenant.suspensionReason}>
+                            {tenant.suspensionReason}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 flex-wrap">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleLoginAs(tenant)}
-                          disabled={admins.length === 0}
-                          className="flex items-center gap-1"
-                          title={
-                            admins.length === 0 
-                                ? 'No admin available'
-                                : `Login as ${primaryAdmin?.name}`
-                          }
-                        >
-                          <LogIn className="w-3 h-3" />
-                          Login As
-                        </Button>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => console.log('View tenant details:', tenant.id)}
+                          onClick={() => openDetailsDialog(tenant)}
+                          title="View details"
                         >
                           <Eye className="w-3 h-3" />
                         </Button>
@@ -328,10 +439,38 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => console.log('Configure tenant:', tenant.id)}
+                          onClick={() => handleLoginAs(tenant)}
+                          disabled={admins.length === 0 || tenantStatus === 'suspended'}
+                          title={
+                            admins.length === 0 
+                                ? 'No admin available'
+                                : tenantStatus === 'suspended'
+                                ? 'Cannot login to suspended tenant'
+                                : `Login as ${primaryAdmin?.name}`
+                          }
                         >
-                          <Settings className="w-3 h-3" />
+                          <LogIn className="w-3 h-3" />
                         </Button>
+                        
+                        {tenantStatus === 'active' ? (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openSuspendDialog(tenant)}
+                            title="Suspend tenant"
+                          >
+                            <Ban className="w-3 h-3" />
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleReactivateTenant(tenant)}
+                            title="Reactivate tenant"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -341,6 +480,143 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
           </Table>
         </CardContent>
       </Card>
+
+      {/* Suspension Dialog */}
+      <Dialog open={showSuspendDialog} onOpenChange={setShowSuspendDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suspend Tenant</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to suspend {selectedTenant?.name}? Users will not be able to log in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                This will immediately prevent all users from accessing this tenant's account.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Suspension Reason</Label>
+              <Textarea
+                id="reason"
+                placeholder="Enter reason for suspension (required)..."
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowSuspendDialog(false);
+              setSuspensionReason('');
+              setSelectedTenant(null);
+            }}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleSuspendTenant}>
+              Suspend Tenant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tenant Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Tenant Details</DialogTitle>
+            <DialogDescription>
+              {selectedTenant?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTenant && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Account Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">ID:</span> {selectedTenant.id}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Plan:</span> {getTenantPlan(selectedTenant.planId)?.name}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Created:</span> {new Date(selectedTenant.createdAt).toLocaleDateString()}
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span> {getStatusBadge(selectedTenant)}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Usage Metrics</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-500">Users</span>
+                        <span>{selectedTenant.currentUsers || 0} / {selectedTenant.maxUsers === -1 ? '∞' : selectedTenant.maxUsers}</span>
+                      </div>
+                      {selectedTenant.maxUsers !== -1 && (
+                        <Progress value={(selectedTenant.currentUsers || 0) / selectedTenant.maxUsers * 100} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-500">Tournaments</span>
+                        <span>{selectedTenant.currentTournaments || 0} / {selectedTenant.maxTournaments === -1 ? '∞' : selectedTenant.maxTournaments}</span>
+                      </div>
+                      {selectedTenant.maxTournaments !== -1 && (
+                        <Progress value={(selectedTenant.currentTournaments || 0) / selectedTenant.maxTournaments * 100} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Storage</span>
+                        <span>{selectedTenant.storageUsedMB?.toFixed(1) || 0} MB</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {selectedTenant.status === 'suspended' && (
+                <Alert variant="destructive">
+                  <Ban className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold">Suspended</div>
+                    <div className="text-sm mt-1">
+                      Reason: {selectedTenant.suspensionReason}
+                    </div>
+                    {selectedTenant.suspendedAt && (
+                      <div className="text-sm mt-1">
+                        Suspended on: {new Date(selectedTenant.suspendedAt).toLocaleString()}
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {selectedTenant.lastActivityAt && (
+                <div className="text-sm text-gray-600">
+                  Last activity: {new Date(selectedTenant.lastActivityAt).toLocaleString()}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setShowDetailsDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

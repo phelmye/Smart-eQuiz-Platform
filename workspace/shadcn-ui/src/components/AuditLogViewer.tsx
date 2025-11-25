@@ -28,27 +28,54 @@ const AuditLogViewer: React.FC<AuditLogViewerProps> = ({ onBack }) => {
   };
 
   const getActionColor = (action: string) => {
-    switch (action) {
-      case 'user.create': return 'bg-green-100 text-green-800';
-      case 'user.update': return 'bg-blue-100 text-blue-800';
-      case 'user.delete': return 'bg-red-100 text-red-800';
-      case 'role.assign': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+    if (action.includes('create')) return 'bg-green-100 text-green-800';
+    if (action.includes('update')) return 'bg-blue-100 text-blue-800';
+    if (action.includes('delete')) return 'bg-red-100 text-red-800';
+    if (action.includes('suspend')) return 'bg-orange-100 text-orange-800';
+    if (action.includes('reactivate')) return 'bg-green-100 text-green-800';
+    if (action.includes('login')) return 'bg-purple-100 text-purple-800';
+    if (action.includes('payment')) return 'bg-yellow-100 text-yellow-800';
+    if (action.includes('export') || action.includes('import')) return 'bg-cyan-100 text-cyan-800';
+    return 'bg-gray-100 text-gray-800';
   };
 
   const formatActionDetails = (log: AuditLog) => {
+    const actionType = log.action.split('.')[0];
+    const actionVerb = log.action.split('.')[1];
+    
     switch (log.action) {
       case 'user.create':
-        return `Created user with role: ${log.details.roleName}`;
+        return `Created user with role: ${log.details.roleName || log.details.newValue?.role}`;
       case 'user.update':
         return `Updated user from ${log.details.previousValue?.role} to ${log.details.newValue?.role}`;
       case 'user.delete':
         return `Deleted user (${log.details.previousValue?.name})`;
+      case 'user.login':
+        return `User logged in`;
+      case 'user.login_failed':
+        return `Failed login attempt ${log.details.errorMessage ? ': ' + log.details.errorMessage : ''}`;
       case 'role.assign':
         return `Assigned role: ${log.details.roleName}`;
+      case 'tenant.suspend':
+        return `Suspended tenant: ${log.details.reason}`;
+      case 'tenant.reactivate':
+        return `Reactivated tenant`;
+      case 'tournament.create':
+        return `Created tournament`;
+      case 'tournament.start':
+        return `Started tournament`;
+      case 'question.create':
+        return `Created question`;
+      case 'payment.processed':
+        return `Payment processed: ${log.details.metadata?.amount || 'N/A'}`;
+      case 'payment.failed':
+        return `Payment failed: ${log.details.errorMessage || 'Unknown error'}`;
+      case 'data.export':
+        return `Exported ${log.entityType} data`;
+      case 'settings.update':
+        return `Updated ${log.entityType || 'system'} settings`;
       default:
-        return 'Action performed';
+        return `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} ${actionType}`;
     }
   };
 

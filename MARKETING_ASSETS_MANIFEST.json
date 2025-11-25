@@ -1,0 +1,200 @@
+{
+  "generated": "2025-11-18T13:33:46.383Z",
+  "version": "1.0.0",
+  "description": "Marketing asset manifest for Smart eQuiz Platform",
+  "assets": {
+    "hero-backgrounds": [
+      {
+        "name": "hero-bg-church.svg",
+        "path": "/images/hero/hero-bg-church.svg",
+        "uploadPath": "/uploads/media/hero-bg-church.svg",
+        "category": "hero-background",
+        "title": "Church Community",
+        "dimensions": "1920x1080"
+      },
+      {
+        "name": "hero-bg-bible-study.svg",
+        "path": "/images/hero/hero-bg-bible-study.svg",
+        "uploadPath": "/uploads/media/hero-bg-bible-study.svg",
+        "category": "hero-background",
+        "title": "Bible Study",
+        "dimensions": "1920x1080"
+      },
+      {
+        "name": "hero-bg-youth-group.svg",
+        "path": "/images/hero/hero-bg-youth-group.svg",
+        "uploadPath": "/uploads/media/hero-bg-youth-group.svg",
+        "category": "hero-background",
+        "title": "Youth Engagement",
+        "dimensions": "1920x1080"
+      }
+    ],
+    "testimonial-avatars": [
+      {
+        "name": "pastor-john.svg",
+        "path": "/images/testimonials/pastor-john.svg",
+        "uploadPath": "/uploads/media/pastor-john.svg",
+        "category": "testimonial-avatar",
+        "initials": "JS"
+      },
+      {
+        "name": "pastor-sarah.svg",
+        "path": "/images/testimonials/pastor-sarah.svg",
+        "uploadPath": "/uploads/media/pastor-sarah.svg",
+        "category": "testimonial-avatar",
+        "initials": "SM"
+      },
+      {
+        "name": "youth-leader-mike.svg",
+        "path": "/images/testimonials/youth-leader-mike.svg",
+        "uploadPath": "/uploads/media/youth-leader-mike.svg",
+        "category": "testimonial-avatar",
+        "initials": "MT"
+      },
+      {
+        "name": "teacher-amy.svg",
+        "path": "/images/testimonials/teacher-amy.svg",
+        "uploadPath": "/uploads/media/teacher-amy.svg",
+        "category": "testimonial-avatar",
+        "initials": "AL"
+      },
+      {
+        "name": "coordinator-david.svg",
+        "path": "/images/testimonials/coordinator-david.svg",
+        "uploadPath": "/uploads/media/coordinator-david.svg",
+        "category": "testimonial-avatar",
+        "initials": "DR"
+      },
+      {
+        "name": "minister-lisa.svg",
+        "path": "/images/testimonials/minister-lisa.svg",
+        "uploadPath": "/uploads/media/minister-lisa.svg",
+        "category": "testimonial-avatar",
+        "initials": "LW"
+      }
+    ],
+    "feature-icons": [
+      {
+        "name": "ai-generation.svg",
+        "path": "/images/features/ai-generation.svg",
+        "uploadPath": "/uploads/media/ai-generation.svg",
+        "category": "feature-icon",
+        "title": "AI Question Generation"
+      },
+      {
+        "name": "live-tournaments.svg",
+        "path": "/images/features/live-tournaments.svg",
+        "uploadPath": "/uploads/media/live-tournaments.svg",
+        "category": "feature-icon",
+        "title": "Live Tournaments"
+      },
+      {
+        "name": "team-collaboration.svg",
+        "path": "/images/features/team-collaboration.svg",
+        "uploadPath": "/uploads/media/team-collaboration.svg",
+        "category": "feature-icon",
+        "title": "Team Collaboration"
+      },
+      {
+        "name": "analytics-tracking.svg",
+        "path": "/images/features/analytics-tracking.svg",
+        "uploadPath": "/uploads/media/analytics-tracking.svg",
+        "category": "feature-icon",
+        "title": "Analytics & Tracking"
+      },
+      {
+        "name": "mobile-friendly.svg",
+        "path": "/images/features/mobile-friendly.svg",
+        "uploadPath": "/uploads/media/mobile-friendly.svg",
+        "category": "feature-icon",
+        "title": "Mobile Friendly"
+      },
+      {
+        "name": "customization.svg",
+        "path": "/images/features/customization.svg",
+        "uploadPath": "/uploads/media/customization.svg",
+        "category": "feature-icon",
+        "title": "Full Customization"
+      }
+    ],
+    "pricing-icons": [
+      {
+        "name": "free-tier.svg",
+        "path": "/images/pricing/free-tier.svg",
+        "uploadPath": "/uploads/media/free-tier.svg",
+        "category": "pricing-icon"
+      },
+      {
+        "name": "pro-tier.svg",
+        "path": "/images/pricing/pro-tier.svg",
+        "uploadPath": "/uploads/media/pro-tier.svg",
+        "category": "pricing-icon"
+      },
+      {
+        "name": "enterprise-tier.svg",
+        "path": "/images/pricing/enterprise-tier.svg",
+        "uploadPath": "/uploads/media/enterprise-tier.svg",
+        "category": "pricing-icon"
+      }
+    ],
+    "blog-images": [
+      {
+        "name": "getting-started.svg",
+        "path": "/images/blog/getting-started.svg",
+        "uploadPath": "/uploads/media/getting-started.svg",
+        "category": "blog-image",
+        "title": "Getting Started Guide",
+        "dimensions": "1200x630"
+      },
+      {
+        "name": "best-practices.svg",
+        "path": "/images/blog/best-practices.svg",
+        "uploadPath": "/uploads/media/best-practices.svg",
+        "category": "blog-image",
+        "title": "Best Practices",
+        "dimensions": "1200x630"
+      },
+      {
+        "name": "success-stories.svg",
+        "path": "/images/blog/success-stories.svg",
+        "uploadPath": "/uploads/media/success-stories.svg",
+        "category": "blog-image",
+        "title": "Success Stories",
+        "dimensions": "1200x630"
+      }
+    ],
+    "case-study-images": [
+      {
+        "name": "grace-church.svg",
+        "path": "/images/case-studies/grace-church.svg",
+        "uploadPath": "/uploads/media/grace-church.svg",
+        "category": "case-study-image",
+        "title": "Grace Community Church",
+        "dimensions": "1200x630"
+      },
+      {
+        "name": "hope-ministry.svg",
+        "path": "/images/case-studies/hope-ministry.svg",
+        "uploadPath": "/uploads/media/hope-ministry.svg",
+        "category": "case-study-image",
+        "title": "Hope Ministry",
+        "dimensions": "1200x630"
+      }
+    ]
+  },
+  "stats": {
+    "totalAssets": 23,
+    "heroBackgrounds": 3,
+    "testimonialAvatars": 6,
+    "featureIcons": 6,
+    "pricingIcons": 3,
+    "blogImages": 3,
+    "caseStudyImages": 2
+  },
+  "notes": [
+    "All assets are SVG-based placeholders",
+    "Replace with real images/photos for production",
+    "Assets are optimized for web display",
+    "Accessible via both /images/ and /uploads/media/ paths"
+  ]
+}
