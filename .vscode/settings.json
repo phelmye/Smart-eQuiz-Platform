@@ -1,7 +1,25 @@
-{
-  // Treat the repo root pnpm lockfile as plaintext to avoid YAML parser errors in VS Code
-  "files.associations": {
-    "pnpm-lock.yaml": "plaintext",
-    "**/pnpm-lock.yaml": "plaintext"
+﻿{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/workspace/**": true,
+    "**/build/**": true,
+    "**/cover/**": true,
+    "**/.storage/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/workspace": true,
+    "**/build": true,
+    "**/cover": true,
+    "**/.storage": true
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true
   }
 }
