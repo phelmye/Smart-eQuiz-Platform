@@ -8,9 +8,18 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../common/roles.guard';
+import { Roles } from '../common/roles.decorator';
 import { MarketingCmsService } from './marketing-cms.service';
-import { BlogPostStatus, PricingInterval } from '@prisma/client';
+import { CreateBlogPostDto, UpdateBlogPostDto } from './dto/blog-post.dto';
+import { CreateFeatureDto, UpdateFeatureDto } from './dto/feature.dto';
+import { CreateTestimonialDto, UpdateTestimonialDto } from './dto/testimonial.dto';
+import { CreatePricingPlanDto, UpdatePricingPlanDto } from './dto/pricing-plan.dto';
+import { CreateFaqDto, UpdateFaqDto } from './dto/faq.dto';
+import { CreateHeroDto } from './dto/hero.dto';
 
 @Controller('marketing-cms')
 export class MarketingCmsController {
@@ -31,44 +40,25 @@ export class MarketingCmsController {
   }
 
   @Post('blog-posts')
-  async createBlogPost(
-    @Body()
-    body: {
-      title: string;
-      slug: string;
-      excerpt: string;
-      content: string;
-      author: string;
-      category: string;
-      featuredImage?: string;
-      tags?: string[];
-      status: BlogPostStatus;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createBlogPost(@Body() body: CreateBlogPostDto) {
     return this.marketingCmsService.createBlogPost(body);
   }
 
   @Put('blog-posts/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updateBlogPost(
     @Param('id') id: string,
-    @Body()
-    body: {
-      title?: string;
-      slug?: string;
-      excerpt?: string;
-      content?: string;
-      author?: string;
-      category?: string;
-      featuredImage?: string;
-      tags?: string[];
-      status?: BlogPostStatus;
-    },
+    @Body() body: UpdateBlogPostDto,
   ) {
     return this.marketingCmsService.updateBlogPost(id, body);
   }
 
   @Delete('blog-posts/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlogPost(@Param('id') id: string) {
     await this.marketingCmsService.deleteBlogPost(id);
@@ -89,36 +79,25 @@ export class MarketingCmsController {
   }
 
   @Post('features')
-  async createFeature(
-    @Body()
-    body: {
-      title: string;
-      description: string;
-      icon: string;
-      category: string;
-      order?: number;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createFeature(@Body() body: CreateFeatureDto) {
     return this.marketingCmsService.createFeature(body);
   }
 
   @Put('features/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updateFeature(
     @Param('id') id: string,
-    @Body()
-    body: {
-      title?: string;
-      description?: string;
-      icon?: string;
-      category?: string;
-      order?: number;
-    },
+    @Body() body: UpdateFeatureDto,
   ) {
     return this.marketingCmsService.updateFeature(id, body);
   }
 
   @Delete('features/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFeature(@Param('id') id: string) {
     await this.marketingCmsService.deleteFeature(id);
@@ -139,40 +118,25 @@ export class MarketingCmsController {
   }
 
   @Post('testimonials')
-  async createTestimonial(
-    @Body()
-    body: {
-      name: string;
-      role: string;
-      organization: string;
-      quote: string;
-      rating: number;
-      avatar?: string;
-      featured?: boolean;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createTestimonial(@Body() body: CreateTestimonialDto) {
     return this.marketingCmsService.createTestimonial(body);
   }
 
   @Put('testimonials/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updateTestimonial(
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      role?: string;
-      organization?: string;
-      quote?: string;
-      rating?: number;
-      avatar?: string;
-      featured?: boolean;
-    },
+    @Body() body: UpdateTestimonialDto,
   ) {
     return this.marketingCmsService.updateTestimonial(id, body);
   }
 
   @Delete('testimonials/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTestimonial(@Param('id') id: string) {
     await this.marketingCmsService.deleteTestimonial(id);
@@ -193,40 +157,25 @@ export class MarketingCmsController {
   }
 
   @Post('pricing-plans')
-  async createPricingPlan(
-    @Body()
-    body: {
-      name: string;
-      price: number;
-      interval: PricingInterval;
-      features: string[];
-      ctaText: string;
-      ctaLink: string;
-      highlighted?: boolean;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createPricingPlan(@Body() body: CreatePricingPlanDto) {
     return this.marketingCmsService.createPricingPlan(body);
   }
 
   @Put('pricing-plans/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updatePricingPlan(
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      price?: number;
-      interval?: PricingInterval;
-      features?: string[];
-      ctaText?: string;
-      ctaLink?: string;
-      popular?: boolean;
-    },
+    @Body() body: UpdatePricingPlanDto,
   ) {
     return this.marketingCmsService.updatePricingPlan(id, body);
   }
 
   @Delete('pricing-plans/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePricingPlan(@Param('id') id: string) {
     await this.marketingCmsService.deletePricingPlan(id);
@@ -247,34 +196,25 @@ export class MarketingCmsController {
   }
 
   @Post('faqs')
-  async createFaq(
-    @Body()
-    body: {
-      question: string;
-      answer: string;
-      category: string;
-      order?: number;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createFaq(@Body() body: CreateFaqDto) {
     return this.marketingCmsService.createFaq(body);
   }
 
   @Put('faqs/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   async updateFaq(
     @Param('id') id: string,
-    @Body()
-    body: {
-      question?: string;
-      answer?: string;
-      category?: string;
-      order?: number;
-    },
+    @Body() body: UpdateFaqDto,
   ) {
     return this.marketingCmsService.updateFaq(id, body);
   }
 
   @Delete('faqs/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFaq(@Param('id') id: string) {
     await this.marketingCmsService.deleteFaq(id);
@@ -290,20 +230,9 @@ export class MarketingCmsController {
   }
 
   @Post('hero')
-  async createOrUpdateHeroContent(
-    @Body()
-    body: {
-      headline: string;
-      subheadline: string;
-      ctaPrimary: string;
-      ctaPrimaryLink: string;
-      ctaSecondary?: string;
-      ctaSecondaryLink?: string;
-      backgroundImage?: string;
-      videoUrl?: string;
-      createdBy: string;
-    },
-  ) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin')
+  async createOrUpdateHeroContent(@Body() body: CreateHeroDto) {
     return this.marketingCmsService.createOrUpdateHeroContent(body);
   }
 
