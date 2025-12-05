@@ -3,6 +3,9 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/components/AuthSystem';
+import { loadSavedTheme } from '@/lib/theme';
+import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { useEffect } from 'react';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
 
@@ -10,6 +13,15 @@ const queryClient = new QueryClient();
 
 function App() {
   console.log('🔍 App component rendering');
+  
+  // Load and apply saved theme on mount
+  useEffect(() => {
+    const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
+    if (currentUser?.tenantId) {
+      loadSavedTheme(currentUser.tenantId);
+    }
+  }, []);
+  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

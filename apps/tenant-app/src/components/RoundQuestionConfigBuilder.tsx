@@ -1,0 +1,605 @@
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { 
+  Plus, 
+  Trash2, 
+  MoveUp, 
+  MoveDown, 
+  Layers, 
+  Shuffle,
+  List,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Weight,
+  FileDown,
+  Star
+} from 'lucide-react';
+import { 
+  RoundQuestionConfig, 
+  RoundCategoryDistribution, 
+  QuestionCategoryType,
+  CustomQuestionCategory,
+  getCustomCategories,
+  getRoundTemplates,
+  applyRoundTemplate,
+  TOURNAMENT_FEATURES,
+  hasFeatureAccess,
+  type User
+} from '@/lib/mockData';
+import { useState, useEffect } from 'react';
+
+interface RoundQuestionConfigBuilderProps {
+  totalRounds: number;
+  onConfigsChange: (configs: RoundQuestionConfig[]) => void;
+  initialConfigs?: RoundQuestionConfig[];
+  tenantId: string;
+  currentUser: User;
+  onBack?: () => void;
+}
+
+const CATEGORY_OPTIONS: Array<{ value: QuestionCategoryType; label: string; color: string }> = [
+  { value: 'general_bible', label: 'General Bible Knowledge', color: 'bg-blue-100 text-blue-800' },
+  { value: 'ccc_hymns', label: 'CCC Hymns & Worship', color: 'bg-purple-100 text-purple-800' },
+  { value: 'specific_study', label: 'Specific Bible Study', color: 'bg-green-100 text-green-800' },
+  { value: 'doctrine', label: 'Doctrine', color: 'bg-orange-100 text-orange-800' },
+  { value: 'tenets', label: 'Tenets', color: 'bg-red-100 text-red-800' },
+  { value: 'custom', label: 'Custom Category', color: 'bg-gray-100 text-gray-800' }
+];
+
+const DEFAULT_ROUND_CONFIG: RoundQuestionConfig = {
+  roundNumber: 1,
+  roundName: 'Round 1',
+  totalQuestions: 10,
+  timeLimitMinutes: 15,
+  categoryDistribution: [
+    { category: 'general_bible', questionCount: 5 },
+    { category: 'specific_study', questionCount: 5 }
+  ],
+  questionDeliveryMode: 'mixed',
+  excludePreviousRoundQuestions: true,
+  allowQuestionReuse: false,
+  randomizeQuestionOrder: true,
+  randomizeOptionOrder: true
+};
+
+export default function RoundQuestionConfigBuilder({
+  totalRounds,
+  onConfigsChange,
+  initialConfigs,
+  tenantId,
+  currentUser
+}: RoundQuestionConfigBuilderProps) {
+  const [configs, setConfigs] = useState<RoundQuestionConfig[]>(
+    initialConfigs || generateDefaultConfigs(totalRounds)
+  );
+  const [expandedRound, setExpandedRound] = useState<number>(1);
+  const [customCategories, setCustomCategories] = useState<CustomQuestionCategory[]>([]);
+
+  const hasCustomCategories = hasFeatureAccess(currentUser, TOURNAMENT_FEATURES.CUSTOM_CATEGORIES);
+  const hasCategoryWeighting = hasFeatureAccess(currentUser, TOURNAMENT_FEATURES.CATEGORY_WEIGHTING);
+
+  useEffect(() => {
+    if (hasCustomCategories) {
+      const categories = getCustomCategories(tenantId, true);
+      setCustomCategories(categories);
+    }
+  }, [tenantId, hasCustomCategories]);
+
+  function generateDefaultConfigs(rounds: number): RoundQuestionConfig[] {
+    const roundNames = ['Round 1', 'Quarter Finals', 'Semi Finals', 'Finals', 'Round 5', 'Round 6'];
+    
+    return Array.from({ length: rounds }, (_, i) => ({
+      ...DEFAULT_ROUND_CONFIG,
+      roundNumber: i + 1,
+      roundName: roundNames[i] || `Round ${i + 1}`,
+      totalQuestions: 10 + (i * 5), // Increase questions per round
+      timeLimitMinutes: 15 + (i * 5)
+    }));
+  }
+
+  const updateConfig = (roundNumber: number, updates: Partial<RoundQuestionConfig>) => {
+    const newConfigs = configs.map(config =>
+      config.roundNumber === roundNumber ? { ...config, ...updates } : config
+    );
+    setConfigs(newConfigs);
+    onConfigsChange(newConfigs);
+  };
+
+  const addCategory = (roundNumber: number) => {
+    const config = configs.find(c => c.roundNumber === roundNumber);
+    if (!config) return;
+
+    const newDistribution: RoundCategoryDistribution = {
+      category: 'general_bible',
+      questionCount: 5
+    };
+
+    updateConfig(roundNumber, {
+      categoryDistribution: [...config.categoryDistribution, newDistribution]
+    });
+  };
+
+  const removeCategory = (roundNumber: number, index: number) => {
+    const config = configs.find(c => c.roundNumber === roundNumber);
+    if (!config || config.categoryDistribution.length <= 1) return;
+
+    const newDistribution = config.categoryDistribution.filter((_, i) => i !== index);
+    updateConfig(roundNumber, { categoryDistribution: newDistribution });
+  };
+
+  const updateCategory = (
+    roundNumber: number, 
+    index: number, 
+    updates: Partial<RoundCategoryDistribution>
+  ) => {
+    const config = configs.find(c => c.roundNumber === roundNumber);
+    if (!config) return;
+
+    const newDistribution = config.categoryDistribution.map((cat, i) =>
+      i === index ? { ...cat, ...updates } : cat
+    );
+    updateConfig(roundNumber, { categoryDistribution: newDistribution });
+  };
+
+  const moveCategoryUp = (roundNumber: number, index: number) => {
+    if (index === 0) return;
+    const config = configs.find(c => c.roundNumber === roundNumber);
+    if (!config) return;
+
+    const newDistribution = [...config.categoryDistribution];
+    [newDistribution[index - 1], newDistribution[index]] = 
+    [newDistribution[index], newDistribution[index - 1]];
+    
+    updateConfig(roundNumber, { categoryDistribution: newDistribution });
+  };
+
+  const moveCategoryDown = (roundNumber: number, index: number) => {
+    const config = configs.find(c => c.roundNumber === roundNumber);
+    if (!config || index === config.categoryDistribution.length - 1) return;
+
+    const newDistribution = [...config.categoryDistribution];
+    [newDistribution[index], newDistribution[index + 1]] = 
+    [newDistribution[index + 1], newDistribution[index]];
+    
+    updateConfig(roundNumber, { categoryDistribution: newDistribution });
+  };
+
+  const getTotalQuestions = (config: RoundQuestionConfig): number => {
+    return config.categoryDistribution.reduce((sum, cat) => sum + cat.questionCount, 0);
+  };
+
+  const getCategoryColor = (category: QuestionCategoryType, customCategoryId?: string): string => {
+    if (customCategoryId) {
+      const customCat = customCategories.find(c => c.id === customCategoryId);
+      if (customCat) return `text-white`;
+    }
+    return CATEGORY_OPTIONS.find(opt => opt.value === category)?.color || 'bg-gray-100 text-gray-800';
+  };
+
+  const getCategoryLabel = (category: QuestionCategoryType, customCategoryId?: string, customCategoryName?: string): string => {
+    if (customCategoryId && customCategoryName) {
+      return customCategoryName;
+    }
+    if (customCategoryId) {
+      const customCat = customCategories.find(c => c.id === customCategoryId);
+      if (customCat) return customCat.name;
+    }
+    return CATEGORY_OPTIONS.find(opt => opt.value === category)?.label || category;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Banner */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-blue-900">Round-by-Round Question Configuration</h4>
+              <p className="text-sm text-blue-700">
+                Configure unique question sets and categories for each tournament round
+              </p>
+            </div>
+            <Badge variant="outline" className="bg-white">
+              {totalRounds} Rounds
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Template Library Section */}
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-semibold text-green-900 flex items-center gap-2">
+                <FileDown className="w-4 h-4" />
+                Quick Start with Templates
+              </CardTitle>
+              <CardDescription className="text-green-700">
+                Load pre-configured question distributions for common tournament formats
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {getRoundTemplates(tenantId, true).map((template) => (
+              <Button
+                key={template.id}
+                variant="outline"
+                size="sm"
+                className="bg-white hover:bg-green-50"
+                onClick={() => {
+                  const appliedConfigs = applyRoundTemplate(template.id);
+                  if (appliedConfigs && appliedConfigs.length > 0) {
+                    // Adjust to match current totalRounds
+                    const adjustedConfigs = appliedConfigs.slice(0, totalRounds).map((config, index) => ({
+                      ...config,
+                      roundNumber: index + 1
+                    }));
+                    setConfigs(adjustedConfigs);
+                    onConfigsChange(adjustedConfigs);
+                  }
+                }}
+              >
+                <Star className="w-3 h-3 mr-1.5" />
+                {template.name}
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  {template.configurations.length} rounds
+                </Badge>
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-green-600 mt-3">
+            💡 Tip: Templates provide tested question distributions. You can customize them after applying.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Round Configurations */}
+      {configs.map((config) => {
+        const totalQs = getTotalQuestions(config);
+        const isExpanded = expandedRound === config.roundNumber;
+        const hasValidConfig = totalQs === config.totalQuestions;
+
+        return (
+          <Card key={config.roundNumber} className={isExpanded ? 'border-blue-500 shadow-md' : ''}>
+            <CardHeader 
+              className="cursor-pointer hover:bg-gray-50"
+              onClick={() => setExpandedRound(isExpanded ? 0 : config.roundNumber)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {config.roundNumber}
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{config.roundName}</CardTitle>
+                    <CardDescription className="flex items-center gap-2 mt-1">
+                      <span>{config.totalQuestions} questions</span>
+                      <span>•</span>
+                      <Clock className="w-3 h-3" />
+                      <span>{config.timeLimitMinutes} min</span>
+                      <span>•</span>
+                      <Badge variant="outline" className="text-xs">
+                        {config.questionDeliveryMode === 'mixed' ? (
+                          <><Shuffle className="w-3 h-3 mr-1" /> Mixed</>
+                        ) : (
+                          <><Layers className="w-3 h-3 mr-1" /> Staged</>
+                        )}
+                      </Badge>
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasValidConfig ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+
+            {isExpanded && (
+              <CardContent className="space-y-6 pt-6 border-t">
+                {/* Basic Settings */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label>Round Name</Label>
+                    <Input
+                      value={config.roundName}
+                      onChange={(e) => updateConfig(config.roundNumber, { roundName: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Total Questions</Label>
+                    <Input
+                      type="number"
+                      min="5"
+                      max="100"
+                      value={config.totalQuestions}
+                      onChange={(e) => updateConfig(config.roundNumber, { 
+                        totalQuestions: parseInt(e.target.value) || 10 
+                      })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Time Limit (minutes)</Label>
+                    <Input
+                      type="number"
+                      min="5"
+                      max="120"
+                      value={config.timeLimitMinutes}
+                      onChange={(e) => updateConfig(config.roundNumber, { 
+                        timeLimitMinutes: parseInt(e.target.value) || 15 
+                      })}
+                    />
+                  </div>
+                </div>
+
+                {/* Question Delivery Mode */}
+                <div>
+                  <Label>Question Delivery Mode</Label>
+                  <Select 
+                    value={config.questionDeliveryMode}
+                    onValueChange={(value: 'mixed' | 'staged_by_category') => 
+                      updateConfig(config.roundNumber, { questionDeliveryMode: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mixed">
+                        <div className="flex items-center gap-2">
+                          <Shuffle className="w-4 h-4" />
+                          <div>
+                            <div className="font-medium">Mixed (Shuffled)</div>
+                            <div className="text-xs text-gray-500">All questions randomly shuffled together</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="staged_by_category">
+                        <div className="flex items-center gap-2">
+                          <Layers className="w-4 h-4" />
+                          <div>
+                            <div className="font-medium">Staged by Category</div>
+                            <div className="text-xs text-gray-500">Present each category as a separate stage</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {config.questionDeliveryMode === 'staged_by_category' && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <List className="w-4 h-4 text-blue-600 mt-0.5" />
+                        <div className="text-sm text-blue-800">
+                          <p className="font-medium mb-1">Staged Presentation</p>
+                          <p className="text-xs">
+                            Participants will see all questions from Category 1, then all from Category 2, etc.
+                            The order below determines the presentation sequence.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Category Distribution */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="text-base">Category Distribution</Label>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => addCategory(config.roundNumber)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Category
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {config.categoryDistribution.map((cat, index) => (
+                      <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-3">
+                        <div className="flex items-center gap-3">
+                          {/* Category Selection */}
+                          <div className="flex-1">
+                            <Select
+                              value={cat.customCategoryId || cat.category}
+                              onValueChange={(value: string) => {
+                                const isCustom = value.startsWith('cat_');
+                                if (isCustom) {
+                                  const customCat = customCategories.find(c => c.id === value);
+                                  updateCategory(config.roundNumber, index, { 
+                                    category: 'custom',
+                                    customCategoryId: value,
+                                    customCategoryName: customCat?.name
+                                  });
+                                } else {
+                                  updateCategory(config.roundNumber, index, { 
+                                    category: value as QuestionCategoryType,
+                                    customCategoryId: undefined,
+                                    customCategoryName: undefined
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CATEGORY_OPTIONS.filter(opt => opt.value !== 'custom').map(opt => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    <Badge className={opt.color}>{opt.label}</Badge>
+                                  </SelectItem>
+                                ))}
+                                {hasCustomCategories && customCategories.length > 0 && (
+                                  <>
+                                    <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                                      Custom Categories
+                                    </div>
+                                    {customCategories.map(customCat => (
+                                      <SelectItem key={customCat.id} value={customCat.id}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{customCat.icon}</span>
+                                          <span
+                                            className="px-2 py-0.5 rounded text-white text-xs"
+                                            style={{ backgroundColor: customCat.color }}
+                                          >
+                                            {customCat.name}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Question Count */}
+                          <div className="w-32">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="50"
+                              value={cat.questionCount}
+                              onChange={(e) =>
+                                updateCategory(config.roundNumber, index, { 
+                                  questionCount: parseInt(e.target.value) || 1 
+                                })
+                              }
+                              placeholder="Questions"
+                            />
+                          </div>
+
+                          {/* Difficulty (optional) */}
+                          <div className="w-32">
+                            <Select
+                              value={cat.difficulty || 'medium'}
+                              onValueChange={(value: 'easy' | 'medium' | 'hard') =>
+                                updateCategory(config.roundNumber, index, { difficulty: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="easy">Easy</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="hard">Hard</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Move/Delete Buttons */}
+                          <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => moveCategoryUp(config.roundNumber, index)}
+                              disabled={index === 0}
+                            >
+                              <MoveUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => moveCategoryDown(config.roundNumber, index)}
+                              disabled={index === config.categoryDistribution.length - 1}
+                            >
+                              <MoveDown className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-red-600"
+                              onClick={() => removeCategory(config.roundNumber, index)}
+                              disabled={config.categoryDistribution.length === 1}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Category Weighting (Enterprise Feature) */}
+                        {hasCategoryWeighting && (
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <Weight className="w-4 h-4 text-muted-foreground" />
+                            <Label className="text-sm">Score Multiplier:</Label>
+                            <Input
+                              type="number"
+                              min="0.5"
+                              max="3.0"
+                              step="0.1"
+                              value={cat.weight || 1.0}
+                              onChange={(e) =>
+                                updateCategory(config.roundNumber, index, { 
+                                  weight: parseFloat(e.target.value) || 1.0
+                                })
+                              }
+                              className="w-20"
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {cat.weight && cat.weight !== 1.0 
+                                ? `(${((cat.weight - 1) * 100).toFixed(0)}% ${cat.weight > 1 ? 'bonus' : 'reduction'})`
+                                : '(normal)'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Validation Warning */}
+                  {!hasValidConfig && (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+                        <div className="text-sm text-amber-800">
+                          <p className="font-medium">Question Count Mismatch</p>
+                          <p className="text-xs mt-1">
+                            Category questions ({totalQs}) don't match total questions ({config.totalQuestions}).
+                            Please adjust the counts.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Presentation Preview */}
+                {config.questionDeliveryMode === 'staged_by_category' && (
+                  <div className="border-t pt-4">
+                    <Label className="text-sm text-gray-600 mb-2 block">Presentation Order Preview</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {config.categoryDistribution.map((cat, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <Badge className={getCategoryColor(cat.category)}>
+                            Stage {index + 1}: {getCategoryLabel(cat.category)} ({cat.questionCount}Q)
+                          </Badge>
+                          {index < config.categoryDistribution.length - 1 && (
+                            <span className="text-gray-400">→</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
+    </div>
+  );
+}

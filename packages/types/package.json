@@ -1,0 +1,26 @@
+{
+  "name": "@smart-equiz/types",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Shared TypeScript type definitions for Smart eQuiz Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": ["types", "typescript", "shared"],
+  "author": "Smart eQuiz Platform Team",
+  "license": "PROPRIETARY",
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

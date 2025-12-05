@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CreditCard, AlertTriangle, LogOut } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from './AuthSystem';
+import { hasPermission } from '@/lib/mockData';
 import { isPaymentIntegrationEnabled } from '@/lib/mockData';
 
 interface PaymentManagementProps {
@@ -11,10 +12,10 @@ interface PaymentManagementProps {
 }
 
 export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBack }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // Check if user is admin
-  if (!user || (user.role !== 'org_admin' && user.role !== 'super_admin')) {
+  if (!user || !hasPermission(user, 'payments.read')) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <Card className="max-w-md mx-auto">
@@ -48,6 +49,10 @@ export const PaymentManagementSimple: React.FC<PaymentManagementProps> = ({ onBa
                 <p className="text-gray-600">Manage transactions, payouts, and payment integrations</p>
               </div>
             </div>
+            <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
           </div>
         </div>
 

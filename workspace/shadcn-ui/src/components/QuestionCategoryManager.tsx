@@ -24,7 +24,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut } from 'lucide-react';
+import { useAuth } from './AuthSystem';
 import { 
   User, 
   Plan, 
@@ -54,6 +55,7 @@ interface QuestionCategoryManagerProps {
 }
 
 export default function QuestionCategoryManager({ user, onBack }: QuestionCategoryManagerProps) {
+  const { logout } = useAuth();
   const [categories, setCategories] = useState<QuestionCategory[]>([]);
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -196,148 +198,152 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Question Categories</h1>
-          <p className="text-gray-600 mt-2">
-            Organize your questions into categories for better tournament management
-          </p>
-        </div>
-        <Button variant="outline" onClick={onBack}>
-          Back
-        </Button>
-      </div>
-
-      {/* Plan Limits Alert */}
-      {userPlan && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={onBack}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
               <div>
-                <span className="font-medium">Plan: {userPlan.displayName}</span>
-                {(userPlan.maxQuestionCategories || 0) === -1 ? (
-                  <span className="text-green-700 ml-2">• Unlimited categories</span>
-                ) : (
-                  <span className="text-blue-700 ml-2">
-                    • {categories.length} / {userPlan.maxQuestionCategories || 0} categories used
-                  </span>
+                <h1 className="text-3xl font-bold text-gray-900">Question Categories</h1>
+                <p className="text-gray-600 mt-1">
+                  Organize your questions into categories for better tournament management
+                </p>
+              </div>
+            </div>
+            {canCreateCategory() && (
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Category</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="categoryName">Category Name</Label>
+                      <Input
+                        id="categoryName"
+                        value={newCategory.name}
+                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                        placeholder="Enter category name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="categoryDescription">Description (Optional)</Label>
+                      <Textarea
+                        id="categoryDescription"
+                        value={newCategory.description}
+                        onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                        placeholder="Enter category description"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Color</Label>
+                      <div className="flex gap-2 mt-2">
+                        {availableColors.map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`w-8 h-8 rounded-full border-2 ${
+                              newCategory.color === color ? 'border-gray-800' : 'border-gray-300'
+                            }`}
+                            style={{ backgroundColor: color }}
+                            onClick={() => setNewCategory({ ...newCategory, color })}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <Button onClick={handleCreateCategory} className="flex-1">
+                        Create Category
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsCreateDialogOpen(false);
+                          setNewCategory({ name: '', description: '', color: '#3b82f6' });
+                          clearMessages();
+                        }}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        </div>
+
+        {/* Plan Limits Alert */}
+        {userPlan && (
+          <Alert className="border-blue-200 bg-blue-50">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-medium">Plan: {userPlan?.displayName}</span>
+                  {(userPlan?.maxQuestionCategories ?? 0) === -1 ? (
+                    <span className="text-green-700 ml-2">• Unlimited categories</span>
+                  ) : (
+                    <span className="text-blue-700 ml-2">
+                      • {categories.length} / {userPlan?.maxQuestionCategories ?? 0} categories used
+                    </span>
+                  )}
+                </div>
+                {(userPlan?.maxQuestionCategories ?? 0) !== -1 && (
+                  <Badge variant={canCreateCategory() ? "secondary" : "destructive"}>
+                    {canCreateCategory() 
+                      ? `${getRemainingCategories()} remaining` 
+                      : 'Limit reached'
+                    }
+                  </Badge>
                 )}
               </div>
-              {(userPlan.maxQuestionCategories || 0) !== -1 && (
-                <Badge variant={canCreateCategory() ? "secondary" : "destructive"}>
-                  {canCreateCategory() 
-                    ? `${getRemainingCategories()} remaining` 
-                    : 'Limit reached'
-                  }
-                </Badge>
-              )}
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {/* Messages */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        {/* Messages */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {success && (
-        <Alert className="border-green-200 bg-green-50">
-          <AlertDescription className="text-green-800">{success}</AlertDescription>
-        </Alert>
-      )}
+        {success && (
+          <Alert className="border-green-200 bg-green-50">
+            <AlertDescription className="text-green-800">{success}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Actions */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
+        {/* Categories Stats */}
+        <div className="flex justify-between items-center mb-4">
           <Badge variant="outline" className="text-sm">
             {categories.length} {categories.length === 1 ? 'Category' : 'Categories'}
           </Badge>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="flex items-center gap-2" 
-              disabled={!canCreateCategory()}
-              onClick={clearMessages}
-            >
-              <Plus className="w-4 h-4" />
-              Add Category
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Category</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="categoryName">Category Name</Label>
-                <Input
-                  id="categoryName"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  placeholder="Enter category name"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="categoryDescription">Description (Optional)</Label>
-                <Textarea
-                  id="categoryDescription"
-                  value={newCategory.description}
-                  onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
-                  placeholder="Enter category description"
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label>Color</Label>
-                <div className="flex gap-2 mt-2">
-                  {availableColors.map(color => (
-                    <button
-                      key={color}
-                      type="button"
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        newCategory.color === color ? 'border-gray-800' : 'border-gray-300'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => setNewCategory({ ...newCategory, color })}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button onClick={handleCreateCategory} className="flex-1">
-                  Create Category
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsCreateDialogOpen(false);
-                    setNewCategory({ name: '', description: '', color: '#3b82f6' });
-                    clearMessages();
-                  }}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Categories Grid */}
-      <div className="grid gap-4">
+        {/* Categories Grid */}
+        <div className="grid gap-4">
         {categories.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
@@ -513,7 +519,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
               <div>
                 <h3 className="font-semibold text-orange-800">Category Limit Reached</h3>
                 <p className="text-orange-700 mt-1">
-                  You've reached the maximum of {userPlan.maxQuestionCategories || 0} categories for your {userPlan.displayName}. 
+                  You've reached the maximum of {userPlan?.maxQuestionCategories ?? 0} categories for your {userPlan?.displayName ?? 'current plan'}. 
                   To create more categories, you can either delete existing ones or upgrade to a higher plan.
                 </p>
                 <div className="mt-3 flex gap-2">
@@ -524,7 +530,10 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
                     size="sm" 
                     variant="ghost" 
                     className="text-orange-800"
-                    onClick={() => window.alert('Contact your administrator to upgrade your plan.')}
+                    onClick={() => {
+                      // TODO: Implement plan upgrade info modal
+                      console.log('Show plan upgrade information');
+                    }}
                   >
                     Learn More
                   </Button>
@@ -534,6 +543,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

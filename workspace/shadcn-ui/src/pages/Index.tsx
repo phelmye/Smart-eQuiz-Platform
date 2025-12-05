@@ -2,7 +2,8 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthSystem, useAuth } from '@/components/AuthSystem';
 import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { initializeMockData } from '@/lib/mockData';
+import { initializeMockData, mockTenants, Tenant } from '@/lib/mockData';
+import TenantLandingPage from '@/components/TenantLandingPage';
 
 // Dynamic imports for code splitting - components are loaded only when needed
 const Dashboard = lazy(() => import('@/components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -23,6 +24,51 @@ type Page = 'auth' | 'dashboard' | 'practice' | 'tournament-builder' | 'live-mat
 const AppContent: React.FC = () => {
   const { user, isAuthenticated, isInitializing } = useAuth();
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [, forceUpdate] = useState(0);
+  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
+
+  // Detect tenant from URL
+  useEffect(() => {
+    const detectTenantFromUrl = (): Tenant | null => {
+      const hostname = window.location.hostname;
+      const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+      
+      if (isDevelopment) {
+        // Check URL parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        const tenantParam = urlParams.get('tenant');
+        if (tenantParam) {
+          return mockTenants.find(t => t.id === tenantParam) || mockTenants[0];
+        }
+        // Default to first tenant for development
+        return mockTenants[0];
+      }
+      
+      // Production: subdomain detection
+      const parts = hostname.split('.');
+      if (parts.length >= 3) {
+        const subdomain = parts[0];
+        if (subdomain === 'www' || subdomain === 'admin') {
+          return mockTenants[0];
+        }
+        
+        // Map subdomain to tenant
+        const subdomainToTenant: Record<string, string> = {
+          'firstbaptist': 'tenant1',
+          'grace': 'tenant2',
+          'stmarys': 'tenant3',
+        };
+        
+        const tenantId = subdomainToTenant[subdomain] || 'tenant1';
+        return mockTenants.find(t => t.id === tenantId) || mockTenants[0];
+      }
+      
+      return mockTenants[0];
+    };
+    
+    const tenant = detectTenantFromUrl();
+    setCurrentTenant(tenant);
+  }, []);
 
   // Navigate to dashboard when authenticated
   useEffect(() => {
@@ -36,6 +82,8 @@ const AppContent: React.FC = () => {
     if (isAuthenticated && user && !isInitializing) {
       console.log('🔍 Index.tsx - User is authenticated, navigating to dashboard');
       setCurrentPage('dashboard');
+      // Force a re-render to ensure dashboard shows
+      forceUpdate(n => n + 1);
     } else {
       console.log('🔍 Index.tsx - Still not authenticated or initializing:', { 
         isAuthenticated, 
@@ -65,16 +113,32 @@ const AppContent: React.FC = () => {
     return <FullScreenLoader text="Initializing..." />;
   }
 
-  // Show auth system if not authenticated
+  // Show tenant landing page if not authenticated
   if (!isAuthenticated || !user) {
-    console.log('🔍 Index.tsx - Showing auth system because:', { 
+    console.log('🔍 Index.tsx - Showing landing page because:', { 
       isAuthenticated, 
       hasUser: !!user, 
       isInitializing 
     });
+    
+    if (currentTenant) {
+      return (
+        <TenantLandingPage 
+          tenant={currentTenant}
+          onAuthSuccess={() => {
+            console.log('🔍 Index.tsx - Landing page auth success callback triggered');
+            setCurrentPage('dashboard');
+            forceUpdate(n => n + 1);
+          }}
+        />
+      );
+    }
+    
+    // Fallback to auth system if tenant not detected
     return <AuthSystem onAuthSuccess={() => {
-      console.log('🔍 Index.tsx - onAuthSuccess callback triggered - authentication should be handled by AuthProvider');
-      // Don't manually set page - let the auth state change trigger the re-render naturally
+      console.log('🔍 Index.tsx - onAuthSuccess callback triggered');
+      setCurrentPage('dashboard');
+      forceUpdate(n => n + 1);
     }} />;
   }
 

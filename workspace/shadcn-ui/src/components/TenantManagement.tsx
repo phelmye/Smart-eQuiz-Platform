@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ArrowLeft, Plus, Edit, Trash2, Building, Users, Calendar, Crown } from 'lucide-react';
 import { useAuth } from './AuthSystem';
-import { storage, STORAGE_KEYS, Tenant, User, Tournament } from '@/lib/mockData';
+import { storage, STORAGE_KEYS, Tenant, User, Tournament, hasPermission } from '@/lib/mockData';
 
 interface TenantManagementProps {
   onBack: () => void;
@@ -137,7 +137,7 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
     }
   };
 
-  if (!user || user.role !== 'super_admin') {
+  if (!user || !hasPermission(user, 'tenants.manage')) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <Card className="max-w-2xl mx-auto">
@@ -249,13 +249,8 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
                   return (
                     <TableRow key={tenant.id}>
                       <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                            style={{ backgroundColor: tenant.primaryColor }}
-                          >
-                            {tenant.name.charAt(0)}
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <TenantAvatar tenant={tenant} size="sm" />
                           <div>
                             <div className="font-medium">{tenant.name}</div>
                             <div className="text-sm text-gray-500">{tenant.id}</div>
