@@ -14,9 +14,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StripeService } from './stripe.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { TenantGuard } from '../common/guards/tenant.guard';
-import { TenantId } from '../common/decorators/tenant-id.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TenantGuard } from '../auth/tenant.guard';
+import { TenantId } from '../common/tenant-id.decorator';
 import {
   CreateCustomerDto,
   CreateSubscriptionDto,

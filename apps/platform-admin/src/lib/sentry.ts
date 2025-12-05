@@ -19,7 +19,7 @@ if (SENTRY_DSN) {
     replaysOnErrorSampleRate: 1.0, // 100% of sessions with errors
     
     // Additional configuration
-    beforeSend(event) {
+    beforeSend(event: Sentry.Event) {
       // Don't send events in development unless explicitly enabled
       if (!import.meta.env.PROD && !import.meta.env.VITE_SENTRY_DEBUG) {
         return null;

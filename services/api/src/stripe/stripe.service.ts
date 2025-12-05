@@ -2,7 +2,7 @@ import { Injectable, Logger, BadRequestException, InternalServerErrorException }
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma.service';
-import { AuditService } from '../audit/audit.service';
+import { AuditService, AuditAction, AuditResource } from '../audit/audit.service';
 import { AnalyticsTrackingService } from '../analytics/analytics-tracking.service';
 import {
   CreateCustomerDto,
@@ -27,7 +27,7 @@ export class StripeService {
       // Don't throw error, allow app to start without Stripe
     } else {
       this.stripe = new Stripe(secretKey, {
-        apiVersion: '2024-12-18.acacia',
+        apiVersion: '2023-10-16',
       });
     }
   }
@@ -56,10 +56,10 @@ export class StripeService {
       await this.auditService.log({
         tenantId,
         userId,
-        action: 'PAYMENT_METHOD_ADDED',
-        entityType: 'customer',
-        entityId: customer.id,
-        details: { email: dto.email, name: dto.name },
+        action: AuditAction.PAYMENT_METHOD_ADDED,
+        resource: AuditResource.USER,
+        resourceId: customer.id,
+        metadata: { email: dto.email, name: dto.name },
       });
 
       this.logger.log(`Created Stripe customer ${customer.id} for user ${userId}`);
@@ -114,10 +114,10 @@ export class StripeService {
       await this.auditService.log({
         tenantId,
         userId,
-        action: 'PAYMENT_METHOD_ADDED',
-        entityType: 'payment_method',
-        entityId: paymentMethod.id,
-        details: { customerId: dto.customerId, type: paymentMethod.type },
+        action: AuditAction.PAYMENT_METHOD_ADDED,
+        resource: AuditResource.USER,
+        resourceId: paymentMethod.id,
+        metadata: { customerId: dto.customerId, type: paymentMethod.type },
       });
 
       this.logger.log(`Attached payment method ${paymentMethod.id} to customer ${dto.customerId}`);
@@ -169,10 +169,10 @@ export class StripeService {
       await this.auditService.log({
         tenantId,
         userId,
-        action: 'SUBSCRIPTION_UPDATED',
-        entityType: 'subscription',
-        entityId: subscription.id,
-        details: { priceId: dto.priceId, status: subscription.status },
+        action: AuditAction.SUBSCRIPTION_UPDATED,
+        resource: AuditResource.TENANT,
+        resourceId: subscription.id,
+        metadata: { priceId: dto.priceId, status: subscription.status },
       });
 
       // Track payment conversion in analytics (only if subscription is active/trialing)
@@ -223,10 +223,10 @@ export class StripeService {
       await this.auditService.log({
         tenantId,
         userId,
-        action: 'SUBSCRIPTION_UPDATED',
-        entityType: 'subscription',
-        entityId: subscriptionId,
-        details: { status: 'canceled' },
+        action: AuditAction.SUBSCRIPTION_UPDATED,
+        resource: AuditResource.TENANT,
+        resourceId: subscription.id,
+        metadata: { status: 'canceled' },
       });
 
       this.logger.log(`Canceled subscription ${subscriptionId} for tenant ${tenantId}`);

@@ -6,8 +6,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { EmailService, WelcomeEmailData, PasswordResetEmailData, TournamentNotificationData, PaymentReceiptData } from './email.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { TenantGuard } from '../common/guards/tenant.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TenantGuard } from '../auth/tenant.guard';
 import { SendEmailDto } from './dto';
 
 @ApiTags('Email')
