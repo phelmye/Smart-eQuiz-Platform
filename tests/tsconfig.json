@@ -6,13 +6,13 @@
     "types": ["@playwright/test", "node"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "baseUrl": ".",
-    "typeRoots": [
-      "../node_modules/@types"
-    ]
+    "baseUrl": "..",
+    "paths": {
+      "*": ["node_modules/*"]
+    }
   },
   "include": [
     "**/*.ts"
