@@ -21,6 +21,18 @@ async function main() {
 
   await prisma.userTenant.upsert({ where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } }, update: {}, create: { userId: user.id, tenantId: tenant.id, role: 'ORG_ADMIN' } });
 
+  // Create super_admin user for platform administration
+  const superAdminPw = await bcrypt.hash('SuperAdmin123!', 10);
+  await prisma.user.upsert({ 
+    where: { email: 'super@admin.com' }, 
+    update: {}, 
+    create: { 
+      email: 'super@admin.com', 
+      passwordHash: superAdminPw, 
+      role: 'SUPER_ADMIN' 
+    } 
+  });
+
   // Create categories
   const categoryNames = ['Old Testament', 'New Testament', 'Genesis', 'Exodus', 'Matthew', 'John', 'Revelation'];
   const categories = [];
