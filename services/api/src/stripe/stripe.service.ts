@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { AnalyticsTrackingService } from '../analytics/analytics-tracking.service';
 import {
   CreateCustomerDto,
   CreateSubscriptionDto,
@@ -18,6 +19,7 @@ export class StripeService {
     private configService: ConfigService,
     private prisma: PrismaService,
     private auditService: AuditService,
+    private analyticsTracking: AnalyticsTrackingService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!secretKey) {
@@ -172,6 +174,23 @@ export class StripeService {
         entityId: subscription.id,
         details: { priceId: dto.priceId, status: subscription.status },
       });
+
+      // Track payment conversion in analytics (only if subscription is active/trialing)
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
+        const amount = typeof subscription.items.data[0]?.price?.unit_amount === 'number'
+          ? subscription.items.data[0].price.unit_amount / 100
+          : 0;
+        const currency = subscription.items.data[0]?.price?.currency || 'usd';
+
+        await this.analyticsTracking.trackPaymentConversion({
+          userId,
+          tenantId,
+          amount,
+          currency,
+          planId: dto.priceId,
+          subscriptionId: subscription.id,
+        }).catch(err => this.logger.warn('Failed to track payment conversion', err));
+      }
 
       this.logger.log(`Created subscription ${subscription.id} for tenant ${tenantId}`);
       return subscription;
