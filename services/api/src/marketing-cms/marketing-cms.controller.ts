@@ -41,14 +41,14 @@ export class MarketingCmsController {
 
   @Post('blog-posts')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createBlogPost(@Body() body: CreateBlogPostDto) {
     return this.marketingCmsService.createBlogPost(body);
   }
 
   @Put('blog-posts/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async updateBlogPost(
     @Param('id') id: string,
     @Body() body: UpdateBlogPostDto,
@@ -58,7 +58,7 @@ export class MarketingCmsController {
 
   @Delete('blog-posts/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBlogPost(@Param('id') id: string) {
     await this.marketingCmsService.deleteBlogPost(id);
@@ -80,14 +80,14 @@ export class MarketingCmsController {
 
   @Post('features')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createFeature(@Body() body: CreateFeatureDto) {
     return this.marketingCmsService.createFeature(body);
   }
 
   @Put('features/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async updateFeature(
     @Param('id') id: string,
     @Body() body: UpdateFeatureDto,
@@ -97,7 +97,7 @@ export class MarketingCmsController {
 
   @Delete('features/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFeature(@Param('id') id: string) {
     await this.marketingCmsService.deleteFeature(id);
@@ -119,14 +119,14 @@ export class MarketingCmsController {
 
   @Post('testimonials')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createTestimonial(@Body() body: CreateTestimonialDto) {
     return this.marketingCmsService.createTestimonial(body);
   }
 
   @Put('testimonials/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async updateTestimonial(
     @Param('id') id: string,
     @Body() body: UpdateTestimonialDto,
@@ -136,7 +136,7 @@ export class MarketingCmsController {
 
   @Delete('testimonials/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTestimonial(@Param('id') id: string) {
     await this.marketingCmsService.deleteTestimonial(id);
@@ -158,14 +158,14 @@ export class MarketingCmsController {
 
   @Post('pricing-plans')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createPricingPlan(@Body() body: CreatePricingPlanDto) {
     return this.marketingCmsService.createPricingPlan(body);
   }
 
   @Put('pricing-plans/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async updatePricingPlan(
     @Param('id') id: string,
     @Body() body: UpdatePricingPlanDto,
@@ -175,7 +175,7 @@ export class MarketingCmsController {
 
   @Delete('pricing-plans/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deletePricingPlan(@Param('id') id: string) {
     await this.marketingCmsService.deletePricingPlan(id);
@@ -197,14 +197,14 @@ export class MarketingCmsController {
 
   @Post('faqs')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createFaq(@Body() body: CreateFaqDto) {
     return this.marketingCmsService.createFaq(body);
   }
 
   @Put('faqs/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async updateFaq(
     @Param('id') id: string,
     @Body() body: UpdateFaqDto,
@@ -214,7 +214,7 @@ export class MarketingCmsController {
 
   @Delete('faqs/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteFaq(@Param('id') id: string) {
     await this.marketingCmsService.deleteFaq(id);
@@ -231,7 +231,7 @@ export class MarketingCmsController {
 
   @Post('hero')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin')
+  @Roles('SUPER_ADMIN')
   async createOrUpdateHeroContent(@Body() body: CreateHeroDto) {
     return this.marketingCmsService.createOrUpdateHeroContent(body);
   }
@@ -245,3 +245,4 @@ export class MarketingCmsController {
     return this.marketingCmsService.getAllContent();
   }
 }
+
