@@ -5,7 +5,6 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 
 async function bootstrap() {
   // Initialize Sentry for error monitoring
@@ -13,13 +12,8 @@ async function bootstrap() {
     Sentry.init({
       dsn: process.env.SENTRY_DSN,
       environment: process.env.NODE_ENV || 'development',
-      integrations: [
-        new ProfilingIntegration(),
-      ],
       // Performance Monitoring
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-      // Profiling
-      profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     });
     console.log('✅ Sentry error monitoring initialized');
   } else {
