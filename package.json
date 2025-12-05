@@ -29,6 +29,7 @@
     "pnpm": ">=8.10.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0"
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^20.19.25"
   }
 }
