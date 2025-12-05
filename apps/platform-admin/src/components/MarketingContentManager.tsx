@@ -1,80 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, AlertCircle } from 'lucide-react';
-
-// Types for marketing content
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  publishedAt: string;
-  featuredImage: string;
-  category: string;
-  tags: string[];
-  status: 'draft' | 'published';
-}
-
-interface Feature {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  category: string;
-  order: number;
-}
-
-interface Testimonial {
-  id: string;
-  name: string;
-  role: string;
-  organization: string;
-  quote: string;
-  avatar: string;
-  rating: number;
-  featured: boolean;
-}
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  price: number;
-  interval: 'month' | 'year';
-  features: string[];
-  highlighted: boolean;
-  ctaText: string;
-  ctaLink: string;
-}
-
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-  order: number;
-}
-
-interface HeroContent {
-  headline: string;
-  subheadline: string;
-  ctaPrimary: string;
-  ctaSecondary: string;
-  ctaPrimaryLink: string;
-  ctaSecondaryLink: string;
-  backgroundImage: string;
-  videoUrl?: string;
-}
+import { useMarketingCMS } from '@/hooks/useMarketingCMS';
+import type { BlogPost, Feature, Testimonial, PricingPlan, FAQ, HeroContent } from '@/hooks/useMarketingCMS';
 
 export function MarketingContentManager() {
   const [activeSection, setActiveSection] = useState<string>('hero');
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Section data
-  const [hero, setHero] = useState<HeroContent>({
+  // API hooks for each content type
+  const blogCMS = useMarketingCMS<BlogPost>('blog-posts');
+  const featureCMS = useMarketingCMS<Feature>('features');
+  const testimonialCMS = useMarketingCMS<Testimonial>('testimonials');
+  const pricingCMS = useMarketingCMS<PricingPlan>('pricing-plans');
+  const faqCMS = useMarketingCMS<FAQ>('faqs');
+  const heroCMS = useMarketingCMS<HeroContent>('hero');
+
+  // Extract data from hooks
+  const blogPosts = blogCMS.data || [];
+  const features = featureCMS.data || [];
+  const testimonials = testimonialCMS.data || [];
+  const pricingPlans = pricingCMS.data || [];
+  const faqs = faqCMS.data || [];
+  const hero = heroCMS.data?.[0] || {
     headline: 'Transform Bible Learning with Smart eQuiz',
     subheadline: 'Create engaging quiz tournaments for your congregation',
     ctaPrimary: 'Start Free Trial',
@@ -82,13 +30,11 @@ export function MarketingContentManager() {
     ctaPrimaryLink: '/signup',
     ctaSecondaryLink: '/demo',
     backgroundImage: '/images/hero-bg.jpg',
-  });
-  
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
-  const [features, setFeatures] = useState<Feature[]>([]);
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
-  const [faqs, setFAQs] = useState<FAQ[]>([]);
+  };
+
+  // Aggregate loading state
+  const loading = blogCMS.loading || featureCMS.loading || testimonialCMS.loading || 
+                  pricingCMS.loading || faqCMS.loading || heroCMS.loading;
 
   // Modal states
   const [editingBlog, setEditingBlog] = useState<BlogPost | null>(null);
@@ -96,59 +42,19 @@ export function MarketingContentManager() {
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
   const [editingPricing, setEditingPricing] = useState<PricingPlan | null>(null);
   const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
+  const [editingHero, setEditingHero] = useState<HeroContent>(hero);
 
-  useEffect(() => {
-    loadContent();
-  }, [activeSection]);
-
-  const loadContent = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Load from localStorage (in production, replace with API calls)
-      const storedBlogPosts = localStorage.getItem('marketing_blog_posts');
-      const storedFeatures = localStorage.getItem('marketing_features');
-      const storedTestimonials = localStorage.getItem('marketing_testimonials');
-      const storedPricing = localStorage.getItem('marketing_pricing');
-      const storedFAQs = localStorage.getItem('marketing_faqs');
-      const storedHero = localStorage.getItem('marketing_hero');
-
-      if (storedBlogPosts) setBlogPosts(JSON.parse(storedBlogPosts));
-      if (storedFeatures) setFeatures(JSON.parse(storedFeatures));
-      if (storedTestimonials) setTestimonials(JSON.parse(storedTestimonials));
-      if (storedPricing) setPricingPlans(JSON.parse(storedPricing));
-      if (storedFAQs) setFAQs(JSON.parse(storedFAQs));
-      if (storedHero) setHero(JSON.parse(storedHero));
-    } catch (err) {
-      setError('Failed to load content');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveContent = async (type: string, data: any) => {
-    setSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      localStorage.setItem(`marketing_${type}`, JSON.stringify(data));
-      setSuccess(`${type} saved successfully!`);
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(`Failed to save ${type}`);
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
+  // Aggregate error state
+  const apiError = blogCMS.error || featureCMS.error || testimonialCMS.error || 
+                   pricingCMS.error || faqCMS.error || heroCMS.error;
+  
+  if (apiError && !error) {
+    setError(apiError);
+  }
 
   // Blog post management
   const addBlogPost = () => {
-    const newPost: BlogPost = {
-      id: Date.now().toString(),
+    const newPost: Partial<BlogPost> = {
       title: '',
       slug: '',
       excerpt: '',
@@ -160,64 +66,86 @@ export function MarketingContentManager() {
       tags: [],
       status: 'draft',
     };
-    setEditingBlog(newPost);
+    setEditingBlog(newPost as BlogPost);
   };
 
   const saveBlogPost = async () => {
     if (!editingBlog) return;
     
-    const updated = blogPosts.some(p => p.id === editingBlog.id)
-      ? blogPosts.map(p => p.id === editingBlog.id ? editingBlog : p)
-      : [...blogPosts, editingBlog];
-    
-    setBlogPosts(updated);
-    await saveContent('blog_posts', updated);
-    setEditingBlog(null);
+    try {
+      if (editingBlog.id) {
+        await blogCMS.update(editingBlog.id, editingBlog);
+      } else {
+        await blogCMS.create(editingBlog);
+      }
+      setSuccess('Blog post saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      setEditingBlog(null);
+    } catch (err) {
+      setError('Failed to save blog post');
+      console.error(err);
+    }
   };
 
   const deleteBlogPost = async (id: string) => {
     if (!confirm('Are you sure you want to delete this blog post?')) return;
-    const updated = blogPosts.filter(p => p.id !== id);
-    setBlogPosts(updated);
-    await saveContent('blog_posts', updated);
+    
+    try {
+      await blogCMS.remove(id);
+      setSuccess('Blog post deleted successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to delete blog post');
+      console.error(err);
+    }
   };
 
   // Feature management
   const addFeature = () => {
-    const newFeature: Feature = {
-      id: Date.now().toString(),
+    const newFeature: Partial<Feature> = {
       title: '',
       description: '',
       icon: 'star',
       category: 'core',
       order: features.length,
     };
-    setEditingFeature(newFeature);
+    setEditingFeature(newFeature as Feature);
   };
 
   const saveFeature = async () => {
     if (!editingFeature) return;
     
-    const updated = features.some(f => f.id === editingFeature.id)
-      ? features.map(f => f.id === editingFeature.id ? editingFeature : f)
-      : [...features, editingFeature];
-    
-    setFeatures(updated);
-    await saveContent('features', updated);
-    setEditingFeature(null);
+    try {
+      if (editingFeature.id) {
+        await featureCMS.update(editingFeature.id, editingFeature);
+      } else {
+        await featureCMS.create(editingFeature);
+      }
+      setSuccess('Feature saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      setEditingFeature(null);
+    } catch (err) {
+      setError('Failed to save feature');
+      console.error(err);
+    }
   };
 
   const deleteFeature = async (id: string) => {
     if (!confirm('Are you sure you want to delete this feature?')) return;
-    const updated = features.filter(f => f.id !== id);
-    setFeatures(updated);
-    await saveContent('features', updated);
+    
+    try {
+      await featureCMS.remove(id);
+      setSuccess('Feature deleted successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to delete feature');
+      console.error(err);
+    }
   };
 
   // Testimonial management
   const addTestimonial = () => {
-    const newTestimonial: Testimonial = {
-      id: Date.now().toString(),
+    const newTestimonial: Partial<Testimonial> = {
       name: '',
       role: '',
       organization: '',
@@ -226,32 +154,43 @@ export function MarketingContentManager() {
       rating: 5,
       featured: false,
     };
-    setEditingTestimonial(newTestimonial);
+    setEditingTestimonial(newTestimonial as Testimonial);
   };
 
   const saveTestimonial = async () => {
     if (!editingTestimonial) return;
     
-    const updated = testimonials.some(t => t.id === editingTestimonial.id)
-      ? testimonials.map(t => t.id === editingTestimonial.id ? editingTestimonial : t)
-      : [...testimonials, editingTestimonial];
-    
-    setTestimonials(updated);
-    await saveContent('testimonials', updated);
-    setEditingTestimonial(null);
+    try {
+      if (editingTestimonial.id) {
+        await testimonialCMS.update(editingTestimonial.id, editingTestimonial);
+      } else {
+        await testimonialCMS.create(editingTestimonial);
+      }
+      setSuccess('Testimonial saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      setEditingTestimonial(null);
+    } catch (err) {
+      setError('Failed to save testimonial');
+      console.error(err);
+    }
   };
 
   const deleteTestimonial = async (id: string) => {
     if (!confirm('Are you sure you want to delete this testimonial?')) return;
-    const updated = testimonials.filter(t => t.id !== id);
-    setTestimonials(updated);
-    await saveContent('testimonials', updated);
+    
+    try {
+      await testimonialCMS.remove(id);
+      setSuccess('Testimonial deleted successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to delete testimonial');
+      console.error(err);
+    }
   };
 
   // Pricing plan management
   const addPricingPlan = () => {
-    const newPlan: PricingPlan = {
-      id: Date.now().toString(),
+    const newPlan: Partial<PricingPlan> = {
       name: '',
       price: 0,
       interval: 'month',
@@ -260,62 +199,96 @@ export function MarketingContentManager() {
       ctaText: 'Get Started',
       ctaLink: '/signup',
     };
-    setEditingPricing(newPlan);
+    setEditingPricing(newPlan as PricingPlan);
   };
 
   const savePricingPlan = async () => {
     if (!editingPricing) return;
     
-    const updated = pricingPlans.some(p => p.id === editingPricing.id)
-      ? pricingPlans.map(p => p.id === editingPricing.id ? editingPricing : p)
-      : [...pricingPlans, editingPricing];
-    
-    setPricingPlans(updated);
-    await saveContent('pricing', updated);
-    setEditingPricing(null);
+    try {
+      if (editingPricing.id) {
+        await pricingCMS.update(editingPricing.id, editingPricing);
+      } else {
+        await pricingCMS.create(editingPricing);
+      }
+      setSuccess('Pricing plan saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      setEditingPricing(null);
+    } catch (err) {
+      setError('Failed to save pricing plan');
+      console.error(err);
+    }
   };
 
   const deletePricingPlan = async (id: string) => {
     if (!confirm('Are you sure you want to delete this pricing plan?')) return;
-    const updated = pricingPlans.filter(p => p.id !== id);
-    setPricingPlans(updated);
-    await saveContent('pricing', updated);
+    
+    try {
+      await pricingCMS.remove(id);
+      setSuccess('Pricing plan deleted successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to delete pricing plan');
+      console.error(err);
+    }
   };
 
   // FAQ management
   const addFAQ = () => {
-    const newFAQ: FAQ = {
-      id: Date.now().toString(),
+    const newFAQ: Partial<FAQ> = {
       question: '',
       answer: '',
       category: 'general',
       order: faqs.length,
     };
-    setEditingFAQ(newFAQ);
+    setEditingFAQ(newFAQ as FAQ);
   };
 
   const saveFAQ = async () => {
     if (!editingFAQ) return;
     
-    const updated = faqs.some(f => f.id === editingFAQ.id)
-      ? faqs.map(f => f.id === editingFAQ.id ? editingFAQ : f)
-      : [...faqs, editingFAQ];
-    
-    setFAQs(updated);
-    await saveContent('faqs', updated);
-    setEditingFAQ(null);
+    try {
+      if (editingFAQ.id) {
+        await faqCMS.update(editingFAQ.id, editingFAQ);
+      } else {
+        await faqCMS.create(editingFAQ);
+      }
+      setSuccess('FAQ saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+      setEditingFAQ(null);
+    } catch (err) {
+      setError('Failed to save FAQ');
+      console.error(err);
+    }
   };
 
   const deleteFAQ = async (id: string) => {
     if (!confirm('Are you sure you want to delete this FAQ?')) return;
-    const updated = faqs.filter(f => f.id !== id);
-    setFAQs(updated);
-    await saveContent('faqs', updated);
+    
+    try {
+      await faqCMS.remove(id);
+      setSuccess('FAQ deleted successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to delete FAQ');
+      console.error(err);
+    }
   };
 
   // Save hero content
-  const saveHero = async () => {
-    await saveContent('hero', hero);
+  const saveHero = async (updatedHero: HeroContent) => {
+    try {
+      if (hero.id) {
+        await heroCMS.update(hero.id, updatedHero);
+      } else {
+        await heroCMS.create(updatedHero);
+      }
+      setSuccess('Hero content saved successfully!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Failed to save hero content');
+      console.error(err);
+    }
   };
 
   return (
@@ -374,8 +347,8 @@ export function MarketingContentManager() {
                   <label className="block text-sm font-medium mb-2">Headline</label>
                   <input
                     type="text"
-                    value={hero.headline}
-                    onChange={(e) => setHero({ ...hero, headline: e.target.value })}
+                    value={editingHero.headline}
+                    onChange={(e) => setEditingHero({ ...editingHero, headline: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                   />
                 </div>
@@ -383,8 +356,8 @@ export function MarketingContentManager() {
                 <div>
                   <label className="block text-sm font-medium mb-2">Subheadline</label>
                   <textarea
-                    value={hero.subheadline}
-                    onChange={(e) => setHero({ ...hero, subheadline: e.target.value })}
+                    value={editingHero.subheadline}
+                    onChange={(e) => setEditingHero({ ...editingHero, subheadline: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                     rows={3}
                   />
@@ -395,8 +368,8 @@ export function MarketingContentManager() {
                     <label className="block text-sm font-medium mb-2">Primary CTA Text</label>
                     <input
                       type="text"
-                      value={hero.ctaPrimary}
-                      onChange={(e) => setHero({ ...hero, ctaPrimary: e.target.value })}
+                      value={editingHero.ctaPrimary}
+                      onChange={(e) => setEditingHero({ ...editingHero, ctaPrimary: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
                     />
                   </div>
@@ -405,8 +378,8 @@ export function MarketingContentManager() {
                     <label className="block text-sm font-medium mb-2">Primary CTA Link</label>
                     <input
                       type="text"
-                      value={hero.ctaPrimaryLink}
-                      onChange={(e) => setHero({ ...hero, ctaPrimaryLink: e.target.value })}
+                      value={editingHero.ctaPrimaryLink}
+                      onChange={(e) => setEditingHero({ ...editingHero, ctaPrimaryLink: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
                     />
                   </div>
@@ -417,8 +390,8 @@ export function MarketingContentManager() {
                     <label className="block text-sm font-medium mb-2">Secondary CTA Text</label>
                     <input
                       type="text"
-                      value={hero.ctaSecondary}
-                      onChange={(e) => setHero({ ...hero, ctaSecondary: e.target.value })}
+                      value={editingHero.ctaSecondary}
+                      onChange={(e) => setEditingHero({ ...editingHero, ctaSecondary: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
                     />
                   </div>
@@ -427,8 +400,8 @@ export function MarketingContentManager() {
                     <label className="block text-sm font-medium mb-2">Secondary CTA Link</label>
                     <input
                       type="text"
-                      value={hero.ctaSecondaryLink}
-                      onChange={(e) => setHero({ ...hero, ctaSecondaryLink: e.target.value })}
+                      value={editingHero.ctaSecondaryLink}
+                      onChange={(e) => setEditingHero({ ...editingHero, ctaSecondaryLink: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
                     />
                   </div>
@@ -438,8 +411,8 @@ export function MarketingContentManager() {
                   <label className="block text-sm font-medium mb-2">Background Image URL</label>
                   <input
                     type="text"
-                    value={hero.backgroundImage}
-                    onChange={(e) => setHero({ ...hero, backgroundImage: e.target.value })}
+                    value={editingHero.backgroundImage}
+                    onChange={(e) => setEditingHero({ ...editingHero, backgroundImage: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                   />
                 </div>
@@ -448,19 +421,19 @@ export function MarketingContentManager() {
                   <label className="block text-sm font-medium mb-2">Video URL (Optional)</label>
                   <input
                     type="text"
-                    value={hero.videoUrl || ''}
-                    onChange={(e) => setHero({ ...hero, videoUrl: e.target.value })}
+                    value={editingHero.videoUrl || ''}
+                    onChange={(e) => setEditingHero({ ...editingHero, videoUrl: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg"
                   />
                 </div>
 
                 <button
-                  onClick={saveHero}
-                  disabled={saving}
+                  onClick={() => saveHero(editingHero)}
+                  disabled={loading}
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save Hero Content'}
+                  {loading ? 'Saving...' : 'Save Hero Content'}
                 </button>
               </div>
             </div>
