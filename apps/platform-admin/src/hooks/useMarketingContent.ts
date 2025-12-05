@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 /**
  * React hook for Marketing CMS content management
  * 
- * Current Implementation: localStorage (Phase 1)
- * Future: API integration when backend is deployed (Phase 2)
+ * Implementation: Full API integration with backend
  * 
  * Usage:
  * ```tsx
@@ -149,24 +150,17 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      // TODO: Replace with API calls when backend is ready
-      // const response = await fetch('/api/marketing-content');
-      // const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/all`);
+      if (!response.ok) throw new Error('Failed to fetch content');
       
-      // Phase 1: localStorage implementation
-      const storedBlogPosts = localStorage.getItem('marketing_blog_posts');
-      const storedFeatures = localStorage.getItem('marketing_features');
-      const storedTestimonials = localStorage.getItem('marketing_testimonials');
-      const storedPricing = localStorage.getItem('marketing_pricing');
-      const storedFAQs = localStorage.getItem('marketing_faqs');
-      const storedHero = localStorage.getItem('marketing_hero');
-
-      if (storedBlogPosts) setBlogPosts(JSON.parse(storedBlogPosts));
-      if (storedFeatures) setFeatures(JSON.parse(storedFeatures));
-      if (storedTestimonials) setTestimonials(JSON.parse(storedTestimonials));
-      if (storedPricing) setPricingPlans(JSON.parse(storedPricing));
-      if (storedFAQs) setFAQs(JSON.parse(storedFAQs));
-      if (storedHero) setHero(JSON.parse(storedHero));
+      const data = await response.json();
+      
+      setBlogPosts(data.blogPosts || []);
+      setFeatures(data.features || []);
+      setTestimonials(data.testimonials || []);
+      setPricingPlans(data.pricingPlans || []);
+      setFAQs(data.faqs || []);
+      if (data.hero) setHero(data.hero);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load content'));
     } finally {
@@ -180,18 +174,25 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      // TODO: Replace with API call
-      // await fetch('/api/marketing-content/blog', {
-      //   method: post.id ? 'PUT' : 'POST',
-      //   body: JSON.stringify(post),
-      // });
+      const isUpdate = blogPosts.some(p => p.id === post.id);
+      const url = isUpdate 
+        ? `${API_BASE_URL}/marketing-cms/blog-posts/${post.id}`
+        : `${API_BASE_URL}/marketing-cms/blog-posts`;
       
-      const updated = blogPosts.some(p => p.id === post.id)
-        ? blogPosts.map(p => p.id === post.id ? post : p)
-        : [...blogPosts, post];
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(post),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save blog post');
+      const savedPost = await response.json();
+      
+      const updated = isUpdate
+        ? blogPosts.map(p => p.id === post.id ? savedPost : p)
+        : [...blogPosts, savedPost];
       
       setBlogPosts(updated);
-      localStorage.setItem('marketing_blog_posts', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save blog post'));
       throw err;
@@ -205,12 +206,14 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      // TODO: Replace with API call
-      // await fetch(`/api/marketing-content/blog/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/blog-posts/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete blog post');
       
       const updated = blogPosts.filter(p => p.id !== id);
       setBlogPosts(updated);
-      localStorage.setItem('marketing_blog_posts', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete blog post'));
       throw err;
@@ -225,12 +228,25 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      const updated = features.some(f => f.id === feature.id)
-        ? features.map(f => f.id === feature.id ? feature : f)
-        : [...features, feature];
+      const isUpdate = features.some(f => f.id === feature.id);
+      const url = isUpdate
+        ? `${API_BASE_URL}/marketing-cms/features/${feature.id}`
+        : `${API_BASE_URL}/marketing-cms/features`;
+      
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feature),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save feature');
+      const savedFeature = await response.json();
+      
+      const updated = isUpdate
+        ? features.map(f => f.id === feature.id ? savedFeature : f)
+        : [...features, savedFeature];
       
       setFeatures(updated);
-      localStorage.setItem('marketing_features', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save feature'));
       throw err;
@@ -244,9 +260,14 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/features/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete feature');
+      
       const updated = features.filter(f => f.id !== id);
       setFeatures(updated);
-      localStorage.setItem('marketing_features', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete feature'));
       throw err;
@@ -261,12 +282,25 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      const updated = testimonials.some(t => t.id === testimonial.id)
-        ? testimonials.map(t => t.id === testimonial.id ? testimonial : t)
-        : [...testimonials, testimonial];
+      const isUpdate = testimonials.some(t => t.id === testimonial.id);
+      const url = isUpdate
+        ? `${API_BASE_URL}/marketing-cms/testimonials/${testimonial.id}`
+        : `${API_BASE_URL}/marketing-cms/testimonials`;
+      
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testimonial),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save testimonial');
+      const savedTestimonial = await response.json();
+      
+      const updated = isUpdate
+        ? testimonials.map(t => t.id === testimonial.id ? savedTestimonial : t)
+        : [...testimonials, savedTestimonial];
       
       setTestimonials(updated);
-      localStorage.setItem('marketing_testimonials', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save testimonial'));
       throw err;
@@ -280,9 +314,14 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/testimonials/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete testimonial');
+      
       const updated = testimonials.filter(t => t.id !== id);
       setTestimonials(updated);
-      localStorage.setItem('marketing_testimonials', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete testimonial'));
       throw err;
@@ -297,12 +336,25 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      const updated = pricingPlans.some(p => p.id === plan.id)
-        ? pricingPlans.map(p => p.id === plan.id ? plan : p)
-        : [...pricingPlans, plan];
+      const isUpdate = pricingPlans.some(p => p.id === plan.id);
+      const url = isUpdate
+        ? `${API_BASE_URL}/marketing-cms/pricing-plans/${plan.id}`
+        : `${API_BASE_URL}/marketing-cms/pricing-plans`;
+      
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(plan),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save pricing plan');
+      const savedPlan = await response.json();
+      
+      const updated = isUpdate
+        ? pricingPlans.map(p => p.id === plan.id ? savedPlan : p)
+        : [...pricingPlans, savedPlan];
       
       setPricingPlans(updated);
-      localStorage.setItem('marketing_pricing', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save pricing plan'));
       throw err;
@@ -316,9 +368,14 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/pricing-plans/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete pricing plan');
+      
       const updated = pricingPlans.filter(p => p.id !== id);
       setPricingPlans(updated);
-      localStorage.setItem('marketing_pricing', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete pricing plan'));
       throw err;
@@ -333,12 +390,25 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      const updated = faqs.some(f => f.id === faq.id)
-        ? faqs.map(f => f.id === faq.id ? faq : f)
-        : [...faqs, faq];
+      const isUpdate = faqs.some(f => f.id === faq.id);
+      const url = isUpdate
+        ? `${API_BASE_URL}/marketing-cms/faqs/${faq.id}`
+        : `${API_BASE_URL}/marketing-cms/faqs`;
+      
+      const response = await fetch(url, {
+        method: isUpdate ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(faq),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save FAQ');
+      const savedFaq = await response.json();
+      
+      const updated = isUpdate
+        ? faqs.map(f => f.id === faq.id ? savedFaq : f)
+        : [...faqs, savedFaq];
       
       setFAQs(updated);
-      localStorage.setItem('marketing_faqs', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save FAQ'));
       throw err;
@@ -352,9 +422,14 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/faqs/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete FAQ');
+      
       const updated = faqs.filter(f => f.id !== id);
       setFAQs(updated);
-      localStorage.setItem('marketing_faqs', JSON.stringify(updated));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete FAQ'));
       throw err;
@@ -369,8 +444,16 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      setHero(newHero);
-      localStorage.setItem('marketing_hero', JSON.stringify(newHero));
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/hero`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newHero),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save hero content');
+      const savedHero = await response.json();
+      
+      setHero(savedHero);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to save hero content'));
       throw err;

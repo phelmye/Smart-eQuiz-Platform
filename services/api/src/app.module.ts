@@ -19,6 +19,7 @@ import { ChatModule } from './chat/chat.module';
 import { ApiManagementModule } from './api-management/api-management.module';
 import { LegalDocumentsModule } from './legal-documents/legal-documents.module';
 import { LandingPageModule } from './landing-page/landing-page.module';
+import { MarketingCmsModule } from './marketing-cms/marketing-cms.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -51,6 +52,7 @@ import { PrismaModule } from './prisma.module';
     ApiManagementModule,
     LegalDocumentsModule,
     LandingPageModule,
+    MarketingCmsModule,
   ],
   controllers: [AppController],
   providers: [
