@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import {
-  MarketingContentType,
   BlogPostStatus,
   PricingInterval,
 } from '@prisma/client';
@@ -40,6 +39,7 @@ export class MarketingCmsService {
     featuredImage?: string;
     tags?: string[];
     status: BlogPostStatus;
+    createdBy: string;
   }) {
     return this.prisma.marketingBlogPost.create({
       data: {
@@ -111,6 +111,7 @@ export class MarketingCmsService {
     icon: string;
     category: string;
     order?: number;
+    createdBy: string;
   }) {
     // Auto-assign order if not provided
     if (!data.order) {
@@ -175,6 +176,7 @@ export class MarketingCmsService {
     rating: number;
     avatar?: string;
     featured?: boolean;
+    createdBy: string;
   }) {
     return this.prisma.marketingTestimonial.create({
       data,
@@ -232,7 +234,8 @@ export class MarketingCmsService {
     features: string[];
     ctaText: string;
     ctaLink: string;
-    popular?: boolean;
+    highlighted?: boolean;
+    createdBy: string;
   }) {
     return this.prisma.marketingPricingPlan.create({
       data,
@@ -288,6 +291,7 @@ export class MarketingCmsService {
     answer: string;
     category: string;
     order?: number;
+    createdBy: string;
   }) {
     // Auto-assign order if not provided
     if (!data.order) {
@@ -336,19 +340,29 @@ export class MarketingCmsService {
   async createOrUpdateHeroContent(data: {
     headline: string;
     subheadline: string;
-    primaryCtaText: string;
-    primaryCtaLink: string;
-    secondaryCtaText?: string;
-    secondaryCtaLink?: string;
+    ctaPrimary: string;
+    ctaPrimaryLink: string;
+    ctaSecondary?: string;
+    ctaSecondaryLink?: string;
     backgroundImage?: string;
     videoUrl?: string;
+    createdBy: string;
   }) {
     const existing = await this.prisma.marketingHero.findFirst();
 
     if (existing) {
       return this.prisma.marketingHero.update({
         where: { id: existing.id },
-        data,
+        data: {
+          headline: data.headline,
+          subheadline: data.subheadline,
+          ctaPrimary: data.ctaPrimary,
+          ctaPrimaryLink: data.ctaPrimaryLink,
+          ctaSecondary: data.ctaSecondary,
+          ctaSecondaryLink: data.ctaSecondaryLink,
+          backgroundImage: data.backgroundImage,
+          videoUrl: data.videoUrl,
+        },
       });
     } else {
       return this.prisma.marketingHero.create({

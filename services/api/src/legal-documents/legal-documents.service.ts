@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma.service';
 import { CreateLegalDocumentDto } from './dto/create-legal-document.dto';
 import { UpdateLegalDocumentDto } from './dto/update-legal-document.dto';
 import { AcceptLegalDocumentDto } from './dto/accept-legal-document.dto';

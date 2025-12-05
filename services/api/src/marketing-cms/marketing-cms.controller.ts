@@ -43,6 +43,7 @@ export class MarketingCmsController {
       featuredImage?: string;
       tags?: string[];
       status: BlogPostStatus;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createBlogPost(body);
@@ -96,6 +97,7 @@ export class MarketingCmsController {
       icon: string;
       category: string;
       order?: number;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createFeature(body);
@@ -147,6 +149,7 @@ export class MarketingCmsController {
       rating: number;
       avatar?: string;
       featured?: boolean;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createTestimonial(body);
@@ -199,7 +202,8 @@ export class MarketingCmsController {
       features: string[];
       ctaText: string;
       ctaLink: string;
-      popular?: boolean;
+      highlighted?: boolean;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createPricingPlan(body);
@@ -250,6 +254,7 @@ export class MarketingCmsController {
       answer: string;
       category: string;
       order?: number;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createFaq(body);
@@ -290,12 +295,13 @@ export class MarketingCmsController {
     body: {
       headline: string;
       subheadline: string;
-      primaryCtaText: string;
-      primaryCtaLink: string;
-      secondaryCtaText?: string;
-      secondaryCtaLink?: string;
+      ctaPrimary: string;
+      ctaPrimaryLink: string;
+      ctaSecondary?: string;
+      ctaSecondaryLink?: string;
       backgroundImage?: string;
       videoUrl?: string;
+      createdBy: string;
     },
   ) {
     return this.marketingCmsService.createOrUpdateHeroContent(body);
