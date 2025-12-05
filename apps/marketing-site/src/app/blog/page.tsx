@@ -168,7 +168,7 @@ export default async function BlogPage() {
   ];
 
   // Extract unique categories from posts
-  const allCategories = Array.from(new Set(posts.map(post => post.category)));
+  const allCategories = Array.from(new Set(posts.map((post: any) => post.category))) as string[];
   const categories = ["All", ...allCategories];
 
   return <BlogContent posts={posts} categories={categories} />;

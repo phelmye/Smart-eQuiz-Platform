@@ -1,35 +1,134 @@
 import Link from 'next/link';
+import Testimonials from '@/components/Testimonials';
 
-export default function HomePage() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+interface Hero {
+  headline: string;
+  subheadline: string;
+  ctaPrimaryText?: string;
+  ctaPrimaryUrl?: string;
+  ctaSecondaryText?: string;
+  ctaSecondaryUrl?: string;
+  backgroundImage?: string;
+}
+
+interface Testimonial {
+  id: string;
+  name: string;
+  role: string;
+  organization?: string;
+  quote: string;
+  rating: number;
+  featured: boolean;
+  avatar?: string;
+}
+
+// Fallback hero content
+const defaultHero: Hero = {
+  headline: "Transform Your Church's Bible Quiz Program",
+  subheadline: "The complete SaaS platform for managing tournaments, practice sessions, and competitive championships. Engage youth, track progress, and inspire deeper Scripture study.",
+  ctaPrimaryText: "Start Free Trial",
+  ctaPrimaryUrl: "/signup",
+  ctaSecondaryText: "Watch Demo",
+  ctaSecondaryUrl: "/demo",
+};
+
+// Fallback testimonials
+const defaultTestimonials: Testimonial[] = [
+  {
+    id: '1',
+    name: 'Pastor John Smith',
+    role: 'Youth Pastor',
+    organization: 'First Baptist Church',
+    quote: 'Smart eQuiz transformed our youth program. Engagement is up 300%!',
+    rating: 5,
+    featured: true,
+  },
+  {
+    id: '2',
+    name: 'Sarah Johnson',
+    role: 'Quiz Coordinator',
+    organization: 'Grace Community Church',
+    quote: 'The best platform for managing Bible quiz tournaments. Highly recommended!',
+    rating: 5,
+    featured: true,
+  },
+  {
+    id: '3',
+    name: 'Michael Chen',
+    role: 'Director',
+    organization: 'City Church',
+    quote: 'Easy to use, powerful features, and excellent support. Worth every penny!',
+    rating: 5,
+    featured: true,
+  },
+];
+
+async function getHeroContent(): Promise<Hero> {
+  try {
+    const res = await fetch(`${API_URL}/marketing-cms/hero`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) throw new Error('Failed to fetch hero');
+    const heroes = await res.json();
+    return heroes[0] || defaultHero;
+  } catch (error) {
+    console.error('Error fetching hero:', error);
+    return defaultHero;
+  }
+}
+
+async function getTestimonials(): Promise<Testimonial[]> {
+  try {
+    const res = await fetch(`${API_URL}/marketing-cms/testimonials`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) throw new Error('Failed to fetch testimonials');
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching testimonials:', error);
+    return defaultTestimonials;
+  }
+}
+
+export default async function HomePage() {
+  const hero = await getHeroContent();
+  const testimonials = await getTestimonials();
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+      <section 
+        className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white"
+        style={hero.backgroundImage ? { backgroundImage: `url(${hero.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+      >
         <div className="container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-block bg-blue-400/30 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-semibold mb-6 border border-blue-300/50">
               🎉 Trusted by 500+ churches worldwide
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Transform Your Church&apos;s Bible Quiz Program
+              {hero.headline}
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-blue-100">
-              The complete SaaS platform for managing tournaments, practice sessions, 
-              and competitive championships. Engage youth, track progress, and inspire deeper Scripture study.
+              {hero.subheadline}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="/signup"
+                href={hero.ctaPrimaryUrl || "/signup"}
                 className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
               >
-                Start Free Trial
+                {hero.ctaPrimaryText || "Start Free Trial"}
               </Link>
-              <Link 
-                href="/demo"
-                className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold text-lg hover:bg-blue-400 transition-colors border-2 border-white/20"
-              >
-                Watch Demo
-              </Link>
+              {hero.ctaSecondaryText && (
+                <Link 
+                  href={hero.ctaSecondaryUrl || "/demo"}
+                  className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold text-lg hover:bg-blue-400 transition-colors border-2 border-white/20"
+                >
+                  {hero.ctaSecondaryText}
+                </Link>
+              )}
             </div>
             <p className="mt-6 text-blue-200 text-sm">
               No credit card required • 14-day free trial • Cancel anytime
@@ -183,76 +282,7 @@ export default function HomePage() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Testimonial 1 */}
-            <div className="bg-gray-50 p-8 rounded-lg shadow-md">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                &quot;Smart eQuiz has completely transformed our youth Bible quiz program. The AI question generation saves us hours of preparation time, and the kids love the interactive tournaments!&quot;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center text-blue-600 font-bold mr-3">
-                  SM
-                </div>
-                <div>
-                  <div className="font-semibold">Sarah Mitchell</div>
-                  <div className="text-sm text-gray-600">Youth Director, Grace Community Church</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="bg-gray-50 p-8 rounded-lg shadow-md">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                &quot;We&apos;ve been using Smart eQuiz for regional competitions, and the tournament management features are incredible. Everything runs smoothly, and the real-time scoring keeps everyone engaged.&quot;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center text-green-600 font-bold mr-3">
-                  JR
-                </div>
-                <div>
-                  <div className="font-semibold">James Rodriguez</div>
-                  <div className="text-sm text-gray-600">Regional Coordinator, Bible Quiz Network</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="bg-gray-50 p-8 rounded-lg shadow-md">
-              <div className="flex mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 mb-4">
-                &quot;The analytics and reporting features give us valuable insights into our students&apos; progress. The custom branding makes it feel like our own platform. Highly recommend!&quot;
-              </p>
-              <div className="flex items-center">
-                <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center text-purple-600 font-bold mr-3">
-                  EP
-                </div>
-                <div>
-                  <div className="font-semibold">Emily Patterson</div>
-                  <div className="text-sm text-gray-600">Education Director, First Baptist Church</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Testimonials testimonials={testimonials} showFeaturedOnly={true} maxDisplay={3} />
         </div>
       </section>
 
