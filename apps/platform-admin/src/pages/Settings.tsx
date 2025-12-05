@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Plus, Trash2, Mail, Bell, Shield, Globe } from 'lucide-react';
+import { Save, Plus, Mail, Bell, Shield, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 export default function Settings() {
-  const [emailTemplates, setEmailTemplates] = useState([
+  const [emailTemplates] = useState([ // setEmailTemplates unused
     // Authentication & Onboarding
     { id: '1', name: 'Welcome Email', subject: 'Welcome to Smart eQuiz Platform!', type: 'onboarding', category: 'Auth' },
     { id: '2', name: 'Email Verification', subject: 'Verify your email address', type: 'auth', category: 'Auth' },

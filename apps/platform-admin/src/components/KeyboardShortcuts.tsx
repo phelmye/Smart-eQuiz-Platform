@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Keyboard, X } from 'lucide-react';
+import { Keyboard } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
 

@@ -15,8 +15,10 @@ type MediaAsset = {
   category: string;
   altText?: string;
   uploadedBy: string;
-  uploadedAt: string;
-  tenantId?: string;
+  uploadedByEmail: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 interface ImagePickerProps {

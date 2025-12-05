@@ -379,7 +379,7 @@ export default function Users() {
       'Role': user.role,
       'Tenant': user.tenant,
       'Status': user.status,
-      'Last Active': user.lastActive,
+      'Last Active': (user as any).lastActive || 'N/A',
     }));
     exportToCSV(exportData, { filename: generateFilename('users', 'csv') });
     toast({

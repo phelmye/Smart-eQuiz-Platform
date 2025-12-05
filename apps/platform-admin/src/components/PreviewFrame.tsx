@@ -24,7 +24,7 @@ const deviceIcons: Record<DeviceType, React.ComponentType<any>> = {
 
 export const PreviewFrame: React.FC<PreviewFrameProps> = ({
   content,
-  previewUrl = 'http://localhost:3001', // Marketing site URL
+  // previewUrl = 'http://localhost:3001', // Marketing site URL (unused)
 }) => {
   const [device, setDevice] = useState<DeviceType>('desktop');
   const [iframeKey, setIframeKey] = useState(0);

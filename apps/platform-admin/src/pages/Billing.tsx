@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CreditCard, DollarSign, Download, FileText, TrendingUp, Filter } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { CurrencyConverter, CurrencyDisplay } from '../components/CurrencyConverter';
-import { getFeaturesForPlan, syncPlanFeatures, type PlanTier } from '../lib/planFeatureSync';
+import { CurrencyConverter } from '../components/CurrencyConverter';
+import { syncPlanFeatures, type PlanTier } from '../lib/planFeatureSync';
 
 interface Invoice {
   id: string;
@@ -32,11 +32,14 @@ const mockInvoices: Invoice[] = [
   { id: 'INV-006', tenantName: 'Smart School', amount: 1900, status: 'failed', date: '2024-02-01', plan: 'Starter' },
 ];
 
-const plans = [
+// Plans moved to PlanTier initialization below (uses syncPlanFeatures)
+/*
+const _plans = [
   { name: 'Starter', price: 1900, features: ['Up to 50 users', '10 GB storage', 'Basic support'], color: 'blue' },
   { name: 'Professional', price: 4900, features: ['Up to 200 users', '50 GB storage', 'Priority support', 'Custom branding'], color: 'purple' },
   { name: 'Enterprise', price: 14900, features: ['Unlimited users', '500 GB storage', 'Dedicated support', 'Custom branding', 'API access', 'SLA'], color: 'orange' },
 ];
+*/
 
 const statusColors = {
   paid: 'bg-green-100 text-green-800',

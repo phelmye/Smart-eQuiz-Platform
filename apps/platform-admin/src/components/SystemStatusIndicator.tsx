@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Activity, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type SystemStatus = 'operational' | 'degraded' | 'down';
