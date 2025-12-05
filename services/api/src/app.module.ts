@@ -20,6 +20,8 @@ import { ApiManagementModule } from './api-management/api-management.module';
 import { LegalDocumentsModule } from './legal-documents/legal-documents.module';
 import { LandingPageModule } from './landing-page/landing-page.module';
 import { MarketingCmsModule } from './marketing-cms/marketing-cms.module';
+import { StripeModule } from './stripe/stripe.module';
+import { EmailModule } from './email/email.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -53,6 +55,8 @@ import { PrismaModule } from './prisma.module';
     LegalDocumentsModule,
     LandingPageModule,
     MarketingCmsModule,
+    StripeModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

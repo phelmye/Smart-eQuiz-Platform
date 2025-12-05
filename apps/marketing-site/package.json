@@ -21,7 +21,8 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.5.0",
-    "lucide-react": "^0.462.0"
+    "lucide-react": "^0.462.0",
+    "@sentry/nextjs": "^7.99.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
