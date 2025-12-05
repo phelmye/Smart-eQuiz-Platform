@@ -1,13 +1,35 @@
-'use client';
-
 import Link from 'next/link';
-import { useState } from 'react';
 import { Calendar, User, ArrowRight } from 'lucide-react';
+import { BlogContent } from './BlogContent';
 
-export default function BlogPage() {
-  const [selectedCategory, setSelectedCategory] = useState('All');
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Fetch blog posts from Marketing CMS API
+async function getBlogPosts() {
+  try {
+    const res = await fetch(`${API_URL}/marketing-cms/blog-posts`, {
+      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
+    });
+    
+    if (!res.ok) {
+      console.error('Failed to fetch blog posts:', res.statusText);
+      return [];
+    }
+    
+    const posts = await res.json();
+    // Filter only published posts
+    return posts.filter((post: any) => post.status === 'PUBLISHED');
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    return [];
+  }
+}
+
+export default async function BlogPage() {
+  const apiPosts = await getBlogPosts();
   
-  const posts = [
+  // Fallback to sample data if API returns no posts (for demo)
+  const posts = apiPosts.length > 0 ? apiPosts : [
     {
       id: 1,
       title: "5 Ways to Improve Your Bible Quiz Team's Performance",
@@ -145,124 +167,9 @@ export default function BlogPage() {
     }
   ];
 
-  const categories = ["All", "Coaching Tips", "Technology", "Tournaments", "Platform Features", "Best Practices", "Case Studies"];
+  // Extract unique categories from posts
+  const allCategories = Array.from(new Set(posts.map(post => post.category)));
+  const categories = ["All", ...allCategories];
 
-  const filteredPosts = selectedCategory === 'All' 
-    ? posts 
-    : posts.filter(post => post.category === selectedCategory);
-
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Smart eQuiz Blog</h1>
-          <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-            Tips, insights, and news about Bible quiz competitions, technology, and best practices
-          </p>
-        </div>
-      </section>
-
-      {/* Category Filter */}
-      <section className="border-b bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-wrap gap-3">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  category === selectedCategory
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Blog Posts Grid */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts.map(post => (
-              <article key={post.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-shadow border">
-                <img 
-                  src={post.image} 
-                  alt={post.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                      {post.category}
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-600">
-                    <Link href={`/blog/${post.id}`}>{post.title}</Link>
-                  </h2>
-                  <p className="text-gray-600 mb-4 line-clamp-2">
-                    {post.excerpt}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      <span>{post.author}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>{post.date}</span>
-                    </div>
-                  </div>
-                  <Link 
-                    href={`/blog/${post.id}`}
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Read More
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 mt-12">
-            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50" disabled>
-              Previous
-            </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg">1</button>
-            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">2</button>
-            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">3</button>
-            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-              Next
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Subscribe */}
-      <section className="bg-blue-600 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Subscribe to Our Newsletter</h2>
-          <p className="text-blue-100 mb-8">
-            Get the latest articles, tips, and updates delivered to your inbox
-          </p>
-          <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            />
-            <button className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-100">
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </section>
-    </div>
-  );
+  return <BlogContent posts={posts} categories={categories} />;
 }
