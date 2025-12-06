@@ -136,7 +136,7 @@ export default function Affiliates() {
     setShowApprovalDialog(false);
     toast({
       title: "Affiliate Approved",
-      description: `${affiliate.name} has been approved and can now start earning commissions.`,
+      description: `${affiliate.fullName} has been approved and can now start earning commissions.`,
     });
     // TODO: API call to approve affiliate
     console.log('Approved affiliate:', affiliate.id);
@@ -147,7 +147,7 @@ export default function Affiliates() {
     setShowApprovalDialog(false);
     toast({
       title: "Affiliate Rejected",
-      description: `${affiliate.name}'s application has been rejected.`,
+      description: `${affiliate.fullName}'s application has been rejected.`,
     });
     // TODO: API call to reject affiliate
     console.log('Rejected affiliate:', affiliate.id);
@@ -156,7 +156,7 @@ export default function Affiliates() {
   const handleProcessPayout = (affiliate: Affiliate) => {
     toast({
       title: "Process Payout",
-      description: `Opening payout processing for ${affiliate.name} - $${affiliate.pendingPayout.toFixed(2)}`,
+      description: `Opening payout processing for ${affiliate.fullName} - $${affiliate.pendingPayout.toFixed(2)}`,
     });
     // TODO: Open payout processing dialog
     console.log('Process payout for:', affiliate.id, affiliate.pendingPayout);

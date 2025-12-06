@@ -17,12 +17,12 @@ export function MarketingContentManager() {
   const heroCMS = useMarketingCMS<HeroContent>('hero');
 
   // Extract data from hooks
-  const blogPosts = blogCMS.data || [];
-  const features = featureCMS.data || [];
-  const testimonials = testimonialCMS.data || [];
-  const pricingPlans = pricingCMS.data || [];
-  const faqs = faqCMS.data || [];
-  const hero = heroCMS.data?.[0] || {
+  const blogPosts = Array.isArray(blogCMS.data) ? blogCMS.data : [];
+  const features = Array.isArray(featureCMS.data) ? featureCMS.data : [];
+  const testimonials = Array.isArray(testimonialCMS.data) ? testimonialCMS.data : [];
+  const pricingPlans = Array.isArray(pricingCMS.data) ? pricingCMS.data : [];
+  const faqs = Array.isArray(faqCMS.data) ? faqCMS.data : [];
+  const hero = (Array.isArray(heroCMS.data) ? heroCMS.data[0] : heroCMS.data) || {
     headline: 'Transform Bible Learning with Smart eQuiz',
     subheadline: 'Create engaging quiz tournaments for your congregation',
     ctaPrimary: 'Start Free Trial',
@@ -64,7 +64,7 @@ export function MarketingContentManager() {
       featuredImage: '',
       category: 'general',
       tags: [],
-      status: 'draft',
+      status: 'DRAFT',
     };
     setEditingBlog(newPost as BlogPost);
   };
@@ -193,7 +193,7 @@ export function MarketingContentManager() {
     const newPlan: Partial<PricingPlan> = {
       name: '',
       price: 0,
-      interval: 'month',
+      interval: 'MONTH',
       features: [],
       highlighted: false,
       ctaText: 'Get Started',
@@ -461,7 +461,7 @@ export function MarketingContentManager() {
                       <p className="text-sm text-gray-600">{post.excerpt}</p>
                       <div className="mt-2 flex gap-2">
                         <span className={`px-2 py-1 text-xs rounded ${
-                          post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          post.status === 'PUBLISHED' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {post.status}
                         </span>

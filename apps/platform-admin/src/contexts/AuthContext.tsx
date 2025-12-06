@@ -20,7 +20,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock admin users for demo
+// Mock admin users for demo (unused in production)
+// @ts-ignore - Mock data for future use
 const mockAdmins = [
   {
     id: '1',
