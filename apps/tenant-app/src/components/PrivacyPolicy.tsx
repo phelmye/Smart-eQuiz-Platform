@@ -240,6 +240,7 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, tenantId }
                 </section>
               </div>
             </ScrollArea>
+            )}
           </CardContent>
         </Card>
       </div>

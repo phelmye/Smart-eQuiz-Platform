@@ -172,6 +172,7 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack, tenantId
                 </section>
                 </div>
               </ScrollArea>
+            )}
           </CardContent>
         </Card>
       </div>
