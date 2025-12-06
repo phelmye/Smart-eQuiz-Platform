@@ -67,65 +67,65 @@ export const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack, tenantId }
             {!loading && !error && !document && (
               <ScrollArea className="h-[600px] pr-4">
                 <div className="space-y-6">
-                <section>
-                  <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
-                  <p className="text-gray-700 leading-relaxed">
-                    Smart eQuiz Platform ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service. Please read this privacy policy carefully.
-                  </p>
-                </section>
+                  <section>
+                    <h2 className="text-xl font-semibold mb-3">1. Introduction</h2>
+                    <p className="text-gray-700 leading-relaxed">
+                      Smart eQuiz Platform ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service. Please read this privacy policy carefully.
+                    </p>
+                  </section>
 
-                <section>
-                  <h2 className="text-xl font-semibold mb-3">2. Information We Collect</h2>
-                  
-                  <h3 className="text-lg font-medium mb-2 mt-4">2.1 Personal Information</h3>
-                  <p className="text-gray-700 leading-relaxed mb-2">
-                    We collect information that you provide directly to us:
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                    <li>Name and contact information (email address, phone number)</li>
-                    <li>Account credentials (username, password)</li>
-                    <li>Profile information (avatar, bio, preferences)</li>
-                    <li>Payment information (processed securely by third-party providers)</li>
-                    <li>Organization information (for organizational accounts)</li>
-                  </ul>
+                  <section>
+                    <h2 className="text-xl font-semibold mb-3">2. Information We Collect</h2>
+                    
+                    <h3 className="text-lg font-medium mb-2 mt-4">2.1 Personal Information</h3>
+                    <p className="text-gray-700 leading-relaxed mb-2">
+                      We collect information that you provide directly to us:
+                    </p>
+                    <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                      <li>Name and contact information (email address, phone number)</li>
+                      <li>Account credentials (username, password)</li>
+                      <li>Profile information (avatar, bio, preferences)</li>
+                      <li>Payment information (processed securely by third-party providers)</li>
+                      <li>Organization information (for organizational accounts)</li>
+                    </ul>
 
-                  <h3 className="text-lg font-medium mb-2 mt-4">2.2 Usage Information</h3>
-                  <p className="text-gray-700 leading-relaxed mb-2">
-                    We automatically collect information about your use of the Service:
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                    <li>Quiz and tournament participation data</li>
-                    <li>Performance metrics and scores</li>
-                    <li>Login times and session duration</li>
-                    <li>Device information (IP address, browser type, operating system)</li>
-                    <li>Cookies and similar tracking technologies</li>
-                  </ul>
+                    <h3 className="text-lg font-medium mb-2 mt-4">2.2 Usage Information</h3>
+                    <p className="text-gray-700 leading-relaxed mb-2">
+                      We automatically collect information about your use of the Service:
+                    </p>
+                    <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                      <li>Quiz and tournament participation data</li>
+                      <li>Performance metrics and scores</li>
+                      <li>Login times and session duration</li>
+                      <li>Device information (IP address, browser type, operating system)</li>
+                      <li>Cookies and similar tracking technologies</li>
+                    </ul>
 
-                  <h3 className="text-lg font-medium mb-2 mt-4">2.3 Content You Create</h3>
-                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                    <li>Questions and quizzes you create</li>
-                    <li>Tournament configurations</li>
-                    <li>Comments and feedback</li>
-                    <li>Custom branding and themes</li>
-                  </ul>
-                </section>
+                    <h3 className="text-lg font-medium mb-2 mt-4">2.3 Content You Create</h3>
+                    <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                      <li>Questions and quizzes you create</li>
+                      <li>Tournament configurations</li>
+                      <li>Comments and feedback</li>
+                      <li>Custom branding and themes</li>
+                    </ul>
+                  </section>
 
-                <section>
-                  <h2 className="text-xl font-semibold mb-3">3. How We Use Your Information</h2>
-                  <p className="text-gray-700 leading-relaxed mb-2">
-                    We use the information we collect to:
-                  </p>
-                  <ul className="list-disc pl-6 space-y-1 text-gray-700">
-                    <li>Provide, maintain, and improve our Service</li>
-                    <li>Process transactions and send transaction notifications</li>
-                    <li>Respond to your comments and questions</li>
-                    <li>Send you technical notices and support messages</li>
-                    <li>Communicate about products, services, and events</li>
-                    <li>Monitor and analyze trends, usage, and activities</li>
-                    <li>Detect, investigate, and prevent fraudulent activities</li>
-                    <li>Personalize your experience</li>
-                    <li>Comply with legal obligations</li>
-                  </ul>
+                  <section>
+                    <h2 className="text-xl font-semibold mb-3">3. How We Use Your Information</h2>
+                    <p className="text-gray-700 leading-relaxed mb-2">
+                      We use the information we collect to:
+                    </p>
+                    <ul className="list-disc pl-6 space-y-1 text-gray-700">
+                      <li>Provide, maintain, and improve our Service</li>
+                      <li>Process transactions and send transaction notifications</li>
+                      <li>Respond to your comments and questions</li>
+                      <li>Send you technical notices and support messages</li>
+                      <li>Communicate about products, services, and events</li>
+                      <li>Monitor and analyze trends, usage, and activities</li>
+                      <li>Detect, investigate, and prevent fraudulent activities</li>
+                      <li>Personalize your experience</li>
+                      <li>Comply with legal obligations</li>
+                    </ul>
                 </section>
 
                 <section>
