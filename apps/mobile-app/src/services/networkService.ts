@@ -25,7 +25,7 @@ class NetworkService {
     try {
       const state = await NetInfo.fetch();
       const connected: boolean = (state.isConnected === true && state.isInternetReachable !== false);
-      this.isConnected = !!connected;
+      this.isConnected = connected !== null ? connected : false;
       return connected;
     } catch (error) {
       console.error('Failed to check network connection:', error);

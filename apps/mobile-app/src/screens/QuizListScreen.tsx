@@ -59,7 +59,17 @@ export default function QuizListScreen() {
       // Fall back to cached quizzes
       const cachedQuizzes = await offlineStorage.getCachedQuizzes();
       if (cachedQuizzes.length > 0) {
-        setQuizzes(cachedQuizzes as any);
+        // Map cached quizzes to Quiz type with defaults
+        const mappedQuizzes = cachedQuizzes.map(q => ({
+          id: q.id,
+          title: q.title,
+          description: q.description,
+          questionCount: q.questionCount || q.questions?.length || 0,
+          duration: q.duration || q.timeLimit || 30,
+          difficulty: q.difficulty || 'medium',
+          category: q.category || 'general'
+        } as Quiz));
+        setQuizzes(mappedQuizzes);
       }
     } catch (error) {
       console.error('Error loading quizzes:', error);
@@ -75,8 +85,7 @@ export default function QuizListScreen() {
   };
 
   const handleQuizPress = (quiz: Quiz) => {
-    // @ts-expect-error - Navigation typing issue with React Navigation
-    navigation.navigate('QuizTaking', { quizId: quiz.id });
+    (navigation as any).navigate('QuizTaking', { quizId: quiz.id });
   };
 
   const renderQuizItem = ({ item }: { item: Quiz }) => (
