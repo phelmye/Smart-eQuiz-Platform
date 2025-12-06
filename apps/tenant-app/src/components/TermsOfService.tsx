@@ -170,8 +170,8 @@ export const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack, tenantId
                     By using Smart eQuiz Platform, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
                   </p>
                 </section>
-              </div>
-            </ScrollArea>
+                </div>
+              </ScrollArea>
           </CardContent>
         </Card>
       </div>
