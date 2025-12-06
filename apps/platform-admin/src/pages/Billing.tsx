@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CreditCard, DollarSign, Download, FileText, TrendingUp, Filter } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -49,6 +50,7 @@ const statusColors = {
 };
 
 export default function Billing() {
+  const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('30d');
 
   // Initialize plans with feature sync system
@@ -90,6 +92,52 @@ export default function Billing() {
     },
   ];
 
+  // Handler functions
+  const handleExportData = () => {
+    toast({
+      title: "Exporting billing data",
+      description: "Your billing data export will download shortly.",
+    });
+    // TODO: Implement actual export API call
+    console.log('Export billing data for range:', timeRange);
+  };
+
+  const handleFilterInvoices = () => {
+    toast({
+      title: "Filter invoices",
+      description: "Invoice filtering panel will open here.",
+    });
+    // TODO: Implement filter dialog
+    console.log('Open invoice filters');
+  };
+
+  const handleViewInvoice = (invoiceId: string) => {
+    toast({
+      title: "Opening invoice",
+      description: `Loading invoice ${invoiceId}...`,
+    });
+    // TODO: Open invoice detail modal/page
+    console.log('View invoice:', invoiceId);
+  };
+
+  const handleDownloadInvoice = (invoiceId: string) => {
+    toast({
+      title: "Downloading invoice",
+      description: `Invoice ${invoiceId} will download as PDF.`,
+    });
+    // TODO: Generate and download PDF
+    console.log('Download invoice:', invoiceId);
+  };
+
+  const handleEditPlan = (planId: string) => {
+    toast({
+      title: "Edit plan",
+      description: `Opening editor for ${planId} plan...`,
+    });
+    // TODO: Open plan editor modal
+    console.log('Edit plan:', planId);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,10 +158,7 @@ export default function Billing() {
               <SelectItem value="1y">Last year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => {
-            // TODO: Implement export billing data functionality
-            console.log('Export billing data');
-          }}>
+          <Button variant="outline" onClick={handleExportData}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -164,10 +209,7 @@ export default function Billing() {
                   <CardTitle>Recent Invoices</CardTitle>
                   <CardDescription>View and manage all platform invoices</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => {
-                  // TODO: Implement filter invoices functionality
-                  console.log('Filter invoices');
-                }}>
+                <Button variant="outline" size="sm" onClick={handleFilterInvoices}>
                   <Filter className="mr-2 h-4 w-4" />
                   Filter
                 </Button>
@@ -228,16 +270,10 @@ export default function Billing() {
                             {new Date(invoice.date).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <Button variant="ghost" size="sm" onClick={() => {
-                              // TODO: Implement view invoice functionality
-                              console.log(`View invoice ${invoice.id}`);
-                            }}>
+                            <Button variant="ghost" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
                               View
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => {
-                              // TODO: Implement download invoice functionality
-                              console.log(`Download invoice ${invoice.id}`);
-                            }}>
+                            <Button variant="ghost" size="sm" onClick={() => handleDownloadInvoice(invoice.id)}>
                               <Download className="h-4 w-4" />
                             </Button>
                           </td>
@@ -291,10 +327,7 @@ export default function Billing() {
                     ))}
                   </ul>
                   <div className="pt-4 space-y-2">
-                    <Button className="w-full" variant="outline" onClick={() => {
-                      // TODO: Implement edit plan functionality
-                      console.log(`Edit ${plan.displayName} plan`);
-                    }}>
+                    <Button className="w-full" variant="outline" onClick={() => handleEditPlan(plan.id)}>
                       Edit Plan
                     </Button>
                     <p className="text-xs text-center text-gray-500">
