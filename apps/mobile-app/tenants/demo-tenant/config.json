@@ -1,0 +1,41 @@
+{
+  "id": "demo-tenant",
+  "name": "Demo Church Quiz",
+  "displayName": "Demo Church Bible Quiz",
+  "slug": "demo-church-quiz",
+  
+  "bundleIdentifier": {
+    "ios": "com.smartequiz.demo",
+    "android": "com.smartequiz.demo"
+  },
+  "appStoreName": "Demo Church Quiz",
+  "publisher": "Demo Community Church",
+  
+  "branding": {
+    "primaryColor": "#7C3AED",
+    "secondaryColor": "#A78BFA",
+    "accentColor": "#EC4899",
+    "logoUrl": "/tenant-assets/demo/logo.png",
+    "iconPath": "./tenants/demo-tenant/assets/icon.png",
+    "splashPath": "./tenants/demo-tenant/assets/splash.png",
+    "backgroundColor": "#F3F4F6"
+  },
+  
+  "api": {
+    "baseUrl": "https://api.smartequiz.com",
+    "tenantId": "demo-tenant-uuid"
+  },
+  
+  "features": {
+    "offlineMode": true,
+    "pushNotifications": true,
+    "socialSharing": true,
+    "darkMode": true
+  },
+  
+  "support": {
+    "email": "support@demochu rch.org",
+    "phone": "+1 (555) 123-4567",
+    "website": "https://demochurch.org"
+  }
+}

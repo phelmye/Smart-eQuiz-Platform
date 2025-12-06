@@ -1,0 +1,51 @@
+# Expo
+.expo/
+dist/
+web-build/
+
+# Dependencies
+node_modules/
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.ipa
+*.apk
+*.aab
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Misc
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Backups
+*.backup
+app.json.backup
+
+# EAS
+.eas/
