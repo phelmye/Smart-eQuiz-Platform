@@ -16,10 +16,10 @@ export interface CachedQuiz {
   timeLimit?: number;
   passingScore: number;
   cachedAt: number;
-  questionCount: number;
-  duration: number;
-  difficulty: string;
-  category: string;
+  questionCount?: number;
+  duration?: number;
+  difficulty?: string;
+  category?: string;
 }
 
 export interface PendingAnswer {

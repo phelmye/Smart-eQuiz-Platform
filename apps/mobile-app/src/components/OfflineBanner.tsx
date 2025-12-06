@@ -14,7 +14,7 @@ export default function OfflineBanner() {
 
     // Listen for connection changes
     const unsubscribe = networkService.addListener((connected) => {
-      setIsOnline(connected);
+      setIsOnline(!!connected);
       
       if (connected) {
         // Slide out after 3 seconds when back online
