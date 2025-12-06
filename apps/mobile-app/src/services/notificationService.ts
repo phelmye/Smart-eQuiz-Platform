@@ -151,7 +151,7 @@ class NotificationService {
   // Set up notification listeners
   private setupNotificationListeners(): void {
     // Listener for notifications received while app is foregrounded
-    Notifications.addNotificationReceivedListener((notification) => {
+    Notifications.addNotificationReceivedListener((notification: any) => {
       console.log('Notification received:', notification);
       this.notificationListeners.forEach((listener) => {
         try {
@@ -163,7 +163,7 @@ class NotificationService {
     });
 
     // Listener for notification tap/interaction
-    Notifications.addNotificationResponseReceivedListener((response) => {
+    Notifications.addNotificationResponseReceivedListener((response: any) => {
       console.log('Notification response:', response);
       this.responseListeners.forEach((listener) => {
         try {

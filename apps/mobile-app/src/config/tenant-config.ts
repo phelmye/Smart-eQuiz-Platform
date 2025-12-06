@@ -22,6 +22,14 @@ export interface TenantConfig {
     iconPath: string;
     splashPath: string;
     backgroundColor: string;
+    colors: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      background: string;
+      text: string;
+      border: string;
+    };
   };
   
   // API Configuration
@@ -68,6 +76,14 @@ export const defaultConfig: TenantConfig = {
     iconPath: './assets/icon.png',
     splashPath: './assets/splash.png',
     backgroundColor: '#ffffff',
+    colors: {
+      primary: '#1E40AF',
+      secondary: '#3B82F6',
+      accent: '#10B981',
+      background: '#ffffff',
+      text: '#1F2937',
+      border: '#E5E7EB',
+    },
   },
   
   api: {

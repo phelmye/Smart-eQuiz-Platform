@@ -153,12 +153,12 @@ export default function ResultsScreen() {
               <Text style={styles.reviewQuestionText}>{question.text}</Text>
 
               <View style={styles.reviewOptionsContainer}>
-                {question.options.map((option, optionIndex) => {
+                {question.options.map((option: string, optionIndex: number) => {
                   const isUserAnswer = userAnswer === optionIndex;
                   const isCorrectAnswer = question.correctAnswer === optionIndex;
 
-                  let optionStyle = styles.reviewOption;
-                  let optionTextStyle = styles.reviewOptionText;
+                  let optionStyle: any = styles.reviewOption;
+                  let optionTextStyle: any = styles.reviewOptionText;
 
                   if (isCorrectAnswer) {
                     optionStyle = [styles.reviewOption, styles.reviewOptionCorrect];

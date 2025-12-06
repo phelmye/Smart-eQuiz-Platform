@@ -1,10 +1,10 @@
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
-type NetworkStatusCallback = (isConnected: boolean) => void;
+type NetworkStatusCallback = (isConnected: boolean | null) => void;
 
 class NetworkService {
   private listeners: Set<NetworkStatusCallback> = new Set();
-  private isConnected: boolean = true;
+  private isConnected: boolean | null = true;
 
   constructor() {
     this.setupNetworkListener();
@@ -32,7 +32,7 @@ class NetworkService {
     }
   }
 
-  getConnectionStatus(): boolean {
+  getConnectionStatus(): boolean | null {
     return this.isConnected;
   }
 
@@ -45,7 +45,7 @@ class NetworkService {
     };
   }
 
-  private notifyListeners(isConnected: boolean) {
+  private notifyListeners(isConnected: boolean | null) {
     this.listeners.forEach((callback) => {
       try {
         callback(isConnected);
