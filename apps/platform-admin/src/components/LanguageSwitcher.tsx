@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from './ui/select';
 import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface Language {
   code: string;
@@ -42,6 +43,7 @@ export function LanguageSwitcher({
   className = '',
   onLanguageChange 
 }: LanguageSwitcherProps) {
+  const { toast } = useToast();
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
 
   useEffect(() => {
@@ -73,7 +75,11 @@ export function LanguageSwitcher({
     
     // For now, show a message (until full i18n is implemented)
     if (languageCode !== 'en') {
-      alert(`Multi-language support coming soon!\n\nYour preference has been saved. The interface will display in ${SUPPORTED_LANGUAGES.find(l => l.code === languageCode)?.name} once translation files are complete.`);
+      const language = SUPPORTED_LANGUAGES.find(l => l.code === languageCode);
+      toast({
+        title: "Language Preference Saved",
+        description: `Your preference has been saved. The interface will display in ${language?.name} once translation files are complete.`,
+      });
     }
   };
 

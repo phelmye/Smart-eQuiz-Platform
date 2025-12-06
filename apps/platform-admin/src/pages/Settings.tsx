@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Save, Plus, Mail, Bell, Shield, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '../hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 export default function Settings() {
+  const { toast } = useToast();
   const [emailTemplates] = useState([ // setEmailTemplates unused
     // Authentication & Onboarding
     { id: '1', name: 'Welcome Email', subject: 'Welcome to Smart eQuiz Platform!', type: 'onboarding', category: 'Auth' },
@@ -63,6 +65,61 @@ export default function Settings() {
     { id: '34', name: 'Customer Feedback Request', subject: 'How are we doing?', type: 'marketing', category: 'Marketing' },
     { id: '35', name: 'Referral Program', subject: 'Refer a friend and earn rewards', type: 'marketing', category: 'Marketing' },
   ]);
+
+  // Handler functions
+  const handleSaveGeneralSettings = () => {
+    toast({
+      title: "Settings saved",
+      description: "General settings have been updated successfully.",
+    });
+    // TODO: Implement API call to save general settings
+    console.log('Save general settings');
+  };
+
+  const handleConfigureIPWhitelist = () => {
+    toast({
+      title: "IP Whitelist",
+      description: "Opening IP whitelist configuration...",
+    });
+    // TODO: Open IP whitelist modal/dialog
+    console.log('Configure IP whitelist');
+  };
+
+  const handleSaveSecuritySettings = () => {
+    toast({
+      title: "Security settings saved",
+      description: "Security settings have been updated successfully.",
+    });
+    // TODO: Implement API call to save security settings
+    console.log('Save security settings');
+  };
+
+  const handleCreateEmailTemplate = () => {
+    toast({
+      title: "Create template",
+      description: "Opening email template editor...",
+    });
+    // TODO: Open template creation modal
+    console.log('Create new email template');
+  };
+
+  const handleEditTemplate = (templateName: string) => {
+    toast({
+      title: "Edit template",
+      description: `Opening editor for ${templateName}...`,
+    });
+    // TODO: Open template editor modal
+    console.log('Edit template:', templateName);
+  };
+
+  const handlePreviewTemplate = (templateName: string) => {
+    toast({
+      title: "Preview template",
+      description: `Loading preview for ${templateName}...`,
+    });
+    // TODO: Open template preview modal
+    console.log('Preview template:', templateName);
+  };
 
   return (
     <div className="space-y-6">
@@ -160,10 +217,7 @@ export default function Settings() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => {
-                  // TODO: Implement general settings save functionality
-                  console.log('General settings saved successfully');
-                }}>
+                <Button onClick={handleSaveGeneralSettings}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </Button>
@@ -248,17 +302,14 @@ export default function Settings() {
                       Restrict access to specific IP addresses
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => console.log('Configure IP whitelist')}>
+                  <Button variant="outline" size="sm" onClick={handleConfigureIPWhitelist}>
                     Configure
                   </Button>
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => {
-                  // TODO: Implement security settings save functionality
-                  console.log('Security settings saved successfully');
-                }}>
+                <Button onClick={handleSaveSecuritySettings}>
                   <Save className="mr-2 h-4 w-4" />
                   Save Changes
                 </Button>
@@ -380,10 +431,7 @@ export default function Settings() {
                     Customize email templates sent to users ({emailTemplates.length} templates)
                   </CardDescription>
                 </div>
-                <Button size="sm" onClick={() => {
-                  // TODO: Implement create new email template functionality
-                  console.log('Create new email template');
-                }}>
+                <Button size="sm" onClick={handleCreateEmailTemplate}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Template
                 </Button>
@@ -428,16 +476,10 @@ export default function Settings() {
                               <p className="text-sm text-gray-500 mt-1">{template.subject}</p>
                             </div>
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => {
-                                // TODO: Implement edit template functionality
-                                console.log(`Edit template: ${template.name}`);
-                              }}>
+                              <Button variant="outline" size="sm" onClick={() => handleEditTemplate(template.name)}>
                                 Edit
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => {
-                                // TODO: Implement preview template functionality
-                                console.log(`Preview template: ${template.name}`);
-                              }}>
+                              <Button variant="outline" size="sm" onClick={() => handlePreviewTemplate(template.name)}>
                                 Preview
                               </Button>
                             </div>

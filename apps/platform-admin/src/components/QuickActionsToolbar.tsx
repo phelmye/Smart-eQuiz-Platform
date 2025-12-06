@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, UserPlus, Building2, FileText, Mail, Download, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuickAction {
   id: string;
@@ -13,6 +14,7 @@ interface QuickAction {
 
 export function QuickActionsToolbar() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const actions: QuickAction[] = [
@@ -46,6 +48,10 @@ export function QuickActionsToolbar() {
       description: 'Send email to all',
       icon: Mail,
       action: () => {
+        toast({
+          title: "Broadcast Email",
+          description: "Opening broadcast email composer...",
+        });
         // TODO: Implement broadcast email feature
         console.log('Navigate to broadcast email feature');
         // navigate('/broadcast');

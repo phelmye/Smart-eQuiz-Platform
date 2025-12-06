@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -68,6 +69,7 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { toast } = useToast();
 
   const handleLogout = () => {
     logout();
@@ -173,6 +175,10 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => {
+                toast({
+                  title: "Mobile Menu",
+                  description: "Mobile responsive navigation is being implemented.",
+                });
                 // TODO: Implement mobile menu toggle
                 console.log('Toggle mobile menu');
               }}

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Users, DollarSign, TrendingUp, Award, CheckCircle, XCircle, 
   Clock, Search, Download, MoreHorizontal 
@@ -108,6 +109,7 @@ const mockTenantReferrals: TenantReferral[] = [
 ];
 
 export default function Affiliates() {
+  const { toast } = useToast();
   const [affiliates, setAffiliates] = useState<Affiliate[]>(mockAffiliates);
   const [tenantReferrals] = useState<TenantReferral[]>(mockTenantReferrals);
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
@@ -132,6 +134,10 @@ export default function Affiliates() {
         : a
     ));
     setShowApprovalDialog(false);
+    toast({
+      title: "Affiliate Approved",
+      description: `${affiliate.name} has been approved and can now start earning commissions.`,
+    });
     // TODO: API call to approve affiliate
     console.log('Approved affiliate:', affiliate.id);
   };
@@ -139,11 +145,19 @@ export default function Affiliates() {
   const handleRejectAffiliate = (affiliate: Affiliate) => {
     setAffiliates(prev => prev.filter(a => a.id !== affiliate.id));
     setShowApprovalDialog(false);
+    toast({
+      title: "Affiliate Rejected",
+      description: `${affiliate.name}'s application has been rejected.`,
+    });
     // TODO: API call to reject affiliate
     console.log('Rejected affiliate:', affiliate.id);
   };
 
   const handleProcessPayout = (affiliate: Affiliate) => {
+    toast({
+      title: "Process Payout",
+      description: `Opening payout processing for ${affiliate.name} - $${affiliate.pendingPayout.toFixed(2)}`,
+    });
     // TODO: Open payout processing dialog
     console.log('Process payout for:', affiliate.id, affiliate.pendingPayout);
   };

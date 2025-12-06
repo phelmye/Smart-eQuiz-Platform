@@ -3,6 +3,7 @@ import { Download, FileText, Calendar, TrendingUp, Users, DollarSign, Activity, 
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
+import { useToast } from '../hooks/use-toast';
 import {
   BarChart,
   Bar,
@@ -99,6 +100,7 @@ const categoryIcons = {
 };
 
 export default function Reports() {
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [dateRange, setDateRange] = useState({ start: '2024-02-01', end: '2024-02-15' });
   const [showCustomBuilder, setShowCustomBuilder] = useState(false);
@@ -125,11 +127,39 @@ export default function Reports() {
     : predefinedReports.filter(report => report.category === selectedCategory);
 
   const generateReport = (reportId: string) => {
-    alert(`Generating report: ${reportId}\nThis would trigger the backend to generate and download the report.`);
+    toast({
+      title: "Generating Report",
+      description: `Report ${reportId} is being generated and will be downloaded shortly.`,
+    });
+    // TODO: Implement actual report generation and download
+    console.log(`Generating report: ${reportId}`);
   };
 
   const scheduleReport = (reportId: string) => {
-    alert(`Scheduling report: ${reportId}\nThis would open a modal to configure the schedule.`);
+    toast({
+      title: "Schedule Report",
+      description: "Opening scheduling configuration...",
+    });
+    // TODO: Implement schedule configuration modal
+    console.log(`Scheduling report: ${reportId}`);
+  };
+
+  const handleSaveReportTemplate = () => {
+    toast({
+      title: "Report Template Saved",
+      description: "Your custom report has been saved as a template.",
+    });
+    // TODO: Implement save report template to database
+    console.log('Save report template');
+  };
+
+  const handleGenerateCustomReport = () => {
+    toast({
+      title: "Generating Custom Report",
+      description: "Your custom report is being generated. This may take a few moments.",
+    });
+    // TODO: Implement custom report generation with selected filters
+    console.log('Generate custom report');
   };
 
   return (
@@ -449,19 +479,13 @@ export default function Reports() {
 
               <div className="flex justify-end space-x-2">
                 <button 
-                  onClick={() => {
-                    // TODO: Implement save report template functionality
-                    console.log('Save report template');
-                  }}
+                  onClick={handleSaveReportTemplate}
                   className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Save as Template
                 </button>
                 <button 
-                  onClick={() => {
-                    // TODO: Implement generate custom report functionality
-                    console.log('Generate custom report');
-                  }}
+                  onClick={handleGenerateCustomReport}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Generate Report

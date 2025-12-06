@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export type MediaAsset = {
   id: string;
@@ -26,6 +27,7 @@ interface MediaLibraryProps {
 }
 
 export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaLibraryProps) {
+  const { toast } = useToast();
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -116,7 +118,11 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
       await fetchAssets();
     } catch (error) {
       console.error('Error uploading files:', error);
-      alert('Failed to upload some files');
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "Failed to upload some files. Please try again.",
+      });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -143,7 +149,11 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
       await fetchAssets();
     } catch (error) {
       console.error('Error deleting asset:', error);
-      alert('Failed to delete asset');
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: "Failed to delete asset. Please try again.",
+      });
     }
   };
 
