@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
 import { tenantConfig } from '../config/tenant-config';
+import { notificationService } from '../services/notificationService';
+import type { NavigationContainerRef } from '@react-navigation/native';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -82,6 +84,29 @@ import { View, Text, ActivityIndicator } from 'react-native';
 
 export default function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  useEffect(() => {
+    // Handle notification taps
+    const unsubscribe = notificationService.addResponseListener((response) => {
+      const data = response.notification.request.content.data;
+      
+      // Navigate based on notification type
+      if (navigationRef.current?.isReady()) {
+        if (data.type === 'quiz_available' && data.quizId) {
+          navigationRef.current.navigate('QuizTaking', { quizId: data.quizId });
+        } else if (data.type === 'leaderboard_update') {
+          navigationRef.current.navigate('Main');
+          // Tab navigation will show Leaderboard
+        } else if (data.type === 'result_ready' && data.quizId) {
+          // Navigate to quiz list where user can see their results
+          navigationRef.current.navigate('Main');
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   if (isLoading) {
     return (
@@ -95,7 +120,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           <Stack.Screen name="Login" component={LoginScreen} />

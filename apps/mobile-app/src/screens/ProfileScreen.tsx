@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../api/client';
 import { tenantConfig } from '../config/tenant-config';
+import { notificationService } from '../services/notificationService';
 
 interface UserProfile {
   id: string;
@@ -264,9 +265,38 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Settings</Text>
 
-        <TouchableOpacity style={styles.settingItem}>
+        <TouchableOpacity 
+          style={styles.settingItem}
+          onPress={() => {
+            const pushToken = notificationService.getPushToken();
+            Alert.alert(
+              'Notifications',
+              pushToken 
+                ? 'Push notifications are enabled.\n\nYou will receive updates about new quizzes, tournaments, and leaderboard changes.'
+                : 'Push notifications are not available.\n\nMake sure you have granted notification permissions and are using a physical device.',
+              pushToken 
+                ? [
+                    { text: 'OK', style: 'default' },
+                    { 
+                      text: 'Disable', 
+                      style: 'destructive',
+                      onPress: () => {
+                        notificationService.unregister();
+                        Alert.alert('Disabled', 'Push notifications have been disabled.');
+                      }
+                    }
+                  ]
+                : [{ text: 'OK' }]
+            );
+          }}
+        >
           <Text style={styles.settingText}>Notifications</Text>
-          <Text style={styles.settingArrow}>›</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: notificationService.getPushToken() ? '#34C759' : '#999', marginRight: 8 }}>
+              {notificationService.getPushToken() ? '● Enabled' : '○ Disabled'}
+            </Text>
+            <Text style={styles.settingArrow}>›</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.settingItem}>
