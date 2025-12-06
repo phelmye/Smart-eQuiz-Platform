@@ -1,10 +1,10 @@
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
-type NetworkStatusCallback = (isConnected: boolean | null) => void;
+type NetworkStatusCallback = (isConnected: boolean) => void;
 
 class NetworkService {
   private listeners: Set<NetworkStatusCallback> = new Set();
-  private isConnected: boolean | null = true;
+  private isConnected: boolean = true;
 
   constructor() {
     this.setupNetworkListener();
@@ -12,7 +12,7 @@ class NetworkService {
 
   private setupNetworkListener() {
     NetInfo.addEventListener((state: NetInfoState) => {
-      const connected = state.isConnected && state.isInternetReachable !== false;
+      const connected: boolean = (state.isConnected === true && state.isInternetReachable !== false);
       
       if (connected !== this.isConnected) {
         this.isConnected = connected;
@@ -24,15 +24,16 @@ class NetworkService {
   async checkConnection(): Promise<boolean> {
     try {
       const state = await NetInfo.fetch();
-      this.isConnected = state.isConnected && state.isInternetReachable !== false;
-      return this.isConnected;
+      const connected: boolean = (state.isConnected === true && state.isInternetReachable !== false);
+      this.isConnected = connected;
+      return connected;
     } catch (error) {
       console.error('Failed to check network connection:', error);
       return false;
     }
   }
 
-  getConnectionStatus(): boolean | null {
+  getConnectionStatus(): boolean {
     return this.isConnected;
   }
 
@@ -45,7 +46,7 @@ class NetworkService {
     };
   }
 
-  private notifyListeners(isConnected: boolean | null) {
+  private notifyListeners(isConnected: boolean) {
     this.listeners.forEach((callback) => {
       try {
         callback(isConnected);

@@ -16,6 +16,10 @@ export interface CachedQuiz {
   timeLimit?: number;
   passingScore: number;
   cachedAt: number;
+  questionCount: number;
+  duration: number;
+  difficulty: string;
+  category: string;
 }
 
 export interface PendingAnswer {
@@ -36,6 +40,10 @@ class OfflineStorageService {
       const cachedQuiz: CachedQuiz = {
         ...quiz,
         cachedAt: Date.now(),
+        questionCount: quiz.questionCount || quiz.questions?.length || 0,
+        duration: quiz.duration || quiz.timeLimit || 30,
+        difficulty: quiz.difficulty || 'medium',
+        category: quiz.category || 'general',
       };
 
       // Update or add quiz
