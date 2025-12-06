@@ -11,6 +11,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { apiClient } from '../api/client';
 import { tenantConfig } from '../config/tenant-config';
+import { offlineStorage } from '../services/offlineStorage';
+import { networkService } from '../services/networkService';
 
 interface Quiz {
   id: string;
@@ -35,8 +37,30 @@ export default function QuizListScreen() {
   const loadQuizzes = async () => {
     try {
       setLoading(true);
-      const data = await apiClient.getQuizzes();
-      setQuizzes(data);
+      
+      // Try to load from API if online
+      if (networkService.getConnectionStatus()) {
+        try {
+          const data = await apiClient.getQuizzes();
+          setQuizzes(data);
+          
+          // Cache each quiz for offline use
+          for (const quiz of data) {
+            // Fetch full quiz details to cache
+            const fullQuiz = await apiClient.getQuiz(quiz.id);
+            await offlineStorage.cacheQuiz(fullQuiz);
+          }
+          return;
+        } catch (apiError) {
+          console.log('API failed, loading from cache...', apiError);
+        }
+      }
+      
+      // Fall back to cached quizzes
+      const cachedQuizzes = await offlineStorage.getCachedQuizzes();
+      if (cachedQuizzes.length > 0) {
+        setQuizzes(cachedQuizzes);
+      }
     } catch (error) {
       console.error('Error loading quizzes:', error);
     } finally {

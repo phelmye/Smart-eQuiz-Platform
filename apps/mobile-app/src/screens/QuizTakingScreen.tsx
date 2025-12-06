@@ -12,6 +12,8 @@ import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { apiClient } from '../api/client';
 import { tenantConfig } from '../config/tenant-config';
+import { offlineStorage } from '../services/offlineStorage';
+import { networkService } from '../services/networkService';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type QuizTakingScreenRouteProp = RouteProp<RootStackParamList, 'QuizTaking'>;
@@ -77,14 +79,41 @@ export default function QuizTakingScreen() {
   const loadQuiz = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.getQuiz(quizId);
-      setQuiz(response.data);
       
-      if (response.data.timeLimit) {
-        setTimeRemaining(response.data.timeLimit);
+      // Try to load from API first
+      if (networkService.getConnectionStatus()) {
+        try {
+          const response = await apiClient.getQuiz(quizId);
+          setQuiz(response.data);
+          
+          // Cache for offline use
+          await offlineStorage.cacheQuiz(response.data);
+          
+          if (response.data.timeLimit) {
+            setTimeRemaining(response.data.timeLimit);
+          }
+          return;
+        } catch (apiError) {
+          console.log('API failed, trying cache...', apiError);
+        }
+      }
+      
+      // Fall back to cached version
+      const cachedQuiz = await offlineStorage.getCachedQuiz(quizId);
+      if (cachedQuiz) {
+        setQuiz(cachedQuiz);
+        if (cachedQuiz.timeLimit) {
+          setTimeRemaining(cachedQuiz.timeLimit);
+        }
+        Alert.alert(
+          'Offline Mode',
+          'Loaded cached quiz. Your answers will sync when you\'re back online.'
+        );
+      } else {
+        throw new Error('Quiz not available offline');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to load quiz');
+      Alert.alert('Error', error.message || 'Failed to load quiz');
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -167,19 +196,42 @@ export default function QuizTakingScreen() {
 
     try {
       setSubmitting(true);
-      const response = await apiClient.submitQuizAnswers(quizId, answers);
       
-      // Navigate to results screen
-      navigation.replace('Results', {
-        quizId: quiz.id,
-        score: response.data.score,
-        totalQuestions: quiz.questions.length,
-        correctAnswers: response.data.correctAnswers,
-        answers: answers,
-        questions: quiz.questions,
-      });
+      // Try to submit online
+      if (networkService.getConnectionStatus()) {
+        try {
+          const response = await apiClient.submitQuizAnswers(quizId, answers);
+          
+          // Navigate to results screen
+          navigation.replace('Results', {
+            quizId: quiz.id,
+            score: response.data.score,
+            totalQuestions: quiz.questions.length,
+            correctAnswers: response.data.correctAnswers,
+            answers: answers,
+            questions: quiz.questions,
+          });
+          return;
+        } catch (apiError) {
+          console.log('Submission failed, saving offline...', apiError);
+        }
+      }
+      
+      // Save for offline sync
+      await offlineStorage.savePendingAnswers(quizId, answers);
+      
+      Alert.alert(
+        'Saved Offline',
+        'Your answers have been saved and will be submitted when you\'re back online.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Main'),
+          },
+        ]
+      );
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to submit quiz');
+      Alert.alert('Error', error.message || 'Failed to save quiz');
     } finally {
       setSubmitting(false);
     }
