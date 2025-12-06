@@ -132,10 +132,11 @@ class ApiClient {
   }
 
   // Leaderboard Endpoints
-  async getLeaderboard(tournamentId?: string) {
-    const url = tournamentId 
-      ? `/leaderboard?tournamentId=${tournamentId}`
-      : '/leaderboard';
+  async getLeaderboard(filter: 'all-time' | 'monthly' | 'weekly' = 'all-time', tournamentId?: string) {
+    let url = `/leaderboard?filter=${filter}`;
+    if (tournamentId) {
+      url += `&tournamentId=${tournamentId}`;
+    }
     const response = await this.client.get(url);
     return response.data;
   }

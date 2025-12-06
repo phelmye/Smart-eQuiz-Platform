@@ -8,12 +8,26 @@ import { tenantConfig } from '../config/tenant-config';
 // Screens
 import LoginScreen from '../screens/LoginScreen';
 import QuizListScreen from '../screens/QuizListScreen';
-// import QuizTakingScreen from '../screens/QuizTakingScreen';
-// import ResultsScreen from '../screens/ResultsScreen';
-// import LeaderboardScreen from '../screens/LeaderboardScreen';
-// import ProfileScreen from '../screens/ProfileScreen';
+import QuizTakingScreen from '../screens/QuizTakingScreen';
+import ResultsScreen from '../screens/ResultsScreen';
+import LeaderboardScreen from '../screens/LeaderboardScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
-const Stack = createStackNavigator();
+export type RootStackParamList = {
+  Login: undefined;
+  Main: undefined;
+  QuizTaking: { quizId: string };
+  Results: {
+    quizId: string;
+    score: number;
+    totalQuestions: number;
+    correctAnswers: number;
+    answers: Array<{ questionId: string; selectedOption: number }>;
+    questions: Array<any>;
+  };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
@@ -46,7 +60,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Leaderboard"
-        component={PlaceholderScreen}
+        component={LeaderboardScreen}
         options={{
           tabBarLabel: 'Leaderboard',
           tabBarIcon: () => <Text>🏆</Text>,
@@ -54,22 +68,13 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={PlaceholderScreen}
+        component={ProfileScreen}
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: () => <Text>👤</Text>,
         }}
       />
     </Tab.Navigator>
-  );
-}
-
-// Placeholder for screens not yet implemented
-function PlaceholderScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 18, color: '#6B7280' }}>Coming Soon</Text>
-    </View>
   );
 }
 
@@ -95,7 +100,34 @@ export default function AppNavigator() {
         {!isAuthenticated ? (
           <Stack.Screen name="Login" component={LoginScreen} />
         ) : (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen
+              name="QuizTaking"
+              component={QuizTakingScreen}
+              options={{
+                headerShown: true,
+                title: 'Take Quiz',
+                headerStyle: {
+                  backgroundColor: tenantConfig.branding.primaryColor,
+                },
+                headerTintColor: '#fff',
+              }}
+            />
+            <Stack.Screen
+              name="Results"
+              component={ResultsScreen}
+              options={{
+                headerShown: true,
+                title: 'Quiz Results',
+                headerStyle: {
+                  backgroundColor: tenantConfig.branding.primaryColor,
+                },
+                headerTintColor: '#fff',
+                headerLeft: () => null, // Prevent going back
+              }}
+            />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
