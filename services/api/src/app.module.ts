@@ -22,6 +22,7 @@ import { LandingPageModule } from './landing-page/landing-page.module';
 import { MarketingCmsModule } from './marketing-cms/marketing-cms.module';
 import { StripeModule } from './stripe/stripe.module';
 import { EmailModule } from './email/email.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -57,6 +58,7 @@ import { PrismaModule } from './prisma.module';
     MarketingCmsModule,
     StripeModule,
     EmailModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["esnext"],
+    "lib": [
+      "esnext"
+    ],
     "jsx": "react-native",
     "module": "esnext",
     "moduleResolution": "node",
@@ -13,18 +15,23 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@smart-equiz/types": ["../../packages/types/src"],
-      "@smart-equiz/utils": ["../../packages/utils/src"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@smart-equiz/types": [
+        "../../packages/types/src"
+      ],
+      "@smart-equiz/utils": [
+        "../../packages/utils/src"
+      ]
     }
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }
