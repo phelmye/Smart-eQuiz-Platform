@@ -9,8 +9,10 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#3B82F6"
     },
+    "description": "Bible quiz competition platform with offline support and real-time tournaments",
+    "primaryColor": "#3B82F6",
     "assetBundlePatterns": [
       "**/*"
     ],

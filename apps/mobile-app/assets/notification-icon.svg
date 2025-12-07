@@ -1,0 +1,32 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simple white icon for Android notifications -->
+  <defs>
+    <linearGradient id="bookGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#E0E7FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Open book icon (simplified for notifications) -->
+  <g transform="translate(48, 48)">
+    <!-- Left page -->
+    <path d="M -18 -15 L -18 15 Q -18 17 -16 17 L -1 17 L -1 -15 Z" 
+          fill="white"/>
+    
+    <!-- Right page -->
+    <path d="M 1 -15 L 1 17 L 16 17 Q 18 17 18 15 L 18 -15 Z" 
+          fill="white"/>
+    
+    <!-- Bible cross on left page -->
+    <g transform="translate(-9.5, -5)">
+      <rect x="-1" y="-4" width="2" height="10" rx="0.5" fill="white"/>
+      <rect x="-3" y="-2" width="6" height="2" rx="0.5" fill="white"/>
+    </g>
+    
+    <!-- Quiz checkmark on right page -->
+    <g transform="translate(10, 8)">
+      <circle r="3" fill="white"/>
+      <path d="M -1 0 L -0.3 1 L 1.2 -1" stroke="#3B82F6" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+    </g>
+  </g>
+</svg>
