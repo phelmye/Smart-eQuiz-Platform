@@ -87,25 +87,30 @@ export default function AppNavigator() {
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
-    // Handle notification taps
-    const unsubscribe = notificationService.addResponseListener((response) => {
-      const data = response.notification.request.content.data;
-      
-      // Navigate based on notification type
-      if (navigationRef.current?.isReady()) {
-        if (data.type === 'quiz_available' && data.quizId) {
-          navigationRef.current.navigate('QuizTaking', { quizId: data.quizId });
-        } else if (data.type === 'leaderboard_update') {
-          navigationRef.current.navigate('Main');
-          // Tab navigation will show Leaderboard
-        } else if (data.type === 'result_ready' && data.quizId) {
-          // Navigate to quiz list where user can see their results
-          navigationRef.current.navigate('Main');
+    // Handle notification taps (wrapped in try-catch to prevent crashes)
+    try {
+      const unsubscribe = notificationService.addResponseListener((response) => {
+        const data = response.notification.request.content.data;
+        
+        // Navigate based on notification type
+        if (navigationRef.current?.isReady()) {
+          if (data.type === 'quiz_available' && data.quizId) {
+            navigationRef.current.navigate('QuizTaking', { quizId: data.quizId });
+          } else if (data.type === 'leaderboard_update') {
+            navigationRef.current.navigate('Main');
+            // Tab navigation will show Leaderboard
+          } else if (data.type === 'result_ready' && data.quizId) {
+            // Navigate to quiz list where user can see their results
+            navigationRef.current.navigate('Main');
+          }
         }
-      }
-    });
+      });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (error) {
+      console.warn('Failed to setup notification listener:', error);
+      return () => {}; // Return empty cleanup function
+    }
   }, []);
 
   if (isLoading) {

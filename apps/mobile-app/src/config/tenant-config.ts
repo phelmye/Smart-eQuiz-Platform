@@ -87,7 +87,7 @@ export const defaultConfig: TenantConfig = {
   },
   
   api: {
-    baseUrl: process.env.API_URL || 'http://localhost:3001/api',
+    baseUrl: 'http://10.159.47.66:3001/api', // Will be replaced by .env
     tenantId: 'demo',
   },
   
@@ -106,16 +106,29 @@ export const defaultConfig: TenantConfig = {
 
 // Load tenant-specific configuration
 export function loadTenantConfig(tenantId: string): TenantConfig {
-  try {
-    // In development, try to load from tenants directory
-    const tenantConfig = require(`../../tenants/${tenantId}/config.json`);
-    return { ...defaultConfig, ...tenantConfig };
-  } catch (error) {
-    console.warn(`Tenant config not found for ${tenantId}, using default`);
-    return defaultConfig;
-  }
+  // For now, always use default config
+  // Tenant-specific configs can be added later via build-time configuration
+  console.log(`Loading config for tenant: ${tenantId}`);
+  return defaultConfig;
 }
 
 // Get active tenant config (set via environment or build script)
-export const TENANT_ID = process.env.TENANT_ID || 'demo';
-export const tenantConfig = loadTenantConfig(TENANT_ID);
+const API_URL = 'http://10.159.47.66:3001/api';
+const TENANT_ID = 'demo';
+
+// Create tenant configuration with overridden API settings
+const baseConfig = loadTenantConfig(TENANT_ID);
+
+export const tenantConfig: TenantConfig = {
+  ...baseConfig,
+  api: {
+    baseUrl: API_URL,
+    tenantId: TENANT_ID,
+  },
+};
+
+// Log configuration for debugging
+console.log('Tenant Config Loaded:', {
+  tenantId: tenantConfig.id,
+  apiBaseUrl: tenantConfig.api.baseUrl,
+});
