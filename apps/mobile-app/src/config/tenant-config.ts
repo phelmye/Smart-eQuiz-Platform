@@ -113,8 +113,24 @@ export function loadTenantConfig(tenantId: string): TenantConfig {
 }
 
 // Get active tenant config (set via environment or build script)
-const API_URL = 'http://10.159.47.66:3001/api';
-const TENANT_ID = 'demo';
+let API_URL = 'http://10.159.47.66:3001/api';
+let TENANT_ID = 'demo';
+
+// Try to load from environment variables
+try {
+  // @ts-ignore - env variables from react-native-dotenv
+  const { API_URL: envApiUrl, TENANT_ID: envTenantId } = require('@env');
+  if (envApiUrl) {
+    API_URL = envApiUrl;
+    console.log('✓ Using API_URL from .env:', API_URL);
+  }
+  if (envTenantId) {
+    TENANT_ID = envTenantId;
+    console.log('✓ Using TENANT_ID from .env:', TENANT_ID);
+  }
+} catch (error) {
+  console.warn('⚠️ Could not load .env variables, using defaults');
+}
 
 // Create tenant configuration with overridden API settings
 const baseConfig = loadTenantConfig(TENANT_ID);
@@ -128,7 +144,7 @@ export const tenantConfig: TenantConfig = {
 };
 
 // Log configuration for debugging
-console.log('Tenant Config Loaded:', {
+console.log('✓ Tenant Config Loaded:', {
   tenantId: tenantConfig.id,
   apiBaseUrl: tenantConfig.api.baseUrl,
 });

@@ -1,6 +1,12 @@
+console.log('📦 api/client.ts loading...');
+
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+
+console.log('📦 Importing tenantConfig...');
 import { tenantConfig } from '../config/tenant-config';
+
+console.log('📦 api/client.ts imports complete');
 
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';

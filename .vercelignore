@@ -1,0 +1,23 @@
+# Don't upload these to Vercel (saves time & space)
+node_modules
+.git
+.github
+*.md
+*.log
+dist
+.next
+.turbo
+coverage
+.vscode
+.idea
+
+# Don't upload other apps when deploying specific app
+apps/mobile-app
+apps/marketing-site/.next
+apps/platform-admin/dist
+apps/tenant-app/dist
+workspace/shadcn-ui/dist
+
+# Service code (backend only, not needed for frontend)
+services/
+dev/

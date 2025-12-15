@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cd ../.. && pnpm build --filter=tenant-app",
-  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter=tenant-app build",
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
   "outputDirectory": "dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ../../packages/ ./",
   "rewrites": [
     {
       "source": "/(.*)",

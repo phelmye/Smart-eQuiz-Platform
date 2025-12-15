@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -79,8 +80,6 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
-
-import { View, Text, ActivityIndicator } from 'react-native';
 
 export default function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();

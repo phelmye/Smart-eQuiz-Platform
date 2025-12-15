@@ -1,6 +1,14 @@
+console.log('📦 AuthContext.tsx loading...');
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+
+console.log('📦 Importing apiClient...');
 import { apiClient } from '../api/client';
+
+console.log('📦 Importing AsyncStorage...');
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+console.log('📦 AuthContext imports complete');
 
 interface User {
   id: string;
@@ -29,25 +37,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔐 AuthProvider: Starting initialization...');
     // Load cached user on app start
     loadCachedUser();
   }, []);
 
   const loadCachedUser = async () => {
     try {
+      console.log('🔐 AuthProvider: Loading cached user...');
       const cachedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
       if (cachedUser) {
+        console.log('🔐 AuthProvider: Found cached user');
         setUser(JSON.parse(cachedUser));
+      } else {
+        console.log('🔐 AuthProvider: No cached user found');
       }
       
       // Try to refresh user data from API
       const token = await apiClient.getToken();
       if (token) {
+        console.log('🔐 AuthProvider: Token found, refreshing user...');
         await refreshUser();
+      } else {
+        console.log('🔐 AuthProvider: No token found');
       }
     } catch (error) {
-      console.error('Error loading cached user:', error);
+      console.error('❌ AuthProvider: Error loading cached user:', error);
     } finally {
+      console.log('✓ AuthProvider: Initialization complete, isLoading = false');
       setIsLoading(false);
     }
   };

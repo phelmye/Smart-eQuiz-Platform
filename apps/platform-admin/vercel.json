@@ -1,7 +1,8 @@
 {
-  "buildCommand": "cd ../.. && pnpm build --filter=platform-admin",
-  "installCommand": "corepack enable && corepack prepare pnpm@8.10.0 --activate && cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter=platform-admin build",
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
   "outputDirectory": "dist",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ../../packages/ ./",
   "rewrites": [
     {
       "source": "/(.*)",
