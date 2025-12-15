@@ -2,7 +2,6 @@
   "buildCommand": "cd ../.. && pnpm --filter=platform-admin... build",
   "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
   "outputDirectory": "dist",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ../../packages/ ./",
   "rewrites": [
     {
       "source": "/(.*)",

@@ -3,7 +3,6 @@
   "buildCommand": "cd ../.. && pnpm --filter=marketing-site... build",
   "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
   "outputDirectory": ".next",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD ../../packages/ ./",
   "headers": [
     {
       "source": "/(.*)",
