@@ -4,7 +4,7 @@
   "private": true,
   "description": "Smart eQuiz Platform - Multi-tenant Quiz Tournament System",
   "scripts": {
-    "build": "pnpm -r --filter=tenant-app --filter=marketing-site --filter=platform-admin build",
+    "build": "echo 'Use build:app-name instead'",
     "build:tenant-app": "pnpm --filter tenant-app build",
     "build:marketing-site": "pnpm --filter marketing-site build",
     "build:platform-admin": "pnpm --filter platform-admin build",

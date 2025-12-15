@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm --filter=tenant-app build",
+  "buildCommand": "cd ../.. && pnpm --filter=tenant-app... build",
   "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
   "outputDirectory": "dist",
   "ignoreCommand": "git diff --quiet HEAD^ HEAD ../../packages/ ./",
