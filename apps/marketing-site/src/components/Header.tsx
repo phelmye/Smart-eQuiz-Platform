@@ -25,6 +25,7 @@ export default function Header({ config }: HeaderProps) {
                 fill
                 className="object-contain"
                 priority
+                unoptimized
               />
             </div>
             <span className="text-xl font-bold text-gray-900">{config.siteName}</span>

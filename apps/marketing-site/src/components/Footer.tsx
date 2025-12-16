@@ -49,6 +49,7 @@ export default function Footer({ config }: FooterProps) {
                   alt={config.logoAlt}
                   fill
                   className="object-contain brightness-0 invert"
+                  unoptimized
                 />
               </div>
               <span className="text-white font-bold">{config.siteName}</span>
