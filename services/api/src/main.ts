@@ -35,9 +35,36 @@ async function bootstrap() {
       },
     }));
     
-    // Enable CORS for frontend
+    // Enable CORS for all frontend domains
+    const allowedOrigins = [
+      // Production domains
+      'https://www.smartequiz.com',
+      'https://smartequiz.com',
+      'https://admin.smartequiz.com',
+      // Development
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://localhost:5174',
+    ];
+
     app.enableCors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        
+        // Check if origin is in allowed list
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Allow wildcard tenant subdomains (*.smartequiz.com)
+        if (origin.match(/^https:\/\/.*\.smartequiz\.com$/)) {
+          return callback(null, true);
+        }
+        
+        // Reject all others
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
     });
 
