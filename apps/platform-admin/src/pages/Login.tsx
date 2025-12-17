@@ -87,10 +87,11 @@ export default function Login() {
             </Button>
 
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800 font-medium mb-2">Demo Credentials:</p>
+              <p className="text-xs text-blue-800 font-medium mb-2">Super Admin Credentials:</p>
               <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>Super Admin:</strong> admin@equiz.com / admin123</p>
-                <p><strong>Admin:</strong> support@equiz.com / support123</p>
+                <p><strong>Email:</strong> super@admin.com</p>
+                <p><strong>Password:</strong> SuperAdmin123!</p>
+                <p className="text-blue-600 mt-2 italic">Use these credentials to access platform administration</p>
               </div>
             </div>
           </form>
