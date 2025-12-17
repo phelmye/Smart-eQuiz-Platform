@@ -1,6 +1,6 @@
 {
   "buildCommand": "cd ../.. && pnpm --filter=tenant-app... build",
-  "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
+  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
   "outputDirectory": "dist",
   "rewrites": [
     {

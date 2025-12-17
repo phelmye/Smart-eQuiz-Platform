@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "buildCommand": "cd ../.. && pnpm --filter=marketing-site... build",
-  "installCommand": "corepack enable && pnpm install --frozen-lockfile --prefer-offline",
+  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
   "outputDirectory": ".next",
   "headers": [
     {
