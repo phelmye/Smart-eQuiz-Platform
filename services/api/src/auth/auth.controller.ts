@@ -159,7 +159,8 @@ Authenticates a user with email and password credentials.
         false,
         'Invalid credentials',
       );
-      return { error: 'invalid_credentials' };
+      res.status(401);
+      return { error: 'invalid_credentials', message: 'Invalid email or password' };
     }
     
     const tokens = await this.authService.login(user);

@@ -72,12 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Invalid credentials');
-      }
-
       const data = await response.json();
+      
+      // Check for error in response body (handles both old and new API)
+      if (data.error || !response.ok) {
+        throw new Error(data.message || 'Invalid email or password');
+      }
       
       const userData: User = {
         id: data.user.id,
