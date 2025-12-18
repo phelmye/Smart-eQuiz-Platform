@@ -139,15 +139,52 @@ function SignupForm() {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizationName: formData.organizationName,
+          subdomain: formData.subdomain,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          plan: formData.plan,
+        }),
+      });
 
-      // TODO: Send to backend API
-      console.log('Signup data:', formData);
+      const data = await response.json();
 
-      // Redirect to success page or onboarding
-      router.push(`/welcome?subdomain=${formData.subdomain}`);
+      if (data.error) {
+        // Handle specific errors
+        if (data.error === 'subdomain_taken') {
+          setErrors({ subdomain: 'This subdomain is already taken' });
+        } else if (data.error === 'email_exists') {
+          setErrors({ email: 'This email is already registered' });
+        } else {
+          setErrors({ submit: data.message || 'Registration failed. Please try again.' });
+        }
+        return;
+      }
+
+      if (data.success) {
+        // Store access token
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('tenant_id', data.tenantId);
+          localStorage.setItem('subdomain', data.subdomain);
+        }
+
+        // Redirect to welcome page with tenant info
+        router.push(`/welcome?subdomain=${data.subdomain}&new=true`);
+      }
     } catch (error) {
+      console.error('Registration error:', error);
       setErrors({ submit: 'An error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);

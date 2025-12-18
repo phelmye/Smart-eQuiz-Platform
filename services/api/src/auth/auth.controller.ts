@@ -9,9 +9,11 @@ import {
   ApiBody,
   ApiCookieAuth,
   ApiBadRequestResponse,
-  ApiUnauthorizedResponse 
+  ApiUnauthorizedResponse,
+  ApiConflictResponse,
 } from '@nestjs/swagger';
 import { LoginDto, LoginResponseDto } from './dto/login.dto';
+import { RegisterDto, RegisterResponseDto } from './dto/register.dto';
 import { AuditService, AuditAction } from '../audit/audit.service';
 
 @ApiTags('Authentication')
@@ -21,6 +23,93 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly auditService: AuditService,
   ) {}
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('register')
+  @ApiOperation({ 
+    summary: 'Register new tenant and admin user',
+    description: `
+Creates a new tenant organization and admin user account.
+
+**Returns:**
+- New tenant with subdomain
+- Admin user account
+- JWT tokens for immediate login
+
+**Trial:**
+- 14 days free trial automatically activated
+- No credit card required
+
+**Security:**
+- Rate limited to 3 registrations per minute per IP
+- Subdomain uniqueness enforced
+- Email uniqueness enforced
+    `
+  })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Registration successful',
+    type: RegisterResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiConflictResponse({ description: 'Subdomain or email already exists' })
+  async register(
+    @Body() body: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const result = await this.authService.register(body);
+      
+      // Set refresh token cookie
+      res.cookie('refresh_token', result.refresh_token, { 
+        httpOnly: true, 
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      // Log registration
+      await this.auditService.logAuth(
+        AuditAction.LOGIN, // Using LOGIN as proxy for registration success
+        result.userId,
+        result.tenantId,
+        req.ip,
+        req.headers['user-agent'],
+        true,
+        'New tenant registration',
+      );
+
+      // Return data without refresh_token in body
+      return {
+        success: result.success,
+        tenantId: result.tenantId,
+        userId: result.userId,
+        subdomain: result.subdomain,
+        tenantUrl: result.tenantUrl,
+        access_token: result.access_token,
+      };
+    } catch (error) {
+      // Log failed registration
+      await this.auditService.logAuth(
+        AuditAction.LOGIN_FAILED,
+        body.email,
+        undefined,
+        req.ip,
+        req.headers['user-agent'],
+        false,
+        `Registration failed: ${error.message}`,
+      );
+
+      if (error.message === 'Subdomain already taken') {
+        return { error: 'subdomain_taken', message: 'This subdomain is already in use' };
+      }
+      if (error.message === 'Email already registered') {
+        return { error: 'email_exists', message: 'This email is already registered' };
+      }
+      return { error: 'registration_failed', message: 'Registration failed. Please try again.' };
+    }
+  }
 
   // Stricter rate limit for login endpoint (5 requests per 60 seconds per IP)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
