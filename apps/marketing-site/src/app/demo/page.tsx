@@ -12,22 +12,29 @@ export default function DemoPage() {
           </p>
           
           {/* Demo Access Card */}
-          <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-left border border-white/20">
-            <h2 className="text-2xl font-bold mb-4 text-center">Access Demo Tenant</h2>
+          <div className="max-w-3xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-left border border-white/20">
+            <h2 className="text-2xl font-bold mb-6 text-center">Access Demo Tenant</h2>
+            
+            {/* Instructions */}
+            <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mb-6">
+              <p className="text-sm font-semibold mb-2">📍 How to Access Demo:</p>
+              <ol className="text-sm space-y-2 text-blue-50">
+                <li>1. Go to your Vercel Dashboard</li>
+                <li>2. Find <span className="font-mono bg-white/20 px-2 py-1 rounded">smart-equiz-tenant-app</span> project</li>
+                <li>3. Copy the deployment URL (e.g., <span className="font-mono">yourapp-xyz.vercel.app</span>)</li>
+                <li>4. Add <span className="font-mono bg-white/20 px-2 py-1 rounded">?tenant=demo</span> to the URL</li>
+              </ol>
+            </div>
             
             <div className="space-y-4 mb-6">
               <div className="bg-white/20 rounded-lg p-4">
-                <p className="text-sm text-blue-100 mb-1">Demo URL:</p>
-                <a 
-                  href={process.env.NODE_ENV === 'development' 
-                    ? 'http://localhost:5174?tenant=demo' 
-                    : 'https://demo.smartequiz.com'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xl font-mono font-bold hover:underline"
-                >
-                  demo.smartequiz.com
-                </a>
+                <p className="text-sm text-blue-100 mb-2">Demo URL Format:</p>
+                <p className="font-mono text-sm bg-white/10 p-2 rounded">
+                  https://[YOUR-VERCEL-URL].vercel.app?tenant=demo
+                </p>
+                <p className="text-xs text-blue-200 mt-2">
+                  💡 Or use <span className="font-mono">localhost:5174?tenant=demo</span> if running locally
+                </p>
               </div>
               
               <div className="grid md:grid-cols-2 gap-4">
@@ -45,20 +52,27 @@ export default function DemoPage() {
               </div>
             </div>
             
-            <a
-              href={process.env.NODE_ENV === 'development' 
-                ? 'http://localhost:5174?tenant=demo' 
-                : 'https://demo.smartequiz.com'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full py-4 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors text-center"
-            >
-              Launch Demo Tenant →
-            </a>
+            <div className="space-y-3">
+              <a
+                href="https://vercel.com/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full py-4 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors text-center"
+              >
+                Open Vercel Dashboard →
+              </a>
+              
+              <p className="text-xs text-blue-100 text-center">
+                <strong>Note:</strong> Custom domain (demo.smartequiz.com) requires DNS configuration.<br/>
+                See CUSTOM_DOMAIN_SETUP.md in project files for setup guide.
+              </p>
+            </div>
             
-            <p className="text-sm text-blue-100 text-center mt-4">
-              Try all features: create tournaments, manage questions, run practice sessions, and view analytics
-            </p>
+            <div className="mt-6 pt-6 border-t border-white/20">
+              <p className="text-sm text-blue-100 text-center">
+                Try all features: create tournaments, manage questions, run practice sessions, and view analytics
+              </p>
+            </div>
           </div>
         </div>
       </section>

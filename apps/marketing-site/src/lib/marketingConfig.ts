@@ -45,7 +45,7 @@ export const defaultMarketingConfig: MarketingSiteConfig = {
     { label: 'Pricing', href: '/pricing' },
     { label: 'Docs', href: '/docs' },
     { label: 'Affiliate Program', href: '/affiliate' },
-    { label: 'Try Demo', href: '/demo' },
+    { label: 'Try Demo', href: '/demo' }, // Shows instructions to access demo tenant
     { label: 'Start Free Trial', href: '/signup', highlighted: true },
   ],
   footerSections: [
