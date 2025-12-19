@@ -62,6 +62,11 @@ async function bootstrap() {
           return callback(null, true);
         }
         
+        // Allow Vercel preview deployments (*.vercel.app)
+        if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
+          return callback(null, true);
+        }
+        
         // Reject all others
         callback(new Error('Not allowed by CORS'));
       },
