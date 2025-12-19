@@ -43,10 +43,9 @@ export const defaultMarketingConfig: MarketingSiteConfig = {
   headerMenu: [
     { label: 'Features', href: '/features' },
     { label: 'Pricing', href: '/pricing' },
-    { label: 'Demo', href: '/demo' },
     { label: 'Docs', href: '/docs' },
     { label: 'Affiliate Program', href: '/affiliate' },
-    { label: 'Sign In', href: '/platform-login' },
+    { label: 'Try Demo', href: '/demo' },
     { label: 'Start Free Trial', href: '/signup', highlighted: true },
   ],
   footerSections: [

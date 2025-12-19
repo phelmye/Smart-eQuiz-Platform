@@ -6,10 +6,60 @@ export default function DemoPage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl font-bold mb-6">See Smart eQuiz in Action</h1>
+          <h1 className="text-5xl font-bold mb-6">Try Smart eQuiz - Live Demo</h1>
           <p className="text-xl mb-8 max-w-2xl mx-auto text-blue-100">
-            Watch how churches around the world are transforming their Bible quiz programs
+            Experience the full platform with our interactive demo tenant
           </p>
+          
+          {/* Demo Access Card */}
+          <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-left border border-white/20">
+            <h2 className="text-2xl font-bold mb-4 text-center">Access Demo Tenant</h2>
+            
+            <div className="space-y-4 mb-6">
+              <div className="bg-white/20 rounded-lg p-4">
+                <p className="text-sm text-blue-100 mb-1">Demo URL:</p>
+                <a 
+                  href={process.env.NODE_ENV === 'development' 
+                    ? 'http://localhost:5174?tenant=demo' 
+                    : 'https://demo.smartequiz.com'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xl font-mono font-bold hover:underline"
+                >
+                  demo.smartequiz.com
+                </a>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white/20 rounded-lg p-4">
+                  <p className="text-sm text-blue-100 mb-1">Admin Login:</p>
+                  <p className="font-mono text-sm">admin@demo.local</p>
+                  <p className="font-mono text-sm">password123</p>
+                </div>
+                
+                <div className="bg-white/20 rounded-lg p-4">
+                  <p className="text-sm text-blue-100 mb-1">Organization:</p>
+                  <p className="font-semibold">Demo Church</p>
+                  <p className="text-sm text-blue-100">Full admin access</p>
+                </div>
+              </div>
+            </div>
+            
+            <a
+              href={process.env.NODE_ENV === 'development' 
+                ? 'http://localhost:5174?tenant=demo' 
+                : 'https://demo.smartequiz.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full py-4 bg-white text-blue-600 rounded-lg font-bold hover:bg-blue-50 transition-colors text-center"
+            >
+              Launch Demo Tenant →
+            </a>
+            
+            <p className="text-sm text-blue-100 text-center mt-4">
+              Try all features: create tournaments, manage questions, run practice sessions, and view analytics
+            </p>
+          </div>
         </div>
       </section>
 

@@ -477,10 +477,8 @@ function SignupForm() {
               </button>
 
               <p className="text-center text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link href="/platform-login" className="text-blue-600 hover:underline font-semibold">
-                  Sign in
-                </Link>
+                Already have an account? Access your organization at{' '}
+                <span className="font-mono text-blue-600">yourorg.smartequiz.com</span>
               </p>
             </form>
           </div>

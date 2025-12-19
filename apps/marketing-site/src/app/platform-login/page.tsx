@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 export default function PlatformLoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
+    organization: '',
     email: '',
     password: ''
   });
@@ -19,17 +20,23 @@ export default function PlatformLoginPage() {
     setError('');
     
     try {
-      // TODO: Implement actual authentication
-      // This should authenticate against the platform API
-      // and redirect to the appropriate tenant admin dashboard
+      // Step 1: Verify tenant exists
+      const tenantSubdomain = formData.organization.toLowerCase().trim();
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Step 2: Redirect to tenant's login page
+      const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'smartequiz.com';
+      const isDev = process.env.NODE_ENV === 'development';
       
-      // For now, redirect to tenant app (in production, this would be tenant-specific)
-      window.location.href = 'http://localhost:5174';
+      if (isDev) {
+        // Development: redirect to localhost with tenant info
+        window.location.href = `http://localhost:5174?tenant=${tenantSubdomain}&email=${encodeURIComponent(formData.email)}`;
+      } else {
+        // Production: redirect to tenant subdomain
+        window.location.href = `https://${tenantSubdomain}.${baseDomain}?email=${encodeURIComponent(formData.email)}`;
+      }
       
     } catch (err) {
-      setError('Invalid email or password. Please try again.');
+      setError('Could not find that organization. Please check the name and try again.');
       setIsSubmitting(false);
     }
   };
@@ -42,10 +49,15 @@ export default function PlatformLoginPage() {
           <Link href="/" className="inline-block mb-4">
             <div className="text-3xl font-bold text-blue-600">Smart eQuiz</div>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Access Your Organization</h1>
           <p className="text-gray-600">
-            Access your organization's quiz platform
+            Enter your organization name to continue to login
           </p>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> If you're a participant, use the direct link provided by your organization.
+            </p>
+          </div>
         </div>
 
         {/* Login Form */}
@@ -57,45 +69,37 @@ export default function PlatformLoginPage() {
           )}
 
           <div>
+            <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
+              Organization Name or Subdomain
+            </label>
+            <input
+              type="text"
+              id="organization"
+              name="organization"
+              required
+              value={formData.organization}
+              onChange={(e) => setFormData({...formData, organization: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., firstbaptist or demo"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              This will be your URL: <span className="font-mono">{formData.organization || 'yourorg'}.smartequiz.com</span>
+            </p>
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
+              Your Email (Optional)
             </label>
             <input
               type="email"
               id="email"
               name="email"
-              required
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="you@yourorganization.com"
+              placeholder="Pre-fill your email on next page"
             />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your password"
-            />
-          </div>
-
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2 rounded border-gray-300" />
-              <span className="text-gray-700">Remember me</span>
-            </label>
-            <Link href="/forgot-password" className="text-blue-600 hover:underline font-semibold">
-              Forgot password?
-            </Link>
           </div>
 
           <button
@@ -103,7 +107,7 @@ export default function PlatformLoginPage() {
             disabled={isSubmitting}
             className="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            {isSubmitting ? 'Redirecting...' : 'Continue to Login'}
           </button>
         </form>
 
