@@ -8,7 +8,7 @@ interface PricingPlan {
   name: string;
   description: string;
   price: number;
-  interval: 'MONTHLY' | 'YEARLY';
+  interval: 'MONTH' | 'YEAR';
   features: string[];
   highlighted: boolean;
   ctaText?: string;
@@ -21,11 +21,11 @@ interface PricingContentProps {
 }
 
 export default function PricingContent({ pricingPlans }: PricingContentProps) {
-  const [interval, setInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
+  const [interval, setInterval] = useState<'MONTH' | 'YEAR'>('MONTH');
 
   // Show monthly plans (all plans are stored as monthly in the API)
   // We'll adjust the display based on the selected interval
-  const monthlyPlans = pricingPlans.filter(plan => plan.interval === 'MONTHLY');
+  const monthlyPlans = pricingPlans.filter(plan => plan.interval === 'MONTH');
 
   // Calculate yearly price with 20% discount
   const getYearlyPrice = (monthlyPrice: number) => Math.round((monthlyPrice * 12) * 0.8);
@@ -33,7 +33,7 @@ export default function PricingContent({ pricingPlans }: PricingContentProps) {
   
   // Get display price based on selected interval
   const getDisplayPrice = (monthlyPrice: number) => 
-    interval === 'YEARLY' ? getYearlyPrice(monthlyPrice) : monthlyPrice;
+    interval === 'YEAR' ? getYearlyPrice(monthlyPrice) : monthlyPrice;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -51,25 +51,25 @@ export default function PricingContent({ pricingPlans }: PricingContentProps) {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="flex justify-center items-center gap-4">
-            <span className={`text-lg font-medium ${interval === 'MONTHLY' ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className={`text-lg font-medium ${interval === 'MONTH' ? 'text-blue-600' : 'text-gray-500'}`}>
               Monthly
             </span>
             <button
-              onClick={() => setInterval(interval === 'MONTHLY' ? 'YEARLY' : 'MONTHLY')}
+              onClick={() => setInterval(interval === 'MONTH' ? 'YEAR' : 'MONTH')}
               className={`relative w-16 h-8 rounded-full transition-colors ${
-                interval === 'YEARLY' ? 'bg-blue-600' : 'bg-gray-300'
+                interval === 'YEAR' ? 'bg-blue-600' : 'bg-gray-300'
               }`}
             >
               <span
                 className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                  interval === 'YEARLY' ? 'translate-x-8' : ''
+                  interval === 'YEAR' ? 'translate-x-8' : ''
                 }`}
               />
             </button>
-            <span className={`text-lg font-medium ${interval === 'YEARLY' ? 'text-blue-600' : 'text-gray-500'}`}>
+            <span className={`text-lg font-medium ${interval === 'YEAR' ? 'text-blue-600' : 'text-gray-500'}`}>
               Yearly
             </span>
-            {interval === 'YEARLY' && (
+            {interval === 'YEAR' && (
               <span className="ml-2 px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
                 Save 20%
               </span>
