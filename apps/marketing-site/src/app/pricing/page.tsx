@@ -88,7 +88,14 @@ export default function PricingPage() {
         const res = await fetch(`${API_URL}/marketing-cms/pricing-plans`);
         if (res.ok) {
           const data = await res.json();
-          setPricingPlans(data.filter((plan: PricingPlan) => plan.isActive));
+          // Normalize interval values from API (MONTHLY/YEARLY -> MONTH/YEAR)
+          const normalizedPlans = data
+            .filter((plan: any) => plan.isActive)
+            .map((plan: any) => ({
+              ...plan,
+              interval: plan.interval === 'MONTHLY' ? 'MONTH' : plan.interval === 'YEARLY' ? 'YEAR' : plan.interval
+            }));
+          setPricingPlans(normalizedPlans);
         }
       } catch (error) {
         console.error('Error fetching pricing plans:', error);
