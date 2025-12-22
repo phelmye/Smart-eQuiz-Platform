@@ -88,7 +88,13 @@ export default function PricingPage() {
         const res = await fetch(`${API_URL}/marketing-cms/pricing-plans`);
         if (res.ok) {
           const data = await res.json();
-          setPricingPlans(data.filter((plan: any) => plan.isActive));
+          // Filter active plans and remove duplicates by name
+          const activePlans = data.filter((plan: any) => plan.isActive);
+          const uniquePlans = activePlans.filter(
+            (plan: any, index: number, self: any[]) =>
+              index === self.findIndex((p) => p.name === plan.name)
+          );
+          setPricingPlans(uniquePlans);
         }
       } catch (error) {
         console.error('Error fetching pricing plans:', error);
