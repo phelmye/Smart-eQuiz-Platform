@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Testimonials from '@/components/Testimonials';
 
@@ -6,11 +9,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 interface Hero {
   headline: string;
   subheadline: string;
-  ctaPrimaryText?: string;
-  ctaPrimaryUrl?: string;
-  ctaSecondaryText?: string;
-  ctaSecondaryUrl?: string;
+  ctaPrimary?: string;
+  ctaPrimaryLink?: string;
+  ctaSecondary?: string;
+  ctaSecondaryLink?: string;
   backgroundImage?: string;
+  videoUrl?: string;
 }
 
 interface Testimonial {
@@ -28,10 +32,10 @@ interface Testimonial {
 const defaultHero: Hero = {
   headline: "Transform Your Church's Bible Quiz Program",
   subheadline: "The complete SaaS platform for managing tournaments, practice sessions, and competitive championships. Engage youth, track progress, and inspire deeper Scripture study.",
-  ctaPrimaryText: "Start Free Trial",
-  ctaPrimaryUrl: "/signup",
-  ctaSecondaryText: "Watch Demo",
-  ctaSecondaryUrl: "/demo",
+  ctaPrimary: "Start Free Trial",
+  ctaPrimaryLink: "/signup",
+  ctaSecondary: "Watch Demo",
+  ctaSecondaryLink: "/demo",
 };
 
 // Fallback testimonials
@@ -65,36 +69,41 @@ const defaultTestimonials: Testimonial[] = [
   },
 ];
 
-async function getHeroContent(): Promise<Hero> {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/hero`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) throw new Error('Failed to fetch hero');
-    const heroes = await res.json();
-    return heroes[0] || defaultHero;
-  } catch (error) {
-    console.error('Error fetching hero:', error);
-    return defaultHero;
-  }
-}
+export default function HomePage() {
+  const [hero, setHero] = useState<Hero>(defaultHero);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(defaultTestimonials);
+  const [loading, setLoading] = useState(true);
 
-async function getTestimonials(): Promise<Testimonial[]> {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/testimonials`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) throw new Error('Failed to fetch testimonials');
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching testimonials:', error);
-    return defaultTestimonials;
-  }
-}
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch hero content
+        const heroRes = await fetch(`${API_URL}/marketing-cms/hero`);
+        if (heroRes.ok) {
+          const heroData = await heroRes.json();
+          if (heroData && heroData.length > 0) {
+            setHero(heroData[0]);
+          }
+        }
 
-export default async function HomePage() {
-  const hero = await getHeroContent();
-  const testimonials = await getTestimonials();
+        // Fetch testimonials
+        const testimonialsRes = await fetch(`${API_URL}/marketing-cms/testimonials`);
+        if (testimonialsRes.ok) {
+          const testimonialsData = await testimonialsRes.json();
+          if (testimonialsData && testimonialsData.length > 0) {
+            setTestimonials(testimonialsData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Keep using fallback content
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -116,17 +125,17 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href={hero.ctaPrimaryUrl || "/signup"}
+                href={hero.ctaPrimaryLink || "/signup"}
                 className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-colors shadow-lg"
               >
-                {hero.ctaPrimaryText || "Start Free Trial"}
+                {hero.ctaPrimary || "Start Free Trial"}
               </Link>
-              {hero.ctaSecondaryText && (
+              {hero.ctaSecondary && (
                 <Link 
-                  href={hero.ctaSecondaryUrl || "/demo"}
+                  href={hero.ctaSecondaryLink || "/demo"}
                   className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold text-lg hover:bg-blue-400 transition-colors border-2 border-white/20"
                 >
-                  {hero.ctaSecondaryText}
+                  {hero.ctaSecondary}
                 </Link>
               )}
             </div>
