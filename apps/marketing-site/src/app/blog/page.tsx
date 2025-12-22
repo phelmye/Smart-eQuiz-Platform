@@ -1,32 +1,32 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, User, ArrowRight } from 'lucide-react';
 import { BlogContent } from './BlogContent';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-// Fetch blog posts from Marketing CMS API
-async function getBlogPosts() {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/blog-posts`, {
-      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
-    });
-    
-    if (!res.ok) {
-      console.error('Failed to fetch blog posts:', res.statusText);
-      return [];
-    }
-    
-    const posts = await res.json();
-    // Filter only published posts
-    return posts.filter((post: any) => post.status === 'PUBLISHED');
-  } catch (error) {
-    console.error('Error fetching blog posts:', error);
-    return [];
-  }
-}
+export default function BlogPage() {
+  const [apiPosts, setApiPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function BlogPage() {
-  const apiPosts = await getBlogPosts();
+  useEffect(() => {
+    async function fetchBlogPosts() {
+      try {
+        const res = await fetch(`${API_URL}/marketing-cms/blog-posts`);
+        if (res.ok) {
+          const posts = await res.json();
+          setApiPosts(posts.filter((post: any) => post.status === 'PUBLISHED'));
+        }
+      } catch (error) {
+        console.error('Error fetching blog posts:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchBlogPosts();
+  }, []);
   
   // Fallback to sample data if API returns no posts (for demo)
   const posts = apiPosts.length > 0 ? apiPosts : [

@@ -1,10 +1,7 @@
-import { Metadata } from 'next';
-import FeaturesContent from './FeaturesContent';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Features - Smart eQuiz Platform',
-  description: 'Discover the powerful features that make Smart eQuiz the best platform for Bible quiz competitions.',
-};
+import { useEffect, useState } from 'react';
+import FeaturesContent from './FeaturesContent';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -30,26 +27,26 @@ const sampleFeatures: Feature[] = [
   { id: '8', title: 'Gamification', description: 'Earn XP, level up, and unlock badges. Leaderboards motivate participants to practice more.', icon: 'Award', category: 'Practice & Training', order: 8, isActive: true },
 ];
 
-async function getFeatures(): Promise<Feature[]> {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/features`, {
-      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
-    });
+export default function FeaturesPage() {
+  const [features, setFeatures] = useState<Feature[]>(sampleFeatures);
+  const [loading, setLoading] = useState(true);
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch features');
+  useEffect(() => {
+    async function fetchFeatures() {
+      try {
+        const res = await fetch(`${API_URL}/marketing-cms/features`);
+        if (res.ok) {
+          const data = await res.json();
+          setFeatures(data.filter((feature: Feature) => feature.isActive));
+        }
+      } catch (error) {
+        console.error('Error fetching features:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-
-    const features = await res.json();
-    return features.filter((feature: Feature) => feature.isActive);
-  } catch (error) {
-    console.error('Error fetching features:', error);
-    return sampleFeatures;
-  }
-}
-
-export default async function FeaturesPage() {
-  const features = await getFeatures();
+    fetchFeatures();
+  }, []);
 
   return <FeaturesContent features={features} />;
 }

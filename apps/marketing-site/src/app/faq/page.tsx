@@ -1,10 +1,7 @@
-import { Metadata } from 'next';
-import FAQContent from './FAQContent';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'FAQ - Smart eQuiz Platform',
-  description: 'Frequently asked questions about Smart eQuiz Platform features, pricing, and support.',
-};
+import { useEffect, useState } from 'react';
+import FAQContent from './FAQContent';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -69,26 +66,26 @@ const sampleFAQs: FAQ[] = [
   },
 ];
 
-async function getFAQs(): Promise<FAQ[]> {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/faqs`, {
-      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
-    });
+export default function FAQPage() {
+  const [faqs, setFaqs] = useState<FAQ[]>(sampleFAQs);
+  const [loading, setLoading] = useState(true);
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch FAQs');
+  useEffect(() => {
+    async function fetchFAQs() {
+      try {
+        const res = await fetch(`${API_URL}/marketing-cms/faqs`);
+        if (res.ok) {
+          const data = await res.json();
+          setFaqs(data.filter((faq: FAQ) => faq.isActive));
+        }
+      } catch (error) {
+        console.error('Error fetching FAQs:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-
-    const faqs = await res.json();
-    return faqs.filter((faq: FAQ) => faq.isActive);
-  } catch (error) {
-    console.error('Error fetching FAQs:', error);
-    return sampleFAQs;
-  }
-}
-
-export default async function FAQPage() {
-  const faqs = await getFAQs();
+    fetchFAQs();
+  }, []);
 
   return <FAQContent faqs={faqs} />;
 }

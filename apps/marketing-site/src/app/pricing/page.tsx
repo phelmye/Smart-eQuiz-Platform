@@ -1,10 +1,7 @@
-import { Metadata } from 'next';
-import PricingContent from './PricingContent';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Pricing - Smart eQuiz Platform',
-  description: 'Choose the perfect plan for your Bible quiz program. Simple, transparent pricing with no hidden fees.',
-};
+import { useEffect, useState } from 'react';
+import PricingContent from './PricingContent';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -13,11 +10,11 @@ interface PricingPlan {
   name: string;
   description: string;
   price: number;
-  interval: 'MONTHLY' | 'YEARLY';
+  interval: 'MONTH' | 'YEAR';
   features: string[];
   highlighted: boolean;
   ctaText?: string;
-  ctaUrl?: string;
+  ctaLink?: string;
   isActive: boolean;
 }
 
@@ -28,7 +25,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Starter',
     description: 'Perfect for small churches',
     price: 29,
-    interval: 'MONTHLY',
+    interval: 'MONTH',
     features: [
       'Up to 50 participants',
       'Unlimited practice quizzes',
@@ -38,7 +35,7 @@ const samplePricingPlans: PricingPlan[] = [
     ],
     highlighted: false,
     ctaText: 'Start Free Trial',
-    ctaUrl: '/signup',
+    ctaLink: '/signup',
     isActive: true,
   },
   {
@@ -46,7 +43,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Professional',
     description: 'For growing organizations',
     price: 79,
-    interval: 'MONTHLY',
+    interval: 'MONTH',
     features: [
       'Up to 200 participants',
       'Advanced analytics',
@@ -57,7 +54,7 @@ const samplePricingPlans: PricingPlan[] = [
     ],
     highlighted: true,
     ctaText: 'Start Free Trial',
-    ctaUrl: '/signup',
+    ctaLink: '/signup',
     isActive: true,
   },
   {
@@ -65,7 +62,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Enterprise',
     description: 'For large organizations',
     price: 199,
-    interval: 'MONTHLY',
+    interval: 'MONTH',
     features: [
       'Unlimited participants',
       'Multi-location support',
@@ -76,31 +73,31 @@ const samplePricingPlans: PricingPlan[] = [
     ],
     highlighted: false,
     ctaText: 'Contact Sales',
-    ctaUrl: '/contact',
+    ctaLink: '/contact',
     isActive: true,
   },
 ];
 
-async function getPricingPlans(): Promise<PricingPlan[]> {
-  try {
-    const res = await fetch(`${API_URL}/marketing-cms/pricing-plans`, {
-      next: { revalidate: 60 }, // ISR: Revalidate every 60 seconds
-    });
+export default function PricingPage() {
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>(samplePricingPlans);
+  const [loading, setLoading] = useState(true);
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch pricing plans');
+  useEffect(() => {
+    async function fetchPricingPlans() {
+      try {
+        const res = await fetch(`${API_URL}/marketing-cms/pricing-plans`);
+        if (res.ok) {
+          const data = await res.json();
+          setPricingPlans(data.filter((plan: PricingPlan) => plan.isActive));
+        }
+      } catch (error) {
+        console.error('Error fetching pricing plans:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-
-    const plans = await res.json();
-    return plans.filter((plan: PricingPlan) => plan.isActive);
-  } catch (error) {
-    console.error('Error fetching pricing plans:', error);
-    return samplePricingPlans;
-  }
-}
-
-export default async function PricingPage() {
-  const pricingPlans = await getPricingPlans();
+    fetchPricingPlans();
+  }, []);
 
   return <PricingContent pricingPlans={pricingPlans} />;
 }
