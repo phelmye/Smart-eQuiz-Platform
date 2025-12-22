@@ -10,7 +10,7 @@ interface PricingPlan {
   name: string;
   description: string;
   price: number;
-  interval: 'MONTH' | 'YEAR';
+  interval: 'MONTHLY' | 'YEARLY';
   features: string[];
   highlighted: boolean;
   ctaText?: string;
@@ -25,7 +25,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Starter',
     description: 'Perfect for small churches',
     price: 29,
-    interval: 'MONTH',
+    interval: 'MONTHLY',
     features: [
       'Up to 50 participants',
       'Unlimited practice quizzes',
@@ -43,7 +43,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Professional',
     description: 'For growing organizations',
     price: 79,
-    interval: 'MONTH',
+    interval: 'MONTHLY',
     features: [
       'Up to 200 participants',
       'Advanced analytics',
@@ -62,7 +62,7 @@ const samplePricingPlans: PricingPlan[] = [
     name: 'Enterprise',
     description: 'For large organizations',
     price: 199,
-    interval: 'MONTH',
+    interval: 'MONTHLY',
     features: [
       'Unlimited participants',
       'Multi-location support',
@@ -88,14 +88,7 @@ export default function PricingPage() {
         const res = await fetch(`${API_URL}/marketing-cms/pricing-plans`);
         if (res.ok) {
           const data = await res.json();
-          // Normalize interval values from API (MONTHLY/YEARLY -> MONTH/YEAR)
-          const normalizedPlans = data
-            .filter((plan: any) => plan.isActive)
-            .map((plan: any) => ({
-              ...plan,
-              interval: plan.interval === 'MONTHLY' ? 'MONTH' : plan.interval === 'YEARLY' ? 'YEAR' : plan.interval
-            }));
-          setPricingPlans(normalizedPlans);
+          setPricingPlans(data.filter((plan: any) => plan.isActive));
         }
       } catch (error) {
         console.error('Error fetching pricing plans:', error);

@@ -12,7 +12,7 @@ interface PricingPlan {
   features: string[];
   highlighted: boolean;
   ctaText?: string;
-  ctaUrl?: string;
+  ctaLink?: string;
   isActive: boolean;
 }
 
@@ -23,12 +23,17 @@ interface PricingContentProps {
 export default function PricingContent({ pricingPlans }: PricingContentProps) {
   const [interval, setInterval] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
 
-  // Filter plans by selected interval
-  const filteredPlans = pricingPlans.filter(plan => plan.interval === interval);
+  // Show monthly plans (all plans are stored as monthly in the API)
+  // We'll adjust the display based on the selected interval
+  const monthlyPlans = pricingPlans.filter(plan => plan.interval === 'MONTHLY');
 
-  // Calculate yearly savings
-  const getYearlyPrice = (monthlyPrice: number) => monthlyPrice * 12;
+  // Calculate yearly price with 20% discount
+  const getYearlyPrice = (monthlyPrice: number) => Math.round((monthlyPrice * 12) * 0.8);
   const getYearlySavings = (monthlyPrice: number) => Math.round(monthlyPrice * 12 * 0.2); // 20% discount
+  
+  // Get display price based on selected interval
+  const getDisplayPrice = (monthlyPrice: number) => 
+    interval === 'YEARLY' ? getYearlyPrice(monthlyPrice) : monthlyPrice;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -77,7 +82,7 @@ export default function PricingContent({ pricingPlans }: PricingContentProps) {
       <section className="py-12 pb-24">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8">
-            {filteredPlans.map((plan) => (
+            {monthlyPlans.map((plan) => (
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-xl shadow-lg overflow-hidden transition-transform hover:scale-105 ${
@@ -95,18 +100,18 @@ export default function PricingContent({ pricingPlans }: PricingContentProps) {
                   <p className="text-gray-600 mb-6">{plan.description}</p>
                   
                   <div className="mb-6">
-                    <span className="text-5xl font-bold">${plan.price}</span>
-                    <span className="text-gray-600">/{interval === 'MONTHLY' ? 'month' : 'year'}</span>
+                    <span className="text-5xl font-bold">${getDisplayPrice(plan.price)}</span>
+                    <span className="text-gray-600">/{interval === 'MONTH' ? 'month' : 'year'}</span>
                   </div>
 
-                  {interval === 'YEARLY' && (
+                  {interval === 'YEAR' && (
                     <p className="text-sm text-green-600 font-medium mb-4">
                       Save ${getYearlySavings(plan.price)} per year
                     </p>
                   )}
                   
                   <a
-                    href={plan.ctaUrl || '/signup'}
+                    href={plan.ctaLink || '/signup'}
                     className={`block w-full text-center py-3 px-6 rounded-lg font-semibold transition-colors mb-6 ${
                       plan.highlighted
                         ? 'bg-blue-600 text-white hover:bg-blue-700'
@@ -129,9 +134,9 @@ export default function PricingContent({ pricingPlans }: PricingContentProps) {
             ))}
           </div>
 
-          {filteredPlans.length === 0 && (
+          {monthlyPlans.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No pricing plans available for this billing interval.</p>
+              <p className="text-gray-500 text-lg">No pricing plans available.</p>
             </div>
           )}
         </div>
