@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CreditCard, DollarSign, Download, FileText, TrendingUp, Filter } from 'lucide-react';
+import { CreditCard, DollarSign, Download, FileText, TrendingUp, Filter, CheckCircle } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
+import { useBilling } from '../hooks/useBilling';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -15,43 +16,27 @@ import {
 import { CurrencyConverter } from '../components/CurrencyConverter';
 import { syncPlanFeatures, type PlanTier } from '../lib/planFeatureSync';
 
-interface Invoice {
-  id: string;
-  tenantName: string;
-  amount: number;
-  status: 'paid' | 'pending' | 'failed' | 'refunded';
-  date: string;
-  plan: string;
-}
-
-const mockInvoices: Invoice[] = [
-  { id: 'INV-001', tenantName: 'Acme University', amount: 14900, status: 'paid', date: '2024-02-01', plan: 'Enterprise' },
-  { id: 'INV-002', tenantName: 'Tech Academy', amount: 4900, status: 'paid', date: '2024-02-01', plan: 'Professional' },
-  { id: 'INV-003', tenantName: 'Global Institute', amount: 1900, status: 'pending', date: '2024-02-01', plan: 'Starter' },
-  { id: 'INV-004', tenantName: 'Learning Hub', amount: 4900, status: 'paid', date: '2024-02-01', plan: 'Professional' },
-  { id: 'INV-005', tenantName: 'Education Plus', amount: 14900, status: 'paid', date: '2024-02-01', plan: 'Enterprise' },
-  { id: 'INV-006', tenantName: 'Smart School', amount: 1900, status: 'failed', date: '2024-02-01', plan: 'Starter' },
-];
-
-// Plans moved to PlanTier initialization below (uses syncPlanFeatures)
-/*
-const _plans = [
-  { name: 'Starter', price: 1900, features: ['Up to 50 users', '10 GB storage', 'Basic support'], color: 'blue' },
-  { name: 'Professional', price: 4900, features: ['Up to 200 users', '50 GB storage', 'Priority support', 'Custom branding'], color: 'purple' },
-  { name: 'Enterprise', price: 14900, features: ['Unlimited users', '500 GB storage', 'Dedicated support', 'Custom branding', 'API access', 'SLA'], color: 'orange' },
-];
-*/
 
 const statusColors = {
-  paid: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  failed: 'bg-red-100 text-red-800',
-  refunded: 'bg-gray-100 text-gray-800',
+  COMPLETED: 'bg-green-100 text-green-800',
+  PENDING: 'bg-yellow-100 text-yellow-800',
+  FAILED: 'bg-red-100 text-red-800',
+  REFUNDED: 'bg-gray-100 text-gray-800',
+};
+
+const providerColors = {
+  STRIPE: 'bg-purple-100 text-purple-800',
+  PAYPAL: 'bg-blue-100 text-blue-800',
+  PAYONEER: 'bg-orange-100 text-orange-800',
+  WORLDFIRST: 'bg-teal-100 text-teal-800',
 };
 
 export default function Billing() {
   const { toast } = useToast();
+  const { transactions, gateways, stats, loading, error, exportTransactions, fetchTransactions } = useBilling();
   const [timeRange, setTimeRange] = useState('30d');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [providerFilter, setProviderFilter] = useState<string>('all');
 
   // Initialize plans with feature sync system
   const [plans] = useState<PlanTier[]>(() => {
@@ -65,68 +50,94 @@ export default function Billing() {
     return syncPlanFeatures(basePlans);
   });
 
-  const stats = [
+  // Filter transactions
+  const filteredTransactions = transactions.filter(transaction => {
+    if (statusFilter !== 'all' && transaction.status !== statusFilter) return false;
+    if (providerFilter !== 'all' && transaction.provider !== providerFilter) return false;
+    return true;
+  });
+
+  // Calculate stats from real data
+  const completedTransactions = transactions.filter(t => t.status === 'COMPLETED');
+  const totalRevenue = completedTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const uniqueTenants = new Set(completedTransactions.map(t => t.tenantId)).size;
+
+  const statsData = [
     {
       name: 'Monthly Revenue',
-      value: `$${mockInvoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount, 0).toLocaleString()}`,
-      change: '+12.5%',
+      value: `$${(totalRevenue / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: stats?.byProvider.length ? `${stats.byProvider.length} gateways active` : 'Loading...',
       icon: DollarSign,
     },
     {
       name: 'Active Subscriptions',
-      value: '245',
-      change: '+8 this month',
+      value: uniqueTenants.toString(),
+      change: `${completedTransactions.length} payments`,
       icon: CreditCard,
     },
     {
-      name: 'Total Invoices',
-      value: mockInvoices.length.toString(),
-      change: `${mockInvoices.filter(i => i.status === 'paid').length} paid`,
+      name: 'Total Transactions',
+      value: transactions.length.toString(),
+      change: `${completedTransactions.length} completed`,
       icon: FileText,
     },
     {
-      name: 'Growth Rate',
-      value: '15.3%',
-      change: '+2.1% vs last month',
+      name: 'Success Rate',
+      value: transactions.length > 0 
+        ? `${((completedTransactions.length / transactions.length) * 100).toFixed(1)}%`
+        : '0%',
+      change: `${transactions.filter(t => t.status === 'FAILED').length} failed`,
       icon: TrendingUp,
     },
   ];
 
   // Handler functions
-  const handleExportData = () => {
-    toast({
-      title: "Exporting billing data",
-      description: "Your billing data export will download shortly.",
-    });
-    // TODO: Implement actual export API call
-    console.log('Export billing data for range:', timeRange);
+  const handleExportData = async () => {
+    try {
+      toast({
+        title: "Exporting transaction data",
+        description: "Your transaction export will download shortly.",
+      });
+      await exportTransactions({ 
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        provider: providerFilter !== 'all' ? providerFilter : undefined,
+      });
+      toast({
+        title: "Export complete",
+        description: "Transaction data has been downloaded as CSV.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : 'Failed to export data',
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleFilterInvoices = () => {
-    toast({
-      title: "Filter invoices",
-      description: "Invoice filtering panel will open here.",
+  const handleFilterChange = async () => {
+    await fetchTransactions({
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      provider: providerFilter !== 'all' ? providerFilter : undefined,
     });
-    // TODO: Implement filter dialog
-    console.log('Open invoice filters');
   };
 
-  const handleViewInvoice = (invoiceId: string) => {
+  const handleViewInvoice = (transactionId: string) => {
     toast({
-      title: "Opening invoice",
-      description: `Loading invoice ${invoiceId}...`,
+      title: "Opening transaction",
+      description: `Loading transaction ${transactionId}...`,
     });
-    // TODO: Open invoice detail modal/page
-    console.log('View invoice:', invoiceId);
+    // TODO: Open transaction detail modal/page
+    console.log('View transaction:', transactionId);
   };
 
-  const handleDownloadInvoice = (invoiceId: string) => {
+  const handleDownloadInvoice = (transactionId: string) => {
     toast({
-      title: "Downloading invoice",
-      description: `Invoice ${invoiceId} will download as PDF.`,
+      title: "Downloading receipt",
+      description: `Transaction receipt will download as PDF.`,
     });
     // TODO: Generate and download PDF
-    console.log('Download invoice:', invoiceId);
+    console.log('Download receipt:', transactionId);
   };
 
   const handleEditPlan = (planId: string) => {
@@ -137,6 +148,31 @@ export default function Billing() {
     // TODO: Open plan editor modal
     console.log('Edit plan:', planId);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading billing data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600 font-semibold">Error loading billing data</p>
+          <p className="text-gray-600 mt-2">{error}</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -167,7 +203,7 @@ export default function Billing() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => {
+        {statsData.map((stat) => {
           const Icon = stat.icon;
           return (
             <Card key={stat.name}>
@@ -188,11 +224,74 @@ export default function Billing() {
         })}
       </div>
 
-      <Tabs defaultValue="invoices" className="space-y-4">
+      {/* Payment Gateways Status */}
+      {gateways.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Payment Gateways</CardTitle>
+            <CardDescription>Configured payment providers</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {gateways.map((gateway) => (
+                <div 
+                  key={gateway.provider}
+                  className={`p-4 border rounded-lg ${gateway.configured ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-gray-900">{gateway.displayName}</span>
+                    {gateway.configured && <CheckCircle className="h-5 w-5 text-green-600" />}
+                  </div>
+                  <p className="text-xs text-gray-600">{gateway.description}</p>
+                  <Badge 
+                    className={`mt-2 ${gateway.configured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    {gateway.configured ? 'Configured' : 'Not Configured'}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Revenue by Provider */}
+      {stats?.byProvider && stats.byProvider.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by Payment Provider</CardTitle>
+            <CardDescription>Transaction breakdown across gateways</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats.byProvider.map((providerStat) => (
+                <div key={providerStat.provider} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Badge className={providerColors[providerStat.provider as keyof typeof providerColors]}>
+                      {providerStat.provider}
+                    </Badge>
+                    <span className="text-sm text-gray-600">
+                      {providerStat.transactionCount} transactions
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900">
+                      ${(providerStat.revenue / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs text-gray-500">{providerStat.percentage.toFixed(1)}%</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs defaultValue="transactions" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="invoices">
+          <TabsTrigger value="transactions">
             <FileText className="mr-2 h-4 w-4" />
-            Invoices
+            Transactions
           </TabsTrigger>
           <TabsTrigger value="plans">
             <CreditCard className="mr-2 h-4 w-4" />
@@ -200,88 +299,132 @@ export default function Billing() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Invoices Tab */}
-        <TabsContent value="invoices">
+        {/* Transactions Tab */}
+        <TabsContent value="transactions">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Recent Invoices</CardTitle>
-                  <CardDescription>View and manage all platform invoices</CardDescription>
+                  <CardTitle>Recent Transactions</CardTitle>
+                  <CardDescription>View and manage all payment transactions</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleFilterInvoices}>
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filter
-                </Button>
+                <div className="flex gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="COMPLETED">Completed</SelectItem>
+                      <SelectItem value="PENDING">Pending</SelectItem>
+                      <SelectItem value="FAILED">Failed</SelectItem>
+                      <SelectItem value="REFUNDED">Refunded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={providerFilter} onValueChange={setProviderFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Providers</SelectItem>
+                      <SelectItem value="STRIPE">Stripe</SelectItem>
+                      <SelectItem value="PAYPAL">PayPal</SelectItem>
+                      <SelectItem value="PAYONEER">Payoneer</SelectItem>
+                      <SelectItem value="WORLDFIRST">WorldFirst</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={handleFilterChange}>
+                    <Filter className="mr-2 h-4 w-4" />
+                    Apply
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Invoice ID
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Tenant
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Plan
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Amount
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                          Date
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {mockInvoices.map((invoice) => (
-                        <tr key={invoice.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-900">{invoice.id}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900">{invoice.tenantName}</span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge variant="secondary">{invoice.plan}</Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-900">
-                              ${(invoice.amount / 100).toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={statusColors[invoice.status]}>
-                              {invoice.status}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewInvoice(invoice.id)}>
-                              View
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleDownloadInvoice(invoice.id)}>
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </td>
+                {filteredTransactions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileText className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                    <p>No transactions found</p>
+                    <p className="text-sm mt-1">Transactions will appear here once payments are processed.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Transaction ID
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Tenant
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Provider
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Amount
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Date
+                          </th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                            Actions
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredTransactions.map((transaction) => (
+                          <tr key={transaction.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-mono text-gray-600">{transaction.id.slice(0, 8)}...</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-900">
+                                {transaction.tenant?.name || transaction.tenantId.slice(0, 8)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Badge className={providerColors[transaction.provider]}>
+                                {transaction.provider}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-900">
+                                {transaction.currency} {(transaction.amount / 100).toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Badge variant="secondary">{transaction.type}</Badge>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Badge className={statusColors[transaction.status]}>
+                                {transaction.status}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(transaction.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleViewInvoice(transaction.id)}>
+                                View
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDownloadInvoice(transaction.id)}>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
