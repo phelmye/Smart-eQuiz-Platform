@@ -9,7 +9,7 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
-} from '@tanstack/react-table';
+} from '@tantml:parameter '@tanstack/react-table';
 import {
   Search,
   Plus,
@@ -22,7 +22,9 @@ import {
   Download,
   MoreHorizontal,
   UserCog,
+  Loader2,
 } from 'lucide-react';
+import { useUsers, type User } from '@/hooks/useUsers';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -54,20 +56,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { exportToCSV, generateFilename } from '../lib/exportHelpers';
 import { useToast } from '../hooks/use-toast';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'super_admin' | 'admin' | 'user';
-  tenant: string;
-  tenantId: string;
-  status: 'active' | 'suspended' | 'pending';
-  lastLogin: string;
-  createdAt: string;
-  emailVerified: boolean;
-}
+// Note: User interface now imported from useUsers hook
 
-const mockUsers: User[] = [
+const mockUsers_REMOVED = [
   {
     id: '1',
     name: 'John Doe',
@@ -155,11 +146,12 @@ const roleColors = {
 };
 
 export default function Users() {
-  const [data, setData] = useState<User[]>(mockUsers);
+  const { users, loading, error, createUser, updateUser, deleteUser, suspendUser, activateUser } = useUsers();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
   
   // Dialogs
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -172,9 +164,10 @@ export default function Users() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'user' as User['role'],
+    password: 'Welcome123!',
+    role: 'user',
     tenantId: '',
-    status: 'active' as User['status'],
+    status: 'active',
   });
 
   const columns: ColumnDef<User>[] = [
@@ -301,7 +294,7 @@ export default function Users() {
   ];
 
   const table = useReactTable({
-    data,
+    data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -334,25 +327,99 @@ export default function Users() {
     setIsEditModalOpen(true);
   };
 
-  const handleDelete = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteModalOpen(true);
+  const handleDelete = async (user: User) => {
+    if (!confirm(`Delete user ${user.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteUser(user.id);
+      toast({
+        title: "User Deleted",
+        description: `${user.name} has been deleted successfully.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Delete Failed",
+        description: err instanceof Error ? err.message : 'Failed to delete user',
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleCreate = () => {
-    console.log('Creating user:', formData);
-    setIsCreateModalOpen(false);
-    resetForm();
+  const handleCreate = async () => {
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Email and password are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await createUser({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        role: formData.role,
+        tenantId: formData.tenantId || undefined,
+      });
+
+      toast({
+        title: "User Created",
+        description: `${formData.name || formData.email} has been created successfully.`,
+      });
+
+      setIsCreateModalOpen(false);
+      resetForm();
+    } catch (err) {
+      toast({
+        title: "Creation Failed",
+        description: err instanceof Error ? err.message : 'Failed to create user',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleUpdate = () => {
-    console.log('Updating user:', selectedUser?.id, formData);
-    setIsEditModalOpen(false);
-    resetForm();
+  const handleUpdate = async () => {
+    if (!selectedUser) return;
+
+    setIsSaving(true);
+    try {
+      await updateUser(selectedUser.id, {
+        email: formData.email,
+        name: formData.name,
+        role: formData.role,
+        status: formData.status,
+      });
+
+      toast({
+        title: "User Updated",
+        description: `${formData.name} has been updated successfully.`,
+      });
+
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+      resetForm();
+    } catch (err) {
+      toast({
+        title: "Update Failed",
+        description: err instanceof Error ? err.message : 'Failed to update user',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteConfirm = () => {
-    setData(data.filter((u) => u.id !== selectedUser?.id));
+    if (selectedUser) {
+      handleDelete(selectedUser);
+    }
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
@@ -361,6 +428,7 @@ export default function Users() {
     setFormData({
       name: '',
       email: '',
+      password: 'Welcome123!',
       role: 'user',
       tenantId: '',
       status: 'active',
@@ -373,23 +441,43 @@ export default function Users() {
   };
 
   const handleExport = () => {
-    const exportData = data.map(user => ({
+    const exportData = users.map(user => ({
       'Name': user.name,
       'Email': user.email,
       'Role': user.role,
-      'Tenant': user.tenant,
       'Status': user.status,
-      'Last Active': (user as any).lastActive || 'N/A',
+      'Email Verified': user.emailVerified ? 'Yes' : 'No',
+      'Last Login': user.lastLogin,
+      'Created At': new Date(user.createdAt).toLocaleDateString(),
     }));
     exportToCSV(exportData, { filename: generateFilename('users', 'csv') });
     toast({
       title: "Export Successful",
-      description: `Exported ${data.length} users to CSV file.`,
+      description: `Exported ${users.length} users to CSV file.`,
     });
   };
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading users...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <p className="font-semibold">Error loading users</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -832,6 +920,8 @@ export default function Users() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 }
