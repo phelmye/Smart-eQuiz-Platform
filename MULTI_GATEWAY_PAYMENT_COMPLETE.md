@@ -197,8 +197,8 @@ WORLDFIRST_ENVIRONMENT=sandbox  # or 'production'
 
 Fix admin login 404 errors by adding `/api` suffix:
 
-**Current (Wrong):** `https://smart-equiz-platform.onrender.com`  
-**Required (Correct):** `https://smart-equiz-platform.onrender.com/api`
+**Current (Wrong):** `https://smart-equiz-api.onrender.com`  
+**Required (Correct):** `https://smart-equiz-api.onrender.com/api`
 
 **How to fix:** See [VERCEL_ENV_VAR_UPDATE_GUIDE.md](./VERCEL_ENV_VAR_UPDATE_GUIDE.md)
 
@@ -215,7 +215,7 @@ cd "c:\Projects\Dev\Smart eQuiz Platform\services\api"
 node test/e2e/payments.e2e.js
 
 # Test against production API
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test/e2e/payments.e2e.js
 ```
 

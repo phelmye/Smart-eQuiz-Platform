@@ -7,7 +7,7 @@ Write-Host "   Payment System Deployment Monitor" -ForegroundColor Cyan
 Write-Host "=======================================" -ForegroundColor Cyan
 Write-Host ""
 
-$API_BASE = "https://smart-equiz-platform.onrender.com/api"
+$API_BASE = "https://smart-equiz-api.onrender.com/api"
 
 # Function to check if endpoint is available
 function Test-Endpoint {

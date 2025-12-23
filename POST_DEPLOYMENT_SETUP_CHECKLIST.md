@@ -28,7 +28,7 @@
 ```powershell
 # Check deployment status via test endpoints
 cd "c:\Projects\Dev\Smart eQuiz Platform\services\api"
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test/e2e/payments.e2e.js
 
 # Expected when deploying: 404 errors
@@ -41,8 +41,8 @@ node test/e2e/payments.e2e.js
 
 **Problem:** Admin login returns 404 because API URL is missing `/api` suffix
 
-**Current:** `https://smart-equiz-platform.onrender.com` ❌  
-**Required:** `https://smart-equiz-platform.onrender.com/api` ✅
+**Current:** `https://smart-equiz-api.onrender.com` ❌  
+**Required:** `https://smart-equiz-api.onrender.com/api` ✅
 
 ### Steps:
 
@@ -57,7 +57,7 @@ node test/e2e/payments.e2e.js
 3. **Edit VITE_API_URL**
    - Find: `VITE_API_URL`
    - Click: **Edit** (︙ three dots)
-   - Change to: `https://smart-equiz-platform.onrender.com/api`
+   - Change to: `https://smart-equiz-api.onrender.com/api`
    - Click: **Save**
 
 4. **Redeploy**
@@ -157,7 +157,7 @@ WORLDFIRST_ENVIRONMENT=sandbox  # or 'production'
 ```powershell
 # Test production API
 cd "c:\Projects\Dev\Smart eQuiz Platform\services\api"
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test/e2e/payments.e2e.js
 ```
 
@@ -192,7 +192,7 @@ node test/e2e/payments.e2e.js
 
 ```powershell
 # List configured gateways (requires login token)
-curl -X GET "https://smart-equiz-platform.onrender.com/api/payments/gateways" `
+curl -X GET "https://smart-equiz-api.onrender.com/api/payments/gateways" `
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 

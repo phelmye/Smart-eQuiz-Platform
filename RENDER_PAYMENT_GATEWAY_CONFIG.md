@@ -181,7 +181,7 @@ After configuring environment variables:
 
 ```bash
 # Get list of configured gateways
-curl -X GET https://smart-equiz-platform.onrender.com/api/payments/gateways \
+curl -X GET https://smart-equiz-api.onrender.com/api/payments/gateways \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 
 # Expected response:

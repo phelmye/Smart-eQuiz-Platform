@@ -27,7 +27,7 @@ Once deployment is complete, run production tests:
 
 ```powershell
 cd "c:\Projects\Dev\Smart eQuiz Platform\services\api"
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test\e2e\payments.e2e.js
 ```
 
@@ -68,9 +68,9 @@ node test\e2e\payments.e2e.js
 
 4. **Edit VITE_API_URL**
    - Find: `VITE_API_URL` in the list
-   - Current value: `https://smart-equiz-platform.onrender.com`
+   - Current value: `https://smart-equiz-api.onrender.com`
    - Click: **⋮** (three dots) or **Edit** button
-   - Update value to: `https://smart-equiz-platform.onrender.com/api`
+   - Update value to: `https://smart-equiz-api.onrender.com/api`
    - ⚠️ **Important:** Make sure to add `/api` at the end
    - Click: **Save**
 

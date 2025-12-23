@@ -16,14 +16,14 @@ cd "c:\Projects\Dev\Smart eQuiz Platform"
 **Vercel Dashboard:**
 1. https://vercel.com/dashboard → `platform-admin`
 2. Settings → Environment Variables → `VITE_API_URL`
-3. Change: `https://smart-equiz-platform.onrender.com`
-4. To: `https://smart-equiz-platform.onrender.com/api` (add `/api`)
+3. Change: `https://smart-equiz-api.onrender.com`
+4. To: `https://smart-equiz-api.onrender.com/api` (add `/api`)
 5. Save → Redeploy
 
 ### 3. Test Production (2 min)
 ```powershell
 cd services\api
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test\e2e\payments.e2e.js
 ```
 
@@ -190,7 +190,7 @@ WORLDFIRST_ENVIRONMENT=sandbox  # or 'production'
 - **Vercel Dashboard:** https://vercel.com/dashboard
 - **Stripe Dashboard:** https://dashboard.stripe.com/
 - **PayPal Developer:** https://developer.paypal.com/
-- **API Base URL:** https://smart-equiz-platform.onrender.com/api
+- **API Base URL:** https://smart-equiz-api.onrender.com/api
 
 ---
 
@@ -202,7 +202,7 @@ WORLDFIRST_ENVIRONMENT=sandbox  # or 'production'
 
 # Run E2E tests on production
 cd services\api
-$env:API_URL="https://smart-equiz-platform.onrender.com/api"
+$env:API_URL="https://smart-equiz-api.onrender.com/api"
 node test\e2e\payments.e2e.js
 
 # View local database
