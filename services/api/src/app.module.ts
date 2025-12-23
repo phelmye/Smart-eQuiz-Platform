@@ -7,6 +7,7 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { TenantsModule } from './tenants/tenants.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
 import { QuestionsModule } from './questions/questions.module';
 import { PracticeModule } from './practice/practice.module';
@@ -43,6 +44,7 @@ import { PrismaModule } from './prisma.module';
     PrismaModule,
     AuthModule,
     UsersModule,
+    TenantsModule,
     TournamentsModule,
     QuestionsModule,
     PracticeModule,
