@@ -171,18 +171,18 @@ export class UsersService {
       where: { id },
       data: {
         ...(data.email && { email: data.email }),
-        ...(data.name && { name: data.name }),
+        ...(data.firstName && { firstName: data.firstName }),
+        ...(data.lastName && { lastName: data.lastName }),
         ...(data.role && { role: data.role }),
-        ...(data.status && { status: data.status }),
       },
     });
 
     return {
       id: updated.id,
       email: updated.email,
-      name: updated.name,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
       role: updated.role,
-      status: updated.status,
     };
   }
 
@@ -209,15 +209,12 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: { status: 'suspended' },
-    });
-
+    // Note: User model doesn't have status field
+    // This method could be extended when status field is added to schema
     return {
-      id: updated.id,
-      email: updated.email,
-      status: updated.status,
+      id: user.id,
+      email: user.email,
+      message: 'User suspension not implemented (no status field in schema)',
     };
   }
 
@@ -228,15 +225,12 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: { status: 'active' },
-    });
-
+    // Note: User model doesn't have status field
+    // This method could be extended when status field is added to schema
     return {
-      id: updated.id,
-      email: updated.email,
-      status: updated.status,
+      id: user.id,
+      email: user.email,
+      message: 'User activation not implemented (no status field in schema)',
     };
   }
 }
