@@ -56,8 +56,8 @@ export function useUsers() {
       if (search) params.append('search', search);
       if (tenantId) params.append('tenantId', tenantId);
       
-      const response = await api.get<User[]>(`/users?${params.toString()}`);
-      setUsers(response.data);
+      const users = await api.get<User[]>(`/users?${params.toString()}`);
+      setUsers(users);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch users';
       setError(message);
@@ -69,8 +69,8 @@ export function useUsers() {
 
   const getStats = async (): Promise<UserStats | null> => {
     try {
-      const response = await api.get<UserStats>('/users/stats');
-      return response.data;
+      const stats = await api.get<UserStats>('/users/stats');
+      return stats;
     } catch (err) {
       console.error('Error fetching user stats:', err);
       return null;
@@ -79,8 +79,8 @@ export function useUsers() {
 
   const createUser = async (data: CreateUserData): Promise<void> => {
     try {
-      const response = await api.post<User>('/users', data);
-      setUsers(prev => [response.data, ...prev]);
+      const user = await api.post<User>('/users', data);
+      setUsers(prev => [user, ...prev]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create user';
       throw new Error(message);
@@ -89,9 +89,9 @@ export function useUsers() {
 
   const updateUser = async (id: string, data: UpdateUserData): Promise<void> => {
     try {
-      const response = await api.put<User>(`/users/${id}`, data);
-      setUsers(prev => prev.map(user => 
-        user.id === id ? { ...user, ...response.data } : user
+      const user = await api.put<User>(`/users/${id}`, data);
+      setUsers(prev => prev.map(u => 
+        u.id === id ? { ...u, ...user } : u
       ));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to update user';
