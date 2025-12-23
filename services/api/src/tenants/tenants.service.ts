@@ -13,7 +13,7 @@ export class TenantsService {
         plan: true,
         _count: {
           select: {
-            userTenants: true,
+            users: true,
           },
         },
       },
@@ -27,17 +27,13 @@ export class TenantsService {
       id: tenant.id,
       name: tenant.name,
       subdomain: tenant.subdomain || '',
-      customDomain: tenant.customDomain || '',
       plan: tenant.plan?.name || 'Starter',
       planId: tenant.planId || '',
-      status: this.mapStatus(tenant.suspended, tenant.plan?.name),
-      users: tenant._count.userTenants,
+      status: this.mapStatus(tenant.isActive, tenant.plan?.name),
+      users: tenant._count.users,
       mrr: this.calculateMRR(tenant.plan?.name),
-      maxUsers: tenant.maxUsers || 0,
-      maxStorage: tenant.maxStorage || 0,
       joined: tenant.createdAt.toISOString(),
       createdAt: tenant.createdAt.toISOString(),
-      updatedAt: tenant.updatedAt.toISOString(),
     }));
   }
 
@@ -46,13 +42,14 @@ export class TenantsService {
       where: { id },
       include: {
         plan: true,
-        userTenants: {
+        users: {
           include: {
             user: {
               select: {
                 id: true,
                 email: true,
-                username: true,
+                firstName: true,
+                lastName: true,
               },
             },
           },
@@ -66,8 +63,8 @@ export class TenantsService {
 
     return {
       ...tenant,
-      status: this.mapStatus(tenant.suspended, tenant.plan?.name),
-      users: tenant.userTenants.length,
+      status: this.mapStatus(tenant.isActive, tenant.plan?.name),
+      users: tenant.users.length,
       mrr: this.calculateMRR(tenant.plan?.name),
     };
   }
@@ -100,7 +97,7 @@ export class TenantsService {
         ...tenantData,
         subdomain: subdomain || this.generateSubdomain(tenantData.name),
         planId: selectedPlanId,
-        suspended: createTenantDto.status === TenantStatus.SUSPENDED,
+        isActive: createTenantDto.status !== TenantStatus.SUSPENDED,
       },
       include: {
         plan: true,
@@ -113,9 +110,10 @@ export class TenantsService {
       const adminUser = await this.prisma.user.create({
         data: {
           email: adminEmail,
-          username: adminEmail.split('@')[0],
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           role: 'ORG_ADMIN',
+          firstName: 'Admin',
+          lastName: 'User',
         },
       });
 
@@ -134,7 +132,7 @@ export class TenantsService {
 
     return {
       ...tenant,
-      status: this.mapStatus(tenant.suspended, tenant.plan?.name),
+      status: this.mapStatus(tenant.isActive, tenant.plan?.name),
       users: 1, // Just created admin
       mrr: this.calculateMRR(tenant.plan?.name),
     };
@@ -157,15 +155,15 @@ export class TenantsService {
       where: { id },
       data: {
         ...updateTenantDto,
-        suspended: updateTenantDto.status === TenantStatus.SUSPENDED ? true : 
-                   updateTenantDto.status === TenantStatus.ACTIVE ? false : 
-                   undefined,
+        isActive: updateTenantDto.status === TenantStatus.ACTIVE ? true : 
+                  updateTenantDto.status === TenantStatus.SUSPENDED ? false : 
+                  undefined,
       },
       include: {
         plan: true,
         _count: {
           select: {
-            userTenants: true,
+            users: true,
           },
         },
       },
@@ -173,8 +171,8 @@ export class TenantsService {
 
     return {
       ...updated,
-      status: this.mapStatus(updated.suspended, updated.plan?.name),
-      users: updated._count.userTenants,
+      status: this.mapStatus(updated.isActive, updated.plan?.name),
+      users: updated._count.users,
       mrr: this.calculateMRR(updated.plan?.name),
     };
   }
@@ -198,14 +196,14 @@ export class TenantsService {
   async suspend(id: string) {
     return this.prisma.tenant.update({
       where: { id },
-      data: { suspended: true },
+      data: { isActive: false },
     });
   }
 
   async activate(id: string) {
     return this.prisma.tenant.update({
       where: { id },
-      data: { suspended: false },
+      data: { isActive: true },
     });
   }
 
@@ -217,8 +215,8 @@ export class TenantsService {
       .substring(0, 20);
   }
 
-  private mapStatus(suspended: boolean, planName?: string): TenantStatus {
-    if (suspended) return TenantStatus.SUSPENDED;
+  private mapStatus(isActive: boolean, planName?: string): TenantStatus {
+    if (!isActive) return TenantStatus.SUSPENDED;
     if (planName === 'Trial') return TenantStatus.TRIAL;
     return TenantStatus.ACTIVE;
   }

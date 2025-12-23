@@ -23,8 +23,8 @@ export class PaymentGatewayService {
     private payoneerGateway: PayoneerGateway,
     private worldfirstGateway: WorldFirstGateway,
   ) {
-    // Initialize gateway map
-    this.gateways = new Map([
+    // Initialize gateway map with explicit typing
+    this.gateways = new Map<PaymentProvider, IPaymentGateway>([
       [PaymentProvider.STRIPE, stripeGateway],
       [PaymentProvider.PAYPAL, paypalGateway],
       [PaymentProvider.PAYONEER, payoneerGateway],

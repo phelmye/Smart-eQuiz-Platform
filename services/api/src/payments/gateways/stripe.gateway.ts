@@ -74,12 +74,14 @@ export class StripeGateway implements IPaymentGateway {
       throw new Error('Customer has been deleted');
     }
 
+    const activeCustomer = customer as Stripe.Customer;
+
     return {
-      id: customer.id,
-      email: customer.email!,
-      name: customer.name || undefined,
-      phone: customer.phone || undefined,
-      metadata: customer.metadata,
+      id: activeCustomer.id,
+      email: activeCustomer.email!,
+      name: activeCustomer.name || undefined,
+      phone: activeCustomer.phone || undefined,
+      metadata: activeCustomer.metadata,
     };
   }
 

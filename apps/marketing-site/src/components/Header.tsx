@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import { MarketingSiteConfig } from '@/lib/marketingConfig';
 
@@ -19,14 +18,12 @@ export default function Header({ config }: HeaderProps) {
           {/* Logo and Site Name */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-10 h-10">
-              <Image
-                src={config.logoUrl}
-                alt={config.logoAlt}
-                fill
-                className="object-contain"
-                priority
-                unoptimized
-              />
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="40" height="40" rx="8" fill="#2563EB"/>
+                <path d="M20 8L12 14V26L20 32L28 26V14L20 8Z" fill="white"/>
+                <path d="M20 14L16 16.5V23.5L20 26L24 23.5V16.5L20 14Z" fill="#2563EB"/>
+                <circle cx="20" cy="20" r="3" fill="white"/>
+              </svg>
             </div>
             <span className="text-xl font-bold text-gray-900">{config.siteName}</span>
           </Link>

@@ -22,6 +22,7 @@ import { LegalDocumentsModule } from './legal-documents/legal-documents.module';
 import { LandingPageModule } from './landing-page/landing-page.module';
 import { MarketingCmsModule } from './marketing-cms/marketing-cms.module';
 import { StripeModule } from './stripe/stripe.module';
+import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { TenantMiddleware } from './common/tenant.middleware';
@@ -59,6 +60,7 @@ import { PrismaModule } from './prisma.module';
     LandingPageModule,
     MarketingCmsModule,
     StripeModule,
+    PaymentsModule,
     EmailModule,
     NotificationsModule,
   ],

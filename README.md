@@ -67,6 +67,29 @@ Smart-eQuiz-Platform/
 
 ## 🚀 Quick Start
 
+### ⚡ Fastest Way to Run Locally
+
+**Marketing Site** (uses production API):
+```powershell
+# From repository root
+.\start-marketing-site.ps1
+# Opens at http://localhost:3000
+```
+
+**Platform Admin**:
+```powershell
+cd apps/platform-admin
+pnpm dev  # http://localhost:5173
+```
+
+**Tenant App**:
+```powershell
+cd apps/tenant-app
+pnpm dev  # http://localhost:5174
+```
+
+> **Important:** Use dedicated terminals for each dev server. Don't run other commands in the same terminal as the dev server or it will shut down.
+
 ### Current Working Application
 
 The existing application is located in `workspace/shadcn-ui/`:

@@ -199,14 +199,15 @@ export class PaymentsService {
       },
     });
 
-    // Log audit event
+    // Log audit event (using UPDATE action since PAYMENT_PROCESSED doesn't exist yet)
     await this.auditService.log({
       tenantId: data.tenantId,
       userId: null,
-      action: AuditAction.PAYMENT_PROCESSED,
+      action: AuditAction.UPDATE,
       resource: AuditResource.TENANT,
       resourceId: transaction.id,
       metadata: {
+        action: 'payment_processed',
         provider: data.provider,
         amount: data.amount,
         currency: data.currency,

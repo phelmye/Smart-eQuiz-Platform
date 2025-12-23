@@ -2,7 +2,6 @@
 # This script populates the Marketing CMS with proper DTO field mappings
 
 $API_URL = "https://smart-equiz-api.onrender.com/api"
-$CREATED_BY = "super@admin.com"
 
 Write-Host "=== Smart eQuiz Marketing CMS Content Loader (FIXED) ===" -ForegroundColor Cyan
 Write-Host ""
@@ -17,7 +16,8 @@ $loginBody = @{
 try {
     $loginResponse = Invoke-RestMethod -Uri "$API_URL/auth/login" -Method Post -ContentType "application/json" -Body $loginBody
     $token = $loginResponse.access_token
-    Write-Host "✅ Authenticated" -ForegroundColor Green
+    $CREATED_BY = $loginResponse.user.id
+    Write-Host "✅ Authenticated (User ID: $CREATED_BY)" -ForegroundColor Green
     Write-Host ""
 } catch {
     Write-Host "❌ Auth failed: $($_.Exception.Message)" -ForegroundColor Red
@@ -43,7 +43,7 @@ function Add-Content {
     
     try {
         $body = $Data | ConvertTo-Json -Depth 10
-        $response = Invoke-RestMethod -Uri "$API_URL/marketing-cms/$Type" -Method Post -Headers $headers -Body $body
+        $null = Invoke-RestMethod -Uri "$API_URL/marketing-cms/$Type" -Method Post -Headers $headers -Body $body
         Write-Host " ✅" -ForegroundColor Green
         $script:successCount++
     } catch {
@@ -175,28 +175,115 @@ Add-Content -Type "testimonials" -Name "Emily Rodriguez" -Data @{
     createdBy = $CREATED_BY
 }
 
-# PRICING PLANS (Need to check DTO for correct fields)
-# Commenting out until we verify the correct DTO structure
-<#
-Add-Content -Type "pricing" -Name "Starter Plan" -Data @{
+# PRICING PLANS (Using correct DTO fields)
+# Required: name, price, interval, features (array), ctaText, ctaLink, createdBy
+# Optional: highlighted
+Add-Content -Type "pricing-plans" -Name "Starter Plan" -Data @{
     name = "Starter"
-    description = "Perfect for small churches and ministries"
     price = 29.00
-    # ... other fields TBD
+    interval = "MONTH"
+    features = @(
+        "Up to 50 participants"
+        "Unlimited practice questions"
+        "Basic analytics"
+        "Email support"
+        "Mobile app access"
+    )
+    ctaText = "Start Free Trial"
+    ctaLink = "/signup?plan=starter"
+    highlighted = $false
     createdBy = $CREATED_BY
 }
-#>
 
-# FAQS (Need to check DTO for correct fields)
-# Commenting out until we verify the correct DTO structure
-<#
+Add-Content -Type "pricing-plans" -Name "Professional Plan" -Data @{
+    name = "Professional"
+    price = 79.00
+    interval = "MONTH"
+    features = @(
+        "Up to 200 participants"
+        "AI question generation"
+        "Advanced analytics"
+        "Custom branding"
+        "Priority support"
+        "Tournament management"
+        "Mobile app access"
+    )
+    ctaText = "Start Free Trial"
+    ctaLink = "/signup?plan=professional"
+    highlighted = $true
+    createdBy = $CREATED_BY
+}
+
+Add-Content -Type "pricing-plans" -Name "Enterprise Plan" -Data @{
+    name = "Enterprise"
+    price = 199.00
+    interval = "MONTH"
+    features = @(
+        "Unlimited participants"
+        "AI question generation"
+        "White-label solution"
+        "Custom domain"
+        "Dedicated support"
+        "Advanced security"
+        "API access"
+        "Multi-location support"
+    )
+    ctaText = "Contact Sales"
+    ctaLink = "/contact?inquiry=enterprise"
+    highlighted = $false
+    createdBy = $CREATED_BY
+}
+
+# FAQS (Using correct DTO fields)
+# Required: question, answer, category, createdBy
+# Optional: order
 Add-Content -Type "faqs" -Name "What is Smart eQuiz?" -Data @{
     question = "What is Smart eQuiz?"
-    answer = "Smart eQuiz is a comprehensive platform..."
-    # ... other fields TBD
+    answer = "Smart eQuiz is a comprehensive Bible quiz competition platform designed for churches, ministries, and Christian organizations. It provides tools for managing participants, creating questions, running tournaments, and tracking progress with real-time analytics."
+    category = "General"
+    order = 1
     createdBy = $CREATED_BY
 }
-#>
+
+Add-Content -Type "faqs" -Name "How does pricing work?" -Data @{
+    question = "How does pricing work?"
+    answer = "We offer three plans: Starter ($29/month for up to 50 participants), Professional ($79/month for up to 200 participants), and Enterprise ($199/month for unlimited participants). All plans include a 14-day free trial with no credit card required. You can upgrade, downgrade, or cancel anytime."
+    category = "Billing"
+    order = 2
+    createdBy = $CREATED_BY
+}
+
+Add-Content -Type "faqs" -Name "Is there a mobile app?" -Data @{
+    question = "Is there a mobile app?"
+    answer = "Yes! Smart eQuiz offers native mobile apps for both iOS and Android. Participants can practice questions, track progress, and even compete in tournaments from their mobile devices. The apps sync seamlessly with the web platform."
+    category = "Technical"
+    order = 3
+    createdBy = $CREATED_BY
+}
+
+Add-Content -Type "faqs" -Name "Can I import existing questions?" -Data @{
+    question = "Can I import my existing question bank?"
+    answer = "Absolutely! You can import questions via CSV or Excel files. We also provide an API for bulk imports. Our support team can help you migrate your existing question database to ensure a smooth transition."
+    category = "Questions"
+    order = 4
+    createdBy = $CREATED_BY
+}
+
+Add-Content -Type "faqs" -Name "How secure is my data?" -Data @{
+    question = "How secure is my data?"
+    answer = "Security is our top priority. We use enterprise-grade encryption (AES-256), multi-tenant data isolation, regular security audits, and GDPR-compliant data handling. Your organization's data is completely isolated from other tenants and backed up daily."
+    category = "Security"
+    order = 5
+    createdBy = $CREATED_BY
+}
+
+Add-Content -Type "faqs" -Name "Can we use custom branding?" -Data @{
+    question = "Can I use my own branding and domain?"
+    answer = "Yes! Professional plans include custom branding (logo, colors, fonts), and Enterprise plans include white-label options with custom domain support. You can make the platform look and feel like it's your own."
+    category = "Customization"
+    order = 6
+    createdBy = $CREATED_BY
+}
 
 Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 Write-Host "✅ Success: $successCount" -ForegroundColor Green

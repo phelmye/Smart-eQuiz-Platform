@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { MarketingSiteConfig } from '@/lib/marketingConfig';
 
 interface FooterProps {
@@ -44,13 +43,12 @@ export default function Footer({ config }: FooterProps) {
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="relative w-8 h-8">
-                <Image
-                  src={config.logoUrl}
-                  alt={config.logoAlt}
-                  fill
-                  className="object-contain brightness-0 invert"
-                  unoptimized
-                />
+                <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="40" height="40" rx="8" fill="white"/>
+                  <path d="M20 8L12 14V26L20 32L28 26V14L20 8Z" fill="#1F2937"/>
+                  <path d="M20 14L16 16.5V23.5L20 26L24 23.5V16.5L20 14Z" fill="white"/>
+                  <circle cx="20" cy="20" r="3" fill="#1F2937"/>
+                </svg>
               </div>
               <span className="text-white font-bold">{config.siteName}</span>
             </Link>
