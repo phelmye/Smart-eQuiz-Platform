@@ -11,8 +11,9 @@ import {
   type ColumnFiltersState,
   type RowSelectionState,
 } from '@tanstack/react-table';
-import { Search, Plus, Eye, Edit, Trash2, Mail, RefreshCw, Ban, CheckCircle, Download, LogIn } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, Mail, RefreshCw, Ban, CheckCircle, Download, LogIn, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { Checkbox } from '../components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
@@ -20,28 +21,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { exportToCSV, generateFilename } from '../lib/exportHelpers';
 import { useToast } from '../hooks/use-toast';
-
-interface Tenant {
-  id: string;
-  name: string;
-  subdomain: string;
-  plan: 'Starter' | 'Professional' | 'Enterprise';
-  status: 'active' | 'trial' | 'suspended' | 'cancelled';
-  users: number;
-  mrr: number;
-  joined: string;
-}
-
-const mockTenants: Tenant[] = [
-  { id: '1', name: 'Acme University', subdomain: 'acme', plan: 'Enterprise', status: 'active', users: 450, mrr: 14900, joined: '2024-01-15' },
-  { id: '2', name: 'Tech Academy', subdomain: 'techacademy', plan: 'Professional', status: 'active', users: 125, mrr: 4900, joined: '2024-01-20' },
-  { id: '3', name: 'Global Institute', subdomain: 'global', plan: 'Starter', status: 'trial', users: 35, mrr: 0, joined: '2024-02-01' },
-  { id: '4', name: 'Learning Hub', subdomain: 'learninghub', plan: 'Professional', status: 'active', users: 89, mrr: 4900, joined: '2024-01-28' },
-  { id: '5', name: 'Education Plus', subdomain: 'edplus', plan: 'Enterprise', status: 'active', users: 320, mrr: 14900, joined: '2024-01-10' },
-  { id: '6', name: 'Smart School', subdomain: 'smartschool', plan: 'Starter', status: 'active', users: 42, mrr: 1900, joined: '2024-02-05' },
-  { id: '7', name: 'Future Academy', subdomain: 'future', plan: 'Professional', status: 'suspended', users: 67, mrr: 0, joined: '2024-01-05' },
-  { id: '8', name: 'Knowledge Base', subdomain: 'knowledge', plan: 'Starter', status: 'active', users: 28, mrr: 1900, joined: '2024-02-10' },
-];
+import { useTenants, type Tenant } from '../hooks/useTenants';
 
 const statusColors = {
   active: 'bg-green-100 text-green-800',
@@ -57,7 +37,18 @@ const planColors = {
 };
 
 export default function Tenants() {
-  const [data] = useState<Tenant[]>(mockTenants);
+  const {
+    tenants,
+    loading,
+    error,
+    fetchTenants,
+    createTenant,
+    updateTenant,
+    deleteTenant,
+    suspendTenant,
+    activateTenant,
+  } = useTenants();
+  
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -66,6 +57,14 @@ export default function Tenants() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    subdomain: '',
+    adminEmail: '',
+    planId: '',
+    status: 'active' as 'active' | 'trial' | 'suspended' | 'cancelled',
+  });
   const { toast } = useToast();
 
   const columns: ColumnDef<Tenant>[] = [
@@ -163,6 +162,13 @@ export default function Tenants() {
           <button 
             onClick={() => {
               setSelectedTenant(row.original);
+              setFormData({
+                name: row.original.name,
+                subdomain: row.original.subdomain,
+                adminEmail: '',
+                planId: '',
+                status: row.original.status,
+              });
               setIsEditModalOpen(true);
             }}
             className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700"
@@ -171,15 +177,7 @@ export default function Tenants() {
             <Edit className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => {
-              if (confirm(`Delete ${row.original.name}? This action cannot be undone.`)) {
-                toast({
-                  title: "Tenant Deleted",
-                  description: `${row.original.name} has been deleted.`,
-                  variant: "destructive"
-                });
-              }
-            }}
+            onClick={() => handleDeleteTenant(row.original)}
             className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-red-600"
             title="Delete Tenant"
           >
@@ -191,7 +189,7 @@ export default function Tenants() {
   ];
 
   const table = useReactTable({
-    data,
+    data: tenants,
     columns,
     state: {
       sorting,
@@ -219,7 +217,7 @@ export default function Tenants() {
   };
 
   const handleExport = () => {
-    const exportData = data.map(tenant => ({
+    const exportData = tenants.map(tenant => ({
       'Organization': tenant.name,
       'Subdomain': tenant.subdomain,
       'Plan': tenant.plan,
@@ -231,7 +229,7 @@ export default function Tenants() {
     exportToCSV(exportData, { filename: generateFilename('tenants', 'csv') });
     toast({
       title: "Export Successful",
-      description: `Exported ${data.length} tenants to CSV file.`,
+      description: `Exported ${tenants.length} tenants to CSV file.`,
     });
   };
 
@@ -263,8 +261,143 @@ export default function Tenants() {
     }, 1000);
   };
 
+  const handleDeleteTenant = async (tenant: Tenant) => {
+    if (!confirm(`Delete ${tenant.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteTenant(tenant.id);
+      toast({
+        title: "Tenant Deleted",
+        description: `${tenant.name} has been deleted successfully.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Delete Failed",
+        description: err instanceof Error ? err.message : 'Failed to delete tenant',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSuspendTenant = async (tenant: Tenant) => {
+    try {
+      if (tenant.status === 'suspended') {
+        await activateTenant(tenant.id);
+        toast({
+          title: "Tenant Activated",
+          description: `${tenant.name} has been activated.`,
+        });
+      } else {
+        await suspendTenant(tenant.id);
+        toast({
+          title: "Tenant Suspended",
+          description: `${tenant.name} has been suspended.`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Action Failed",
+        description: err instanceof Error ? err.message : 'Operation failed',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateTenant = async () => {
+    if (!formData.name || !formData.adminEmail) {
+      toast({
+        title: "Validation Error",
+        description: "Name and Admin Email are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await createTenant({
+        name: formData.name,
+        subdomain: formData.subdomain || undefined,
+        adminEmail: formData.adminEmail,
+        status: formData.status,
+      });
+
+      toast({
+        title: "Tenant Created",
+        description: `${formData.name} has been created successfully.`,
+      });
+
+      setIsAddModalOpen(false);
+      setFormData({
+        name: '',
+        subdomain: '',
+        adminEmail: '',
+        planId: '',
+        status: 'active',
+      });
+    } catch (err) {
+      toast({
+        title: "Creation Failed",
+        description: err instanceof Error ? err.message : 'Failed to create tenant',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateTenant = async () => {
+    if (!selectedTenant) return;
+
+    setIsSaving(true);
+    try {
+      await updateTenant(selectedTenant.id, {
+        name: formData.name,
+        subdomain: formData.subdomain || undefined,
+        status: formData.status,
+      });
+
+      toast({
+        title: "Tenant Updated",
+        description: `${formData.name} has been updated successfully.`,
+      });
+
+      setIsEditModalOpen(false);
+      setSelectedTenant(null);
+    } catch (err) {
+      toast({
+        title: "Update Failed",
+        description: err instanceof Error ? err.message : 'Failed to update tenant',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading tenants...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <p className="font-semibold">Error loading tenants</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -293,24 +426,24 @@ export default function Tenants() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">Total Tenants</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{data.length}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{tenants.length}</p>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">Active</p>
           <p className="text-2xl font-bold text-green-600 mt-1">
-            {data.filter(t => t.status === 'active').length}
+            {tenants.filter(t => t.status === 'active').length}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">On Trial</p>
           <p className="text-2xl font-bold text-yellow-600 mt-1">
-            {data.filter(t => t.status === 'trial').length}
+            {tenants.filter(t => t.status === 'trial').length}
           </p>
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">Total MRR</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            ${data.reduce((sum, t) => sum + t.mrr, 0).toLocaleString()}
+            ${tenants.reduce((sum, t) => sum + t.mrr, 0).toLocaleString()}
           </p>
         </div>
       </div>
@@ -470,53 +603,61 @@ export default function Tenants() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="tenant-name">Organization Name</Label>
-              <Input id="tenant-name" placeholder="Acme Corporation" />
+              <Label htmlFor="tenant-name">Organization Name *</Label>
+              <Input 
+                id="tenant-name" 
+                placeholder="Acme Corporation"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenant-subdomain">Subdomain</Label>
+              <Label htmlFor="tenant-subdomain">Subdomain (optional)</Label>
               <div className="flex items-center gap-2">
-                <Input id="tenant-subdomain" placeholder="acme" />
+                <Input 
+                  id="tenant-subdomain" 
+                  placeholder="acme"
+                  value={formData.subdomain}
+                  onChange={(e) => setFormData({...formData, subdomain: e.target.value})}
+                />
                 <span className="text-sm text-gray-500">.smartequiz.com</span>
               </div>
+              <p className="text-xs text-gray-500">Leave blank to auto-generate from name</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tenant-plan">Plan</Label>
-              <Select defaultValue="starter">
-                <SelectTrigger id="tenant-plan">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="starter">Starter - $29/month</SelectItem>
-                  <SelectItem value="professional">Professional - $99/month</SelectItem>
-                  <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tenant-email">Admin Email</Label>
-              <Input id="tenant-email" type="email" placeholder="admin@acme.com" />
+              <Label htmlFor="tenant-email">Admin Email *</Label>
+              <Input 
+                id="tenant-email" 
+                type="email" 
+                placeholder="admin@acme.com"
+                value={formData.adminEmail}
+                onChange={(e) => setFormData({...formData, adminEmail: e.target.value})}
+              />
+              <p className="text-xs text-gray-500">Temporary password "Welcome123!" will be sent</p>
             </div>
           </div>
           <DialogFooter>
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              disabled={isSaving}
             >
               Cancel
             </button>
-            <button
-              onClick={() => {
-                toast({
-                  title: "Tenant Created",
-                  description: "New tenant has been successfully created.",
-                });
-                setIsAddModalOpen(false);
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            <Button
+              onClick={handleCreateTenant}
+              className="px-4 py-2 text-sm font-medium"
+              disabled={isSaving}
             >
-              Create Tenant
-            </button>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Tenant'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -622,7 +763,20 @@ export default function Tenants() {
       </Dialog>
 
       {/* Edit Tenant Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+      {/* Edit Tenant Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={(open) => {
+        setIsEditModalOpen(open);
+        if (!open) {
+          setSelectedTenant(null);
+          setFormData({
+            name: '',
+            subdomain: '',
+            adminEmail: '',
+            planId: '',
+            status: 'active',
+          });
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Tenant</DialogTitle>
@@ -631,31 +785,29 @@ export default function Tenants() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-tenant-name">Organization Name</Label>
-                <Input id="edit-tenant-name" defaultValue={selectedTenant.name} />
+                <Input 
+                  id="edit-tenant-name" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-tenant-subdomain">Subdomain</Label>
                 <div className="flex items-center gap-2">
-                  <Input id="edit-tenant-subdomain" defaultValue={selectedTenant.subdomain} />
+                  <Input 
+                    id="edit-tenant-subdomain" 
+                    value={formData.subdomain}
+                    onChange={(e) => setFormData({...formData, subdomain: e.target.value})}
+                  />
                   <span className="text-sm text-gray-500">.smartequiz.com</span>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-tenant-plan">Plan</Label>
-                <Select defaultValue={selectedTenant.plan.toLowerCase()}>
-                  <SelectTrigger id="edit-tenant-plan">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="starter">Starter - $29/month</SelectItem>
-                    <SelectItem value="professional">Professional - $99/month</SelectItem>
-                    <SelectItem value="enterprise">Enterprise - $299/month</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="edit-tenant-status">Status</Label>
-                <Select defaultValue={selectedTenant.status}>
+                <Select 
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({...formData, status: value})}
+                >
                   <SelectTrigger id="edit-tenant-status">
                     <SelectValue />
                   </SelectTrigger>
@@ -667,34 +819,35 @@ export default function Tenants() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-tenant-users">Max Users</Label>
-                <Input id="edit-tenant-users" type="number" defaultValue={selectedTenant.users} />
-              </div>
             </div>
           )}
           <DialogFooter>
             <button
               onClick={() => setIsEditModalOpen(false)}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              disabled={isSaving}
             >
               Cancel
             </button>
-            <button
-              onClick={() => {
-                toast({
-                  title: "Changes Saved",
-                  description: "Tenant details have been updated successfully.",
-                });
-                setIsEditModalOpen(false);
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            <Button
+              onClick={handleUpdateTenant}
+              className="px-4 py-2 text-sm font-medium"
+              disabled={isSaving}
             >
-              Save Changes
-            </button>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 }
