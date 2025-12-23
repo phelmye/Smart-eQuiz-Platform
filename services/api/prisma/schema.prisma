@@ -45,27 +45,36 @@ model Plan {
 }
 
 model Tenant {
-  id                    String               @id @default(cuid())
-  name                  String
-  subdomain             String?              @unique
-  planId                String?
-  plan                  Plan?                @relation(fields: [planId], references: [id])
-  stripeCustomerId      String?              @unique
-  stripeSubscriptionId  String?              @unique
-  subscriptionStatus    String?
-  isActive              Boolean              @default(true)
-  trialEndsAt           DateTime?
-  createdAt             DateTime             @default(now())
-  users                 UserTenant[]
-  tournaments           Tournament[]
-  questions             Question[]
-  categories            Category[]
-  chatChannels          ChatChannel[]
-  supportTickets        SupportTicket[]
-  apiKeys               ApiKey[]
-  webhooks              Webhook[]
-  legalDocuments        LegalDocument[]
-  landingPageContents   LandingPageContent[]
+  id                     String                 @id @default(cuid())
+  name                   String
+  subdomain              String?                @unique
+  planId                 String?
+  plan                   Plan?                  @relation(fields: [planId], references: [id])
+  
+  // Multi-gateway payment support
+  paymentProvider        String?                // STRIPE, PAYPAL, PAYONEER, WORLDFIRST
+  stripeCustomerId       String?                @unique
+  stripeSubscriptionId   String?                @unique
+  paypalCustomerId       String?                @unique
+  paypalSubscriptionId   String?                @unique
+  payoneerCustomerId     String?                @unique
+  worldfirstCustomerId   String?                @unique
+  
+  subscriptionStatus     String?
+  isActive               Boolean                @default(true)
+  trialEndsAt            DateTime?
+  createdAt              DateTime               @default(now())
+  users                  UserTenant[]
+  tournaments            Tournament[]
+  questions              Question[]
+  categories             Category[]
+  chatChannels           ChatChannel[]
+  supportTickets         SupportTicket[]
+  apiKeys                ApiKey[]
+  webhooks               Webhook[]
+  legalDocuments         LegalDocument[]
+  landingPageContents    LandingPageContent[]
+  paymentTransactions    PaymentTransaction[]
 }
 
 model User {
@@ -1101,6 +1110,40 @@ model PushToken {
   @@index([token])
   @@index([lastUsedAt])
   @@map("push_tokens")
+}
+
+// Payment Transaction Model
+model PaymentTransaction {
+  id                      String   @id @default(cuid())
+  tenantId                String
+  tenant                  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Payment gateway info
+  provider                String   // STRIPE, PAYPAL, PAYONEER, WORLDFIRST
+  providerTransactionId   String   @unique // Transaction ID from payment provider
+  providerCustomerId      String?  // Customer ID in payment provider system
+  
+  // Transaction details
+  amount                  Int      // Amount in cents
+  currency                String   // USD, EUR, GBP, etc.
+  status                  String   // PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED, CANCELLED
+  type                    String   // SUBSCRIPTION, ONE_TIME, REFUND, PAYOUT
+  
+  // Additional info
+  description             String?  @db.Text
+  metadata                Json?    // Additional transaction data
+  
+  // Timestamps
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  completedAt             DateTime?
+  
+  @@index([tenantId])
+  @@index([provider])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("payment_transactions")
 }
 
 model NotificationLog {
