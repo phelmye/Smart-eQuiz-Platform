@@ -9,7 +9,7 @@ import {
   type ColumnDef,
   type SortingState,
   type ColumnFiltersState,
-} from '@tantml:parameter '@tanstack/react-table';
+} from '@tanstack/react-table';
 import {
   Search,
   Plus,
