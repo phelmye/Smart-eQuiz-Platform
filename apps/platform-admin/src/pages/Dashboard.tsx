@@ -1,6 +1,5 @@
-import { Building2, Users, DollarSign, TrendingUp, RefreshCw } from 'lucide-react';
+import { Building2, Users, DollarSign, TrendingUp, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -24,81 +23,96 @@ import { PerformanceMetrics } from '../components/PerformanceMetrics';
 import { TenantsOverview } from '../components/TenantsOverview';
 import { WelcomeBanner } from '../components/WelcomeBanner';
 import { useToast } from '../hooks/use-toast';
+import { useDashboardStats } from '../hooks/useDashboardStats';
 
 export default function Dashboard() {
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+  const { data, loading, error, refresh } = useDashboardStats();
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      toast({
-        title: "Dashboard Refreshed",
-        description: "All data has been updated successfully.",
-      });
-    }, 1000);
+  const handleRefresh = async () => {
+    await refresh();
+    toast({
+      title: "Dashboard Refreshed",
+      description: "All data has been updated successfully.",
+    });
   };
 
-  const stats = [
+  // Show loading state
+  if (loading && !data) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-500">Loading dashboard statistics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !data) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Dashboard</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Prepare stats cards with real data
+  const stats = data ? [
     {
       name: 'Total Tenants',
-      value: '248',
-      change: '+12.5%',
-      changeType: 'increase',
+      value: data.stats.totalTenants.toLocaleString(),
+      change: `${data.stats.tenantGrowth >= 0 ? '+' : ''}${data.stats.tenantGrowth}%`,
+      changeType: data.stats.tenantGrowth >= 0 ? 'increase' : 'decrease',
       icon: Building2,
     },
     {
       name: 'Active Users',
-      value: '12,543',
-      change: '+8.2%',
-      changeType: 'increase',
+      value: data.stats.activeUsers.toLocaleString(),
+      change: `${data.stats.userGrowth >= 0 ? '+' : ''}${data.stats.userGrowth}%`,
+      changeType: data.stats.userGrowth >= 0 ? 'increase' : 'decrease',
       icon: Users,
     },
     {
       name: 'Monthly Revenue',
-      value: '$54,239',
-      change: '+15.3%',
+      value: `$${data.stats.mrr.toLocaleString()}`,
+      change: `$${data.stats.arr.toLocaleString()} ARR`,
       changeType: 'increase',
       icon: DollarSign,
     },
     {
       name: 'Platform Growth',
-      value: '23.8%',
-      change: '+4.1%',
-      changeType: 'increase',
+      value: `${data.stats.tenantGrowth}%`,
+      change: `${data.stats.activeTenants} active`,
+      changeType: data.stats.tenantGrowth >= 0 ? 'increase' : 'decrease',
       icon: TrendingUp,
     },
-  ];
+  ] : [];
 
-  // Revenue trend data
-  const revenueData = [
-    { month: 'Jan', revenue: 35000, target: 32000 },
-    { month: 'Feb', revenue: 38000, target: 35000 },
-    { month: 'Mar', revenue: 42000, target: 38000 },
-    { month: 'Apr', revenue: 45000, target: 40000 },
-    { month: 'May', revenue: 48000, target: 43000 },
-    { month: 'Jun', revenue: 54239, target: 45000 },
-  ];
+  // Use real chart data
+  const revenueData = data?.charts.revenueData || [];
+  const userGrowthData = data?.charts.tenantGrowthData.map(item => ({
+    month: item.month,
+    users: item.tenants,
+  })) || [];
+  const planDistribution = data?.charts.tenantsByPlan.map((item, index) => ({
+    name: item.name,
+    value: item.value,
+    color: ['#3b82f6', '#8b5cf6', '#f97316', '#10b981', '#f59e0b'][index % 5],
+  })) || [];
 
-  // User growth data
-  const userGrowthData = [
-    { month: 'Jan', users: 8500 },
-    { month: 'Feb', users: 9200 },
-    { month: 'Mar', users: 10100 },
-    { month: 'Apr', users: 10800 },
-    { month: 'May', users: 11600 },
-    { month: 'Jun', users: 12543 },
-  ];
-
-  // Tenant distribution by plan
-  const planDistribution = [
-    { name: 'Starter', value: 95, color: '#3b82f6' },
-    { name: 'Professional', value: 118, color: '#8b5cf6' },
-    { name: 'Enterprise', value: 35, color: '#f97316' },
-  ];
-
-  // Activity data
+  // Activity data (placeholder for now - can be enhanced later)
   const activityData = [
     { day: 'Mon', logins: 1200, quizzes: 850, assessments: 420 },
     { day: 'Tue', logins: 1400, quizzes: 920, assessments: 510 },
@@ -109,13 +123,8 @@ export default function Dashboard() {
     { day: 'Sun', logins: 650, quizzes: 420, assessments: 210 },
   ];
 
-  const recentTenants = [
-    { name: 'Acme University', plan: 'Enterprise', status: 'active', joined: '2 hours ago' },
-    { name: 'Tech Academy', plan: 'Professional', status: 'active', joined: '5 hours ago' },
-    { name: 'Global Institute', plan: 'Starter', status: 'trial', joined: '1 day ago' },
-    { name: 'Learning Hub', plan: 'Professional', status: 'active', joined: '2 days ago' },
-    { name: 'Education Plus', plan: 'Enterprise', status: 'active', joined: '3 days ago' },
-  ];
+  // Recent activity from backend
+  const recentActivities = data?.activities || [];
 
   return (
     <div className="space-y-6">
@@ -130,10 +139,10 @@ export default function Dashboard() {
         </div>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+          disabled={loading}
         >
-          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
@@ -151,9 +160,10 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-600">{stat.name}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
-                  <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
+                  <p className="mt-2 text-sm flex items-center gap-1" 
+                     className={stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
                     <TrendingUp className="w-4 h-4" />
-                    {stat.change} from last month
+                    {stat.change}
                   </p>
                 </div>
                 <div className="flex-shrink-0">

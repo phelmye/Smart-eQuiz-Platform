@@ -75,6 +75,24 @@ export class AnalyticsController {
   }
 
   /**
+   * GET /api/analytics/dashboard-stats
+   * Get platform dashboard statistics (super_admin only)
+   */
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  async getDashboardStats() {
+    try {
+      return await this.analyticsService.getDashboardStats();
+    } catch (error) {
+      throw new HttpException(
+        'Failed to retrieve dashboard statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
    * GET /api/analytics/events
    * Get analytics events with filtering (super_admin only)
    */

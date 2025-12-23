@@ -494,4 +494,167 @@ export class AnalyticsService {
       );
     }
   }
+
+  /**
+   * Get platform dashboard statistics
+   * Aggregates data for super admin dashboard
+   */
+  async getDashboardStats() {
+    try {
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+      // Get tenant statistics
+      const [totalTenants, activeTenants, trialTenants, suspendedTenants] = await Promise.all([
+        this.prisma.tenant.count(),
+        this.prisma.tenant.count({ where: { status: 'ACTIVE' } }),
+        this.prisma.tenant.count({ where: { status: 'TRIAL' } }),
+        this.prisma.tenant.count({ where: { status: 'SUSPENDED' } }),
+      ]);
+
+      // Get user statistics
+      const [totalUsers, activeUsers] = await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { status: 'active' } }),
+      ]);
+
+      // Calculate MRR from active tenants
+      const tenantsWithPlans = await this.prisma.tenant.findMany({
+        where: { status: 'ACTIVE' },
+        include: { plan: true },
+      });
+
+      const mrr = tenantsWithPlans.reduce((sum, tenant) => {
+        if (tenant.plan?.price) {
+          return sum + parseFloat(tenant.plan.price.toString());
+        }
+        return sum;
+      }, 0);
+
+      // Calculate growth metrics
+      const [tenantsLast30, tenantsPrevious30, usersLast30, usersPrevious30] = await Promise.all([
+        this.prisma.tenant.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        this.prisma.tenant.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+        this.prisma.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        this.prisma.user.count({ where: { createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } } }),
+      ]);
+
+      const tenantGrowth = tenantsPrevious30 > 0 
+        ? ((tenantsLast30 - tenantsPrevious30) / tenantsPrevious30) * 100 
+        : 0;
+      
+      const userGrowth = usersPrevious30 > 0 
+        ? ((usersLast30 - usersPrevious30) / usersPrevious30) * 100 
+        : 0;
+
+      // Get revenue trend (last 6 months)
+      const revenueData = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        
+        const tenants = await this.prisma.tenant.findMany({
+          where: { status: 'ACTIVE', createdAt: { lte: monthEnd } },
+          include: { plan: true },
+        });
+
+        const revenue = tenants.reduce((sum, t) => sum + (parseFloat(t.plan?.price?.toString() || '0')), 0);
+        
+        revenueData.push({
+          month: monthStart.toLocaleString('default', { month: 'short' }),
+          revenue: Math.round(revenue),
+          target: Math.round(revenue * 0.9),
+        });
+      }
+
+      // Get tenant growth data
+      const tenantGrowthData = [];
+      for (let i = 5; i >= 0; i--) {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        
+        const count = await this.prisma.tenant.count({
+          where: { createdAt: { gte: monthStart, lte: monthEnd } },
+        });
+
+        tenantGrowthData.push({
+          month: monthStart.toLocaleString('default', { month: 'short' }),
+          tenants: count,
+        });
+      }
+
+      // Get tenants by plan
+      const tenantsByPlan = await this.prisma.tenant.groupBy({
+        by: ['planId'],
+        where: { status: 'ACTIVE' },
+        _count: true,
+      });
+
+      const planCounts = await Promise.all(
+        tenantsByPlan.map(async (item) => {
+          const plan = await this.prisma.plan.findUnique({ where: { id: item.planId } });
+          return {
+            name: plan?.name || 'Unknown',
+            value: item._count,
+          };
+        })
+      );
+
+      // Get recent activity
+      const recentTenants = await this.prisma.tenant.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, createdAt: true },
+      });
+
+      const recentUsers = await this.prisma.user.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, email: true, name: true, createdAt: true },
+      });
+
+      const activities = [
+        ...recentTenants.map(t => ({
+          type: 'tenant_created',
+          description: `New tenant: ${t.name}`,
+          timestamp: t.createdAt.toISOString(),
+        })),
+        ...recentUsers.map(u => ({
+          type: 'user_created',
+          description: `New user: ${u.name || u.email}`,
+          timestamp: u.createdAt.toISOString(),
+        })),
+      ]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 10);
+
+      return {
+        stats: {
+          totalTenants,
+          activeTenants,
+          trialTenants,
+          suspendedTenants,
+          totalUsers,
+          activeUsers,
+          mrr: Math.round(mrr),
+          arr: Math.round(mrr * 12),
+          tenantGrowth: Math.round(tenantGrowth * 10) / 10,
+          userGrowth: Math.round(userGrowth * 10) / 10,
+        },
+        charts: {
+          revenueData,
+          tenantGrowthData,
+          tenantsByPlan: planCounts,
+        },
+        activities,
+      };
+    } catch (error) {
+      console.error('Dashboard stats error:', error);
+      throw new HttpException(
+        'Failed to get dashboard statistics',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }
