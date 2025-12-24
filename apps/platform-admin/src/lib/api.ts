@@ -11,7 +11,7 @@ interface RequestOptions extends RequestInit {
 
 class ApiClient {
   private getAuthToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('platform_admin_token');
   }
 
   private getHeaders(): HeadersInit {
@@ -92,11 +92,11 @@ class ApiClient {
 
   // Authentication
   setToken(token: string): void {
-    localStorage.setItem('token', token);
+    localStorage.setItem('platform_admin_token', token);
   }
 
   clearToken(): void {
-    localStorage.removeItem('token');
+    localStorage.removeItem('platform_admin_token');
   }
 
   // File upload

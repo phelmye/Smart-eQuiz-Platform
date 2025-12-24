@@ -105,7 +105,7 @@ export function useBilling() {
     try {
       setError(null);
       // Note: This endpoint returns CSV data, not JSON
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('platform_admin_token');
       const params = new URLSearchParams(filters as any);
       const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/payments/admin/export?${params.toString()}`;
       

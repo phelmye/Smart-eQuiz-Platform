@@ -268,7 +268,7 @@ export default function AuditLogs() {
       if (filters.endDate) params.endDate = filters.endDate;
 
       // Use fetch directly for blob response
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('platform_admin_token');
       const queryString = new URLSearchParams(params).toString();
       const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/audit/export?${queryString}`;
       

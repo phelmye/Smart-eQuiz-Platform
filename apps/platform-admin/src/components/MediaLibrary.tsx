@@ -72,7 +72,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
 
       const response = await fetch(`/api/media?${params}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('platform_admin_token')}`,
         },
       });
 
@@ -105,7 +105,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
         const response = await fetch('/api/media/upload', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('platform_admin_token')}`,
           },
           body: formData,
         });
@@ -138,7 +138,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
       const response = await fetch(`/api/media/${assetId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('platform_admin_token')}`,
         },
       });
 
