@@ -12,9 +12,10 @@ interface CreateUserDto {
 
 interface UpdateUserDto {
   email?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   role?: string;
-  status?: string;
+  // Note: status field doesn't exist in User model
 }
 
 @Injectable()

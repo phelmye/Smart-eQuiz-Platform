@@ -15,9 +15,10 @@ interface CreateUserDto {
 
 interface UpdateUserDto {
   email?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   role?: string;
-  status?: string;
+  // Note: status field doesn't exist in User model
 }
 
 @Controller('users')
@@ -137,15 +138,15 @@ export class UsersController {
   async suspend(@Param('id') id: string, @Req() req: any) {
     const user = await this.usersService.suspendUser(id);
     
-    await this.auditService.log(
-      req.user.userId,
-      req.user.tenantId,
-      AuditAction.UPDATE,
-      AuditResource.USER,
-      id,
-      { status: 'suspended' },
-      req.ip,
-    );
+    await this.auditService.log({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      action: AuditAction.UPDATE,
+      resource: AuditResource.USER,
+      resourceId: id,
+      changes: { status: 'suspended' },
+      ipAddress: req.ip,
+    });
     
     return user;
   }
@@ -155,15 +156,15 @@ export class UsersController {
   async activate(@Param('id') id: string, @Req() req: any) {
     const user = await this.usersService.activateUser(id);
     
-    await this.auditService.log(
-      req.user.userId,
-      req.user.tenantId,
-      AuditAction.UPDATE,
-      AuditResource.USER,
-      id,
-      { status: 'active' },
-      req.ip,
-    );
+    await this.auditService.log({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      action: AuditAction.UPDATE,
+      resource: AuditResource.USER,
+      resourceId: id,
+      changes: { status: 'active' },
+      ipAddress: req.ip,
+    });
     
     return user;
   }
