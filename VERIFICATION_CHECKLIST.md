@@ -1,5 +1,24 @@
 # Platform Verification Checklist
 
+## ✅ CRITICAL FIX APPLIED - December 24, 2025
+
+**🚨 AUTHENTICATION TOKEN FIX DEPLOYED** (Commits: 631e2de, 43fc587, 1d06bf6)
+
+**Issue Fixed:** Token storage key mismatch causing 401 errors on:
+- `/api/audit/logs`
+- `/api/audit/stats`
+- `/api/marketing-cms/blog-posts/*`
+
+**Root Cause:** AuthContext saved token as `platform_admin_token`, but API client read `token`
+
+**Solution:** Updated all localStorage calls to use consistent key `platform_admin_token`
+
+**Status:** ✅ Built successfully, ✅ Pushed to trigger deployment, ⏳ Vercel deploying
+
+**See:** [TOKEN_AUTH_FIX_SUMMARY.md](TOKEN_AUTH_FIX_SUMMARY.md) for complete details
+
+---
+
 ## ✅ Completed Tasks
 
 - [x] Payment system backend deployed to Render
