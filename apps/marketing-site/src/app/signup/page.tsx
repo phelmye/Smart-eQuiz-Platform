@@ -173,9 +173,10 @@ function SignupForm() {
       }
 
       if (data.success) {
-        // Store access token
+        // Store access token (using 'accessToken' to match tenant-app storage key)
         if (typeof window !== 'undefined') {
-          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('accessToken', data.access_token);
+          localStorage.setItem('refreshToken', data.refresh_token); // If provided
           localStorage.setItem('tenant_id', data.tenantId);
           localStorage.setItem('subdomain', data.subdomain);
         }
