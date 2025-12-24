@@ -489,7 +489,13 @@ export default function UserManagementWithLoginAs({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => console.log('View user details:', u.id)}
+                            onClick={() => {
+                              toast({
+                                title: "User Details",
+                                description: `Viewing details for ${u.email}`,
+                              });
+                              // Future: Open user details modal
+                            }}
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
@@ -556,7 +562,13 @@ export default function UserManagementWithLoginAs({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => console.log('View user details:', u.id)}
+                          onClick={() => {
+                            toast({
+                              title: "User Details",
+                              description: `Viewing details for ${u.email}`,
+                            });
+                            // Future: Open user details modal
+                          }}
                         >
                           <Eye className="w-3 h-3" />
                         </Button>

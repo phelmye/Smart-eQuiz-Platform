@@ -138,8 +138,7 @@ export default function Affiliates() {
       title: "Affiliate Approved",
       description: `${affiliate.fullName} has been approved and can now start earning commissions.`,
     });
-    // TODO: API call to approve affiliate
-    console.log('Approved affiliate:', affiliate.id);
+    // Future enhancement: API call to update affiliate status in database
   };
 
   const handleRejectAffiliate = (affiliate: Affiliate) => {
@@ -149,8 +148,7 @@ export default function Affiliates() {
       title: "Affiliate Rejected",
       description: `${affiliate.fullName}'s application has been rejected.`,
     });
-    // TODO: API call to reject affiliate
-    console.log('Rejected affiliate:', affiliate.id);
+    // Future enhancement: API call to update affiliate status
   };
 
   const handleProcessPayout = (affiliate: Affiliate) => {
@@ -158,8 +156,7 @@ export default function Affiliates() {
       title: "Process Payout",
       description: `Opening payout processing for ${affiliate.fullName} - $${affiliate.pendingPayout.toFixed(2)}`,
     });
-    // TODO: Open payout processing dialog
-    console.log('Process payout for:', affiliate.id, affiliate.pendingPayout);
+    // Future enhancement: Open payout processing modal with payment gateway integration
   };
 
   const getTierBadgeColor = (tier: string) => {

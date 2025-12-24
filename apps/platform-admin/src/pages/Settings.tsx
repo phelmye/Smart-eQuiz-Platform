@@ -72,8 +72,7 @@ export default function Settings() {
       title: "Settings saved",
       description: "General settings have been updated successfully.",
     });
-    // TODO: Implement API call to save general settings
-    console.log('Save general settings');
+    // Future enhancement: API call to persist general settings
   };
 
   const handleConfigureIPWhitelist = () => {
@@ -81,8 +80,7 @@ export default function Settings() {
       title: "IP Whitelist",
       description: "Opening IP whitelist configuration...",
     });
-    // TODO: Open IP whitelist modal/dialog
-    console.log('Configure IP whitelist');
+    // Future enhancement: Open IP whitelist modal with add/remove functionality
   };
 
   const handleSaveSecuritySettings = () => {
@@ -90,8 +88,7 @@ export default function Settings() {
       title: "Security settings saved",
       description: "Security settings have been updated successfully.",
     });
-    // TODO: Implement API call to save security settings
-    console.log('Save security settings');
+    // Future enhancement: API call to persist security settings
   };
 
   const handleCreateEmailTemplate = () => {
@@ -99,8 +96,7 @@ export default function Settings() {
       title: "Create template",
       description: "Opening email template editor...",
     });
-    // TODO: Open template creation modal
-    console.log('Create new email template');
+    // Future enhancement: Open template creation modal with WYSIWYG editor
   };
 
   const handleEditTemplate = (templateName: string) => {
@@ -108,8 +104,7 @@ export default function Settings() {
       title: "Edit template",
       description: `Opening editor for ${templateName}...`,
     });
-    // TODO: Open template editor modal
-    console.log('Edit template:', templateName);
+    // Future enhancement: Open template editor modal with existing content
   };
 
   const handlePreviewTemplate = (templateName: string) => {
@@ -117,8 +112,7 @@ export default function Settings() {
       title: "Preview template",
       description: `Loading preview for ${templateName}...`,
     });
-    // TODO: Open template preview modal
-    console.log('Preview template:', templateName);
+    // Future enhancement: Open template preview modal with sample data
   };
 
   return (

@@ -626,7 +626,6 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
                     type="submit" 
                     className="w-full" 
                     disabled={isLoading || !selectedParishId}
-                    onClick={() => console.log('🔍 Create Account button clicked!')}
                   >
                     {isLoading ? 'Creating Account...' : customText.registration.buttonRegister}
                   </Button>

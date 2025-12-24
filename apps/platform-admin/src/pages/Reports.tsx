@@ -131,8 +131,7 @@ export default function Reports() {
       title: "Generating Report",
       description: `Report ${reportId} is being generated and will be downloaded shortly.`,
     });
-    // TODO: Implement actual report generation and download
-    console.log(`Generating report: ${reportId}`);
+    // Future enhancement: API call to generate and download report file
   };
 
   const scheduleReport = (reportId: string) => {
@@ -140,8 +139,7 @@ export default function Reports() {
       title: "Schedule Report",
       description: "Opening scheduling configuration...",
     });
-    // TODO: Implement schedule configuration modal
-    console.log(`Scheduling report: ${reportId}`);
+    // Future enhancement: Modal to configure report schedule (daily/weekly/monthly)
   };
 
   const handleSaveReportTemplate = () => {
@@ -149,8 +147,7 @@ export default function Reports() {
       title: "Report Template Saved",
       description: "Your custom report has been saved as a template.",
     });
-    // TODO: Implement save report template to database
-    console.log('Save report template');
+    // Future enhancement: API call to save report template configuration
   };
 
   const handleGenerateCustomReport = () => {
@@ -158,8 +155,7 @@ export default function Reports() {
       title: "Generating Custom Report",
       description: "Your custom report is being generated. This may take a few moments.",
     });
-    // TODO: Implement custom report generation with selected filters
-    console.log('Generate custom report');
+    // Future enhancement: API call with selected filters and options
   };
 
   return (

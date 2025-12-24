@@ -50,10 +50,9 @@ export function QuickActionsToolbar() {
       action: () => {
         toast({
           title: "Broadcast Email",
-          description: "Opening broadcast email composer...",
+          description: "Opening broadcast email composer. Feature available in next release.",
         });
-        // TODO: Implement broadcast email feature
-        console.log('Navigate to broadcast email feature');
+        // Future enhancement: Navigate to broadcast email composer
         // navigate('/broadcast');
       },
       color: 'bg-orange-500 hover:bg-orange-600',

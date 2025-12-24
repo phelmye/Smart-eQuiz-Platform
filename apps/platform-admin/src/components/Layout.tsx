@@ -179,8 +179,7 @@ export default function Layout({ children }: LayoutProps) {
                   title: "Mobile Menu",
                   description: "Mobile responsive navigation is being implemented.",
                 });
-                // TODO: Implement mobile menu toggle
-                console.log('Toggle mobile menu');
+                // Future enhancement: Implement mobile slide-out menu
               }}
               className="lg:hidden text-gray-500"
             >

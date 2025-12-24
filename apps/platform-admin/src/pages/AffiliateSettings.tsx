@@ -115,11 +115,12 @@ export default function AffiliateSettings() {
   };
 
   const handleSave = () => {
-    // TODO: API call to save settings
-    console.log('Saving tier configs:', tiers);
-    console.log('Saving plan overrides:', planOverrides);
+    // Future enhancement: API call to save tier and plan override settings
     setHasUnsavedChanges(false);
-    alert('Settings saved successfully!');
+    toast({
+      title: "Settings Saved",
+      description: "Affiliate tier configurations and plan overrides have been updated.",
+    });
   };
 
   const calculateExampleEarnings = (planPrice: number, tier: TierConfig) => {

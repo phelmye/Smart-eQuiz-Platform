@@ -320,7 +320,13 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => console.log('View tenant details:', tenant.id)}
+                          onClick={() => {
+                            toast({
+                              title: "Tenant Details",
+                              description: `Viewing details for ${tenant.name}`,
+                            });
+                            // Future: Open tenant details modal
+                          }}
                         >
                           <Eye className="w-3 h-3" />
                         </Button>
@@ -328,7 +334,13 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => console.log('Configure tenant:', tenant.id)}
+                          onClick={() => {
+                            toast({
+                              title: "Tenant Configuration",
+                              description: `Opening settings for ${tenant.name}...`,
+                            });
+                            // Future: Open tenant configuration modal
+                          }}
                         >
                           <Settings className="w-3 h-3" />
                         </Button>

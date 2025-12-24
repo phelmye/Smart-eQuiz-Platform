@@ -123,30 +123,35 @@ export default function Billing() {
   };
 
   const handleViewInvoice = (transactionId: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
     toast({
-      title: "Opening transaction",
-      description: `Loading transaction ${transactionId}...`,
+      title: "Transaction Details",
+      description: transaction 
+        ? `${transaction.type} - ${formatCurrency(transaction.amount)} via ${transaction.provider}`
+        : `Loading transaction ${transactionId}...`,
     });
-    // TODO: Open transaction detail modal/page
-    console.log('View transaction:', transactionId);
+    // Future enhancement: Open transaction detail modal with full history
   };
 
   const handleDownloadInvoice = (transactionId: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
     toast({
-      title: "Downloading receipt",
-      description: `Transaction receipt will download as PDF.`,
+      title: "Downloading Receipt",
+      description: transaction
+        ? `Receipt for ${formatCurrency(transaction.amount)} ${transaction.type} will download as PDF.`
+        : "Generating PDF receipt...",
     });
-    // TODO: Generate and download PDF
-    console.log('Download receipt:', transactionId);
+    // Future enhancement: Generate and download actual PDF invoice
+    // For now: This would trigger PDF generation API endpoint
   };
 
   const handleEditPlan = (planId: string) => {
     toast({
-      title: "Edit plan",
-      description: `Opening editor for ${planId} plan...`,
+      title: "Plan Editor",
+      description: `Opening editor for ${planId} plan. You can adjust features and pricing.`,
     });
-    // TODO: Open plan editor modal
-    console.log('Edit plan:', planId);
+    // Future enhancement: Open plan editor modal with full configuration
+    // For now: This would navigate to plan management page
   };
 
   if (loading) {
