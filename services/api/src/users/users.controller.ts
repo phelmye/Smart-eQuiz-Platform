@@ -84,15 +84,15 @@ export class UsersController {
   async create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
     const user = await this.usersService.createUser(createUserDto);
     
-    await this.auditService.log(
-      req.user.userId,
-      req.user.tenantId,
-      AuditAction.CREATE,
-      AuditResource.USER,
-      user.id,
-      { email: createUserDto.email, role: createUserDto.role },
-      req.ip,
-    );
+    await this.auditService.log({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      action: AuditAction.CREATE,
+      resource: AuditResource.USER,
+      resourceId: user.id,
+      changes: { email: createUserDto.email, role: createUserDto.role },
+      ipAddress: req.ip,
+    });
     
     return user;
   }
@@ -102,15 +102,15 @@ export class UsersController {
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: any) {
     const user = await this.usersService.updateUser(id, updateUserDto);
     
-    await this.auditService.log(
-      req.user.userId,
-      req.user.tenantId,
-      AuditAction.UPDATE,
-      AuditResource.USER,
-      id,
-      updateUserDto,
-      req.ip,
-    );
+    await this.auditService.log({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      action: AuditAction.UPDATE,
+      resource: AuditResource.USER,
+      resourceId: id,
+      changes: updateUserDto,
+      ipAddress: req.ip,
+    });
     
     return user;
   }
@@ -120,15 +120,15 @@ export class UsersController {
   async remove(@Param('id') id: string, @Req() req: any) {
     await this.usersService.deleteUser(id);
     
-    await this.auditService.log(
-      req.user.userId,
-      req.user.tenantId,
-      AuditAction.DELETE,
-      AuditResource.USER,
-      id,
-      null,
-      req.ip,
-    );
+    await this.auditService.log({
+      userId: req.user.userId,
+      tenantId: req.user.tenantId,
+      action: AuditAction.DELETE,
+      resource: AuditResource.USER,
+      resourceId: id,
+      changes: null,
+      ipAddress: req.ip,
+    });
     
     return { message: 'User deleted successfully' };
   }

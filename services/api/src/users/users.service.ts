@@ -171,7 +171,7 @@ export class UsersService {
         ...(data.email && { email: data.email }),
         ...(data.firstName && { firstName: data.firstName }),
         ...(data.lastName && { lastName: data.lastName }),
-        ...(data.role && { role: data.role }),
+        ...(data.role && { role: data.role as any }), // Cast to avoid enum type issues
       },
     });
 

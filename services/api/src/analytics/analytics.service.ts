@@ -523,8 +523,6 @@ export class AnalyticsService {
       const mrr = tenantsWithPlans.reduce((sum, tenant) => {
         // Plan price calculation would go here if plan model has price
         return sum;
-        }
-        return sum;
       }, 0);
 
       // Calculate growth metrics
