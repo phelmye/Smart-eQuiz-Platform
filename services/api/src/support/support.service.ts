@@ -35,17 +35,10 @@ export class SupportService {
       this.prisma.supportTicket.findMany({
         where,
         include: {
-          user: {
+          creator: {
             select: {
               id: true,
-              name: true,
               email: true,
-            },
-          },
-          tenant: {
-            select: {
-              id: true,
-              name: true,
             },
           },
         },
@@ -62,13 +55,12 @@ export class SupportService {
     const formattedTickets = tickets.map(ticket => ({
       id: ticket.id,
       subject: ticket.subject,
-      tenant: ticket.tenant?.name || 'Unknown',
       tenantId: ticket.tenantId,
-      requester: ticket.user?.name || 'Unknown',
-      requesterEmail: ticket.user?.email || '',
-      priority: ticket.priority,
-      status: ticket.status,
-      category: ticket.category,
+      requester: ticket.creator?.email || 'Unknown',
+      requesterEmail: ticket.creator?.email || '',
+      priority: ticket.priority.toLowerCase(),
+      status: ticket.status.toLowerCase().replace('_', ' '),
+      category: ticket.category.toLowerCase().replace('_', ' '),
       assignedTo: ticket.assignedTo || undefined,
       created: ticket.createdAt.toISOString(),
       updated: ticket.updatedAt.toISOString(),
@@ -87,17 +79,10 @@ export class SupportService {
     const ticket = await this.prisma.supportTicket.findUnique({
       where: { id },
       include: {
-        user: {
+        creator: {
           select: {
             id: true,
-            name: true,
             email: true,
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
           },
         },
       },
@@ -118,14 +103,12 @@ export class SupportService {
     return {
       id: ticket.id,
       subject: ticket.subject,
-      description: ticket.description,
-      tenant: ticket.tenant?.name || 'Unknown',
       tenantId: ticket.tenantId,
-      requester: ticket.user?.name || 'Unknown',
-      requesterEmail: ticket.user?.email || '',
-      priority: ticket.priority,
-      status: ticket.status,
-      category: ticket.category,
+      requester: ticket.creator?.email || 'Unknown',
+      requesterEmail: ticket.creator?.email || '',
+      priority: ticket.priority.toLowerCase(),
+      status: ticket.status.toLowerCase().replace('_', ' '),
+      category: ticket.category.toLowerCase().replace('_', ' '),
       assignedTo: ticket.assignedTo,
       created: ticket.createdAt.toISOString(),
       updated: ticket.updatedAt.toISOString(),
@@ -134,34 +117,37 @@ export class SupportService {
 
   async createTicket(data: {
     subject: string;
-    description?: string;
     priority: string;
     category: string;
     userId: string;
     tenantId: string;
   }) {
+    // First create a chat channel for the ticket
+    const channel = await this.prisma.chatChannel.create({
+      data: {
+        tenantId: data.tenantId,
+        type: 'SUPPORT',
+        status: 'ACTIVE',
+        createdBy: data.userId,
+      },
+    });
+
+    // Then create the ticket
     const ticket = await this.prisma.supportTicket.create({
       data: {
+        channelId: channel.id,
         subject: data.subject,
-        description: data.description,
-        priority: data.priority as any,
-        category: data.category as any,
-        status: 'open',
-        userId: data.userId,
+        priority: data.priority.toUpperCase() as any,
+        category: data.category.toUpperCase().replace(' ', '_') as any,
+        status: 'OPEN',
+        createdBy: data.userId,
         tenantId: data.tenantId,
       },
       include: {
-        user: {
+        creator: {
           select: {
             id: true,
-            name: true,
             email: true,
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
           },
         },
       },
@@ -170,13 +156,12 @@ export class SupportService {
     return {
       id: ticket.id,
       subject: ticket.subject,
-      tenant: ticket.tenant?.name || 'Unknown',
       tenantId: ticket.tenantId,
-      requester: ticket.user?.name || 'Unknown',
-      requesterEmail: ticket.user?.email || '',
-      priority: ticket.priority,
-      status: ticket.status,
-      category: ticket.category,
+      requester: ticket.creator?.email || 'Unknown',
+      requesterEmail: ticket.creator?.email || '',
+      priority: ticket.priority.toLowerCase(),
+      status: ticket.status.toLowerCase(),
+      category: ticket.category.toLowerCase().replace('_', ' '),
       created: ticket.createdAt.toISOString(),
       updated: ticket.updatedAt.toISOString(),
     };
@@ -202,23 +187,16 @@ export class SupportService {
     const updated = await this.prisma.supportTicket.update({
       where: { id },
       data: {
-        status: data.status,
-        priority: data.priority,
-        category: data.category,
+        status: data.status ? data.status.toUpperCase().replace(' ', '_') : undefined,
+        priority: data.priority ? data.priority.toUpperCase() : undefined,
+        category: data.category ? data.category.toUpperCase().replace(' ', '_') : undefined,
         assignedTo: data.assignedTo,
       },
       include: {
-        user: {
+        creator: {
           select: {
             id: true,
-            name: true,
             email: true,
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
           },
         },
       },
@@ -227,13 +205,12 @@ export class SupportService {
     return {
       id: updated.id,
       subject: updated.subject,
-      tenant: updated.tenant?.name || 'Unknown',
       tenantId: updated.tenantId,
-      requester: updated.user?.name || 'Unknown',
-      requesterEmail: updated.user?.email || '',
-      priority: updated.priority,
-      status: updated.status,
-      category: updated.category,
+      requester: updated.creator?.email || '',
+      requesterEmail: updated.creator?.email || '',
+      priority: updated.priority.toLowerCase(),
+      status: updated.status.toLowerCase().replace('_', ' '),
+      category: updated.category.toLowerCase().replace('_', ' '),
       assignedTo: updated.assignedTo,
       updated: updated.updatedAt.toISOString(),
     };
@@ -268,10 +245,10 @@ export class SupportService {
       byCategory,
     ] = await Promise.all([
       this.prisma.supportTicket.count({ where }),
-      this.prisma.supportTicket.count({ where: { ...where, status: 'open' } }),
-      this.prisma.supportTicket.count({ where: { ...where, status: 'in_progress' } }),
-      this.prisma.supportTicket.count({ where: { ...where, status: 'resolved' } }),
-      this.prisma.supportTicket.count({ where: { ...where, status: 'closed' } }),
+      this.prisma.supportTicket.count({ where: { ...where, status: 'OPEN' } }),
+      this.prisma.supportTicket.count({ where: { ...where, status: 'IN_PROGRESS' } }),
+      this.prisma.supportTicket.count({ where: { ...where, status: 'RESOLVED' } }),
+      this.prisma.supportTicket.count({ where: { ...where, status: 'CLOSED' } }),
       this.prisma.supportTicket.groupBy({
         by: ['priority'],
         where,
