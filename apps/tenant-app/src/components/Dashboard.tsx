@@ -52,6 +52,7 @@ import ApiManagementPage from '../pages/ApiManagementPage';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { usePracticeLeaderboard } from '@/hooks/usePracticeLeaderboard';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -61,12 +62,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user, tenant, logout } = useAuth();
   const { stats: practiceStats } = usePracticeStats();
   const { leaderboard: practiceLeaderboard } = usePracticeLeaderboard(undefined, 5);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const { tournaments: allTournaments } = useTournaments();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [currentAction, setCurrentAction] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkoutData, setCheckoutData] = useState<any>(null);
+
+  // Filter tournaments based on user role
+  const tournaments = React.useMemo(() => {
+    if (user?.role === 'super_admin') {
+      return allTournaments;
+    }
+    return allTournaments.filter(t => t.tenantId === user?.tenantId);
+  }, [allTournaments, user]);
 
   // User stats derived from practice stats API
   const userStats = {
@@ -78,16 +87,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   // Check if user has admin or management role (should see sidebar)
   const isAdmin = user?.role && ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator'].includes(user.role.toLowerCase());
-
-  useEffect(() => {
-    // Load tournaments
-    const savedTournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
-    if (user?.role === 'super_admin') {
-      setTournaments(savedTournaments);
-    } else {
-      setTournaments(savedTournaments.filter((t: Tournament) => t.tenantId === user?.tenantId));
-    }
-  }, [user]);
 
   const getCurrentLevel = () => {
     if (!user) return XP_LEVELS[0];
