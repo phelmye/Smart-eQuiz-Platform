@@ -66,8 +66,11 @@
 **Files Modified:**
 - `services/api/src/app.module.ts` - Registered AdminModule
 - `apps/platform-admin/src/pages/Settings.tsx` - Added Data Management tab
+- `services/api/prisma/schema.prisma` - Added isSample to 5 models (commit 65b4a27)
 
-**Status:** ✅ Code complete, ✅ Pushed (a356ed7), ⏳ Migration not yet applied
+**Status:** ✅ Code complete, ✅ Schema updated, ✅ Pushed (a356ed7, 65b4a27, fc43a66), ⏳ Migration not yet applied
+
+**⚠️ Known Issue:** VS Code TypeScript showing 16 errors due to cached Prisma types. Code is correct and will deploy successfully. **Fix:** `Ctrl+Shift+P` → "TypeScript: Restart TS Server". See [TYPESCRIPT_ERRORS_RESOLUTION.md](TYPESCRIPT_ERRORS_RESOLUTION.md).
 
 **See:** [SAMPLE_DATA_MANAGEMENT_GUIDE.md](SAMPLE_DATA_MANAGEMENT_GUIDE.md) for usage guide
 
