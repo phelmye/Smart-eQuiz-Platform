@@ -26,6 +26,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
+import { SupportModule } from './support/support.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
 
@@ -65,6 +66,7 @@ import { PrismaModule } from './prisma.module';
     EmailModule,
     NotificationsModule,
     AdminModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [

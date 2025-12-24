@@ -11,6 +11,7 @@ import {
   Monitor,
   RefreshCw,
 } from 'lucide-react';
+import { api } from '../lib/api';
 
 interface AnalyticsDashboardProps {
   className?: string;
@@ -55,87 +56,49 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
       setLoading(true);
       setError(null);
 
-      // Load from localStorage or use mock data
-      const savedAnalytics = localStorage.getItem('platform_analytics');
-      
-      if (savedAnalytics) {
-        const data = JSON.parse(savedAnalytics);
-        setOverview(data.overview);
-        setCtaPerformance(data.ctaPerformance || []);
-        setTrafficSources(data.trafficSources || []);
-        setDeviceStats(data.deviceStats || null);
-      } else {
-        // Initialize with mock data
-        const mockOverviewData: OverviewData = {
-          overview: {
-            totalEvents: 15420,
-            totalConversions: 892,
-            uniqueVisitors: 8945,
-            ctaClicks: 1234,
-            pageViews: 24567,
-            conversionRate: 5.8
-          },
-          topPages: [
-            { url: '/demo', views: 4521 },
-            { url: '/pricing', views: 3892 },
-            { url: '/features', views: 3204 },
-            { url: '/about', views: 2156 },
-            { url: '/blog', views: 1894 }
-          ],
-          eventsByDay: Array.from({ length: 30 }, (_, i) => ({
-            date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            count: Math.floor(Math.random() * 500) + 300
-          })),
-          conversionsByType: [
-            { type: 'Sign Up', count: 456 },
-            { type: 'Demo Request', count: 234 },
-            { type: 'Contact Form', count: 202 }
-          ],
-          dateRange: {
-            start: dateRange.start,
-            end: dateRange.end
-          }
-        };
+      // Fetch real analytics data from API
+      const params = new URLSearchParams({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      });
 
-        const mockCtaData = [
-          { label: 'Get Started Free', clicks: 567 },
-          { label: 'Request Demo', clicks: 234 },
-          { label: 'View Pricing', clicks: 189 },
-          { label: 'Contact Sales', clicks: 156 },
-          { label: 'Learn More', clicks: 88 }
-        ];
+      const [overviewData, ctaData, trafficData, deviceData] = await Promise.all([
+        api.get<OverviewData>(`/analytics/overview?${params}`).catch(() => null),
+        api.get<Array<{ label: string; clicks: number }>>(`/analytics/cta-performance?${params}`).catch(() => []),
+        api.get<Array<{ source: string; medium: string | null; count: number }>>(`/analytics/traffic-sources?${params}`).catch(() => []),
+        api.get<any>(`/analytics/device-stats?${params}`).catch(() => null),
+      ]);
 
-        const mockTrafficData = [
-          { source: 'Google', medium: 'organic', count: 3456 },
-          { source: 'Direct', medium: null, count: 2134 },
-          { source: 'Facebook', medium: 'social', count: 1245 },
-          { source: 'LinkedIn', medium: 'social', count: 876 },
-          { source: 'Email', medium: 'email', count: 543 }
-        ];
-
-        const mockDeviceData = {
-          desktop: 5234,
-          mobile: 2891,
-          tablet: 820
-        };
-
-        setOverview(mockOverviewData);
-        setCtaPerformance(mockCtaData);
-        setTrafficSources(mockTrafficData);
-        setDeviceStats(mockDeviceData);
-
-        // Save to localStorage
-        localStorage.setItem('platform_analytics', JSON.stringify({
-          overview: mockOverviewData,
-          ctaPerformance: mockCtaData,
-          trafficSources: mockTrafficData,
-          deviceStats: mockDeviceData,
-          lastUpdated: new Date().toISOString()
-        }));
+      if (overviewData) {
+        setOverview(overviewData);
       }
+      
+      setCtaPerformance(ctaData);
+      setTrafficSources(trafficData);
+      setDeviceStats(deviceData);
 
     } catch (err) {
+      console.error('Failed to fetch analytics:', err);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
+      
+      // Fallback to empty/default state on error
+      setOverview({
+        overview: {
+          totalEvents: 0,
+          totalConversions: 0,
+          uniqueVisitors: 0,
+          ctaClicks: 0,
+          pageViews: 0,
+          conversionRate: 0
+        },
+        topPages: [],
+        eventsByDay: [],
+        conversionsByType: [],
+        dateRange: {
+          start: dateRange.start,
+          end: dateRange.end
+        }
+      });
     } finally {
       setLoading(false);
     }

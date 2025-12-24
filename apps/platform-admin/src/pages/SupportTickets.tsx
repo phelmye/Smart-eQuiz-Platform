@@ -19,23 +19,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { exportToCSV, generateFilename } from '../lib/exportHelpers';
 import { useToast } from '../hooks/use-toast';
-
-interface Ticket {
-  id: string;
-  subject: string;
-  tenant: string;
-  tenantId: string;
-  requester: string;
-  requesterEmail: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed';
-  category: 'technical' | 'billing' | 'feature_request' | 'bug_report' | 'general';
-  assignedTo?: string;
-  created: string;
-  updated: string;
-  responseTime?: number; // in minutes
-  messages: number;
-}
+import { useSupportTickets, type Ticket } from '../hooks/useSupportTickets';
 
 interface Message {
   id: string;
@@ -199,6 +183,9 @@ export default function SupportTickets() {
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false);
   const { toast } = useToast();
 
+  // Use real API hook
+  const { tickets, loading, error, updateTicket, addMessage } = useSupportTickets();
+
   const columns: ColumnDef<Ticket>[] = [
     {
       accessorKey: 'id',
@@ -289,7 +276,7 @@ export default function SupportTickets() {
   ];
 
   const table = useReactTable({
-    data: mockTickets,
+    data: tickets,
     columns,
     state: {
       sorting,
@@ -310,22 +297,46 @@ export default function SupportTickets() {
     },
   });
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    // In a real app, this would send the message to the backend
-    alert(`Message sent: ${newMessage}`);
-    setNewMessage('');
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedTicket) return;
+    
+    try {
+      await addMessage(selectedTicket.id, newMessage);
+      toast({
+        title: "Message Sent",
+        description: "Your message has been added to the ticket.",
+      });
+      setNewMessage('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send message",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateStatus = (status: Ticket['status']) => {
+  const handleUpdateStatus = async (status: Ticket['status']) => {
     if (!selectedTicket) return;
-    // In a real app, this would update the status in the backend
-    alert(`Ticket ${selectedTicket.id} status updated to: ${status}`);
-    setSelectedTicket({ ...selectedTicket, status });
+    
+    try {
+      const updated = await updateTicket(selectedTicket.id, { status });
+      setSelectedTicket(updated);
+      toast({
+        title: "Status Updated",
+        description: `Ticket status changed to ${status}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update status",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExport = () => {
-    const exportData = mockTickets.map(ticket => ({
+    const exportData = tickets.map(ticket => ({
       'ID': ticket.id,
       'Subject': ticket.subject,
       'Tenant': ticket.tenant,
@@ -342,7 +353,7 @@ export default function SupportTickets() {
     exportToCSV(exportData, { filename: generateFilename('support-tickets', 'csv') });
     toast({
       title: "Export Successful",
-      description: `Exported ${mockTickets.length} support tickets to CSV file.`,
+      description: `Exported ${tickets.length} support tickets to CSV file.`,
     });
   };
 
