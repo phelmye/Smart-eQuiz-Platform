@@ -71,7 +71,7 @@ export class PaymentsController {
    * Get all transactions (super admin only)
    */
   @Get('admin/transactions')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all payment transactions (super admin)' })
@@ -111,7 +111,7 @@ export class PaymentsController {
    * Get revenue statistics (super admin only)
    */
   @Get('admin/revenue-stats')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get revenue statistics (super admin)' })
@@ -130,7 +130,7 @@ export class PaymentsController {
    * Export transactions (super admin only)
    */
   @Get('admin/export')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Export transactions (super admin)' })

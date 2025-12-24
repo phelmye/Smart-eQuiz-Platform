@@ -67,11 +67,14 @@ async function testGetGateways(token) {
 
   const data = await res.json();
   console.log('✅ Gateways endpoint successful');
-  console.log(`   Found ${data.length} gateways:`);
+  console.log(`   Total gateways: ${data.totalGateways}`);
+  console.log(`   Configured: ${data.configuredGateways}`);
+  console.log(`   Default provider: ${data.defaultProvider}`);
+  console.log(`   Gateway details:`);
   
-  data.forEach(gateway => {
+  data.gateways.forEach(gateway => {
     const status = gateway.configured ? '✓ Configured' : '✗ Not Configured';
-    console.log(`   - ${gateway.displayName}: ${status}`);
+    console.log(`   - ${gateway.info.displayName}: ${status}`);
   });
 
   return data;
