@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, X, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { api } from '../lib/api';
 
 interface Notification {
   id: string;
@@ -12,40 +13,16 @@ interface Notification {
   read: boolean;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'success',
-    title: 'New Tenant Registered',
-    message: 'Acme University has successfully registered.',
-    time: '5 min ago',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'warning',
-    title: 'Payment Failed',
-    message: 'TechCorp Inc payment failed. Please follow up.',
-    time: '1 hour ago',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'info',
-    title: 'System Update',
-    message: 'Platform will be updated tonight at 2 AM.',
-    time: '3 hours ago',
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'error',
-    title: 'API Error Spike',
-    message: 'Unusual error rate detected in the last hour.',
-    time: '5 hours ago',
-    read: true,
-  },
-];
+interface AuditLog {
+  id: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  details?: any;
+  userEmail?: string;
+  createdAt: string;
+  success?: boolean;
+}
 
 const typeIcons = {
   info: Info,
@@ -63,8 +40,117 @@ const typeColors = {
 
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Fetch recent audit logs and convert to notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const logs = await api.get<AuditLog[]>('/audit/logs?limit=20');
+        
+        // Convert audit logs to notifications
+        const notificationItems: Notification[] = logs
+          .filter(log => {
+            // Only show important actions
+            const importantActions = ['create', 'delete', 'suspend', 'activate', 'update', 'fail', 'error'];
+            return importantActions.some(action => log.action?.toLowerCase().includes(action));
+          })
+          .map(log => {
+            // Determine notification type
+            let type: 'info' | 'success' | 'warning' | 'error' = 'info';
+            if (log.success === false || log.action?.includes('fail') || log.action?.includes('error')) {
+              type = 'error';
+            } else if (log.action?.includes('delete') || log.action?.includes('suspend')) {
+              type = 'warning';
+            } else if (log.action?.includes('create') || log.action?.includes('activate')) {
+              type = 'success';
+            }
+            
+            // Format title
+            const title = formatTitle(log.action, log.resource);
+            
+            // Format message
+            const message = formatMessage(log);
+            
+            // Format timestamp
+            const time = formatTimestamp(log.createdAt);
+            
+            return {
+              id: log.id,
+              type,
+              title,
+              message,
+              time,
+              read: false, // All new notifications are unread
+            };
+          });
+        
+        setNotifications(notificationItems);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
+
+  const formatTitle = (action: string, resource: string): string => {
+    const actionMap: Record<string, string> = {
+      'create': 'Created',
+      'update': 'Updated',
+      'delete': 'Deleted',
+      'suspend': 'Suspended',
+      'activate': 'Activated',
+      'login': 'Login',
+      'logout': 'Logout',
+      'fail': 'Failed',
+      'error': 'Error',
+    };
+    
+    const actionWord = Object.keys(actionMap).find(key => 
+      action?.toLowerCase().includes(key)
+    );
+    const actionText = actionWord ? actionMap[actionWord] : action;
+    
+    const resourceText = resource?.charAt(0).toUpperCase() + resource?.slice(1);
+    
+    return `${resourceText} ${actionText}`;
+  };
+
+  const formatMessage = (log: AuditLog): string => {
+    const user = log.userEmail || 'System';
+    const resource = log.resource || 'resource';
+    const action = log.action || 'modified';
+    
+    if (log.details?.description) {
+      return log.details.description;
+    }
+    
+    return `${user} ${action} ${resource}${log.resourceId ? ` (ID: ${log.resourceId.slice(0, 8)}...)` : ''}`;
+  };
+
+  const formatTimestamp = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString();
+  };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
