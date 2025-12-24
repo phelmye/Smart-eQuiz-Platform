@@ -9,9 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, Plus, Trash2, Copy, Shuffle, Lock, Unlock, 
-  AlertCircle, CheckCircle2, Info, TrendingUp 
+  AlertCircle, CheckCircle2, Info, TrendingUp, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthSystem';
+import { useTournaments } from '@/hooks/useTournaments';
+import { useQuestions } from '@/hooks/useQuestions';
 import {
   Question,
   PreTournamentQuestion,
@@ -36,6 +38,8 @@ export const PreTournamentQuestionManager: React.FC<PreTournamentQuestionManager
   onBack 
 }) => {
   const { user } = useAuth();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
+  const { questions: apiQuestions, loading: questionsLoading } = useQuestions();
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [mainBankQuestions, setMainBankQuestions] = useState<Question[]>([]);
   const [preTournamentQuestions, setPreTournamentQuestions] = useState<PreTournamentQuestion[]>([]);
@@ -48,19 +52,19 @@ export const PreTournamentQuestionManager: React.FC<PreTournamentQuestionManager
 
   useEffect(() => {
     loadData();
-  }, [tournamentId, user]);
+  }, [tournamentId, user, apiTournaments, apiQuestions, tournamentsLoading, questionsLoading]);
 
   const loadData = () => {
+    if (tournamentsLoading || questionsLoading) return;
+    
     // Load tournament
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-    const t = tournaments.find((t: Tournament) => t.id === tournamentId);
+    const t = apiTournaments?.find((t: Tournament) => t.id === tournamentId);
     setTournament(t || null);
 
     // Load main bank questions
-    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
-    const tenantQuestions = allQuestions.filter((q: Question) => 
+    const tenantQuestions = apiQuestions?.filter((q: Question) => 
       q.tenantId === user?.tenantId && q.status !== QuestionStatus.ARCHIVED
-    );
+    ) || [];
     setMainBankQuestions(tenantQuestions);
 
     // Load pre-tournament questions
@@ -174,6 +178,20 @@ export const PreTournamentQuestionManager: React.FC<PreTournamentQuestionManager
       return { status: 'insufficient', color: 'text-red-600', bg: 'bg-red-50' };
     }
   };
+
+  // Show loading state
+  if (tournamentsLoading || questionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading tournament data...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
