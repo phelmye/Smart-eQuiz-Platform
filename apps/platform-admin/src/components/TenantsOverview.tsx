@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Building2, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Building2, Users, TrendingUp, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { useTenants } from '../hooks/useTenants';
 
 interface TenantOverview {
   id: string;
@@ -14,59 +15,6 @@ interface TenantOverview {
   health: 'excellent' | 'good' | 'warning' | 'critical';
   lastActivity: string;
 }
-
-const mockTenants: TenantOverview[] = [
-  {
-    id: '1',
-    name: 'Acme University',
-    plan: 'Enterprise',
-    status: 'active',
-    users: 2543,
-    mrr: 299,
-    health: 'excellent',
-    lastActivity: '2 min ago',
-  },
-  {
-    id: '2',
-    name: 'TechCorp Inc',
-    plan: 'Professional',
-    status: 'active',
-    users: 856,
-    mrr: 99,
-    health: 'good',
-    lastActivity: '15 min ago',
-  },
-  {
-    id: '3',
-    name: 'Learning Hub',
-    plan: 'Starter',
-    status: 'trial',
-    users: 124,
-    mrr: 0,
-    health: 'warning',
-    lastActivity: '2 hours ago',
-  },
-  {
-    id: '4',
-    name: 'Global Institute',
-    plan: 'Professional',
-    status: 'active',
-    users: 1247,
-    mrr: 99,
-    health: 'excellent',
-    lastActivity: '5 min ago',
-  },
-  {
-    id: '5',
-    name: 'Education Plus',
-    plan: 'Enterprise',
-    status: 'suspended',
-    users: 3421,
-    mrr: 0,
-    health: 'critical',
-    lastActivity: '3 days ago',
-  },
-];
 
 const statusColors = {
   active: 'bg-green-100 text-green-800',
@@ -91,17 +39,48 @@ const healthIcons = {
 
 export function TenantsOverview() {
   const [sortBy, setSortBy] = useState<'name' | 'users' | 'mrr'>('mrr');
+  const { tenants, loading } = useTenants();
 
-  const sortedTenants = [...mockTenants].sort((a, b) => {
+  // Convert API tenants to TenantOverview format with calculated health
+  const tenantOverviews: TenantOverview[] = tenants.map(tenant => {
+    // Calculate health based on activity and status
+    let health: 'excellent' | 'good' | 'warning' | 'critical' = 'good';
+    if (tenant.status === 'suspended' || tenant.status === 'cancelled') {
+      health = 'critical';
+    } else if (tenant.status === 'trial') {
+      health = 'warning';
+    } else if (tenant.status === 'active' && tenant.mrr > 100) {
+      health = 'excellent';
+    }
+
+    // Calculate last activity (you can enhance this with actual API data)
+    const daysSinceUpdate = Math.floor((Date.now() - new Date(tenant.updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+    const lastActivity = daysSinceUpdate === 0 ? 'Today' : 
+                        daysSinceUpdate === 1 ? 'Yesterday' :
+                        `${daysSinceUpdate} days ago`;
+
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      plan: tenant.plan || 'Starter',
+      status: tenant.status,
+      users: tenant.users || 0,
+      mrr: tenant.mrr || 0,
+      health,
+      lastActivity,
+    };
+  });
+
+  const sortedTenants = [...tenantOverviews].sort((a, b) => {
     if (sortBy === 'name') return a.name.localeCompare(b.name);
     if (sortBy === 'users') return b.users - a.users;
     if (sortBy === 'mrr') return b.mrr - a.mrr;
     return 0;
   });
 
-  const totalMRR = mockTenants.reduce((sum, t) => sum + t.mrr, 0);
-  const totalUsers = mockTenants.reduce((sum, t) => sum + t.users, 0);
-  const activeTenants = mockTenants.filter((t) => t.status === 'active').length;
+  const totalMRR = tenantOverviews.reduce((sum, t) => sum + t.mrr, 0);
+  const totalUsers = tenantOverviews.reduce((sum, t) => sum + t.users, 0);
+  const activeTenants = tenantOverviews.filter((t) => t.status === 'active').length;
 
   return (
     <Card>
@@ -136,6 +115,17 @@ export function TenantsOverview() {
         </div>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
+            <span className="text-gray-500">Loading tenants...</span>
+          </div>
+        ) : tenants.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No tenants found. Create your first tenant to get started.
+          </div>
+        ) : (
+          <>
         {/* Sort Controls */}
         <div className="flex items-center gap-2 mb-4">
           <span className="text-sm text-gray-600">Sort by:</span>
@@ -214,6 +204,8 @@ export function TenantsOverview() {
             );
           })}
         </div>
+        </>
+        )}
       </CardContent>
     </Card>
   );
