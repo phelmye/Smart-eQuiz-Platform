@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOpen, CheckCircle, AlertCircle, Eye, RotateCcw, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
+import { useQuestions, useCategories } from '@/hooks/useQuestions';
 
 interface QuestionBankProps {
   onBack: () => void;
@@ -65,7 +66,21 @@ const BIBLE_CATEGORIES = [
 
 export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateToCategories, initialAction }) => {
   const { user, logout } = useAuth();
-  const [questions, setQuestions] = useState<Question[]>([]);
+  
+  // Fetch questions and categories from API
+  const { 
+    questions: apiQuestions, 
+    loading: questionsLoading, 
+    error: questionsError,
+    refetch: refetchQuestions 
+  } = useQuestions();
+  
+  const { 
+    categories: apiCategories, 
+    loading: categoriesLoading,
+    error: categoriesError 
+  } = useCategories();
+  
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(initialAction === 'add');
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -87,104 +102,28 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
     tags: []
   });
 
-  useEffect(() => {
-    loadQuestions();
-  }, [user]);
+  // Map API questions to local format
+  const questions = React.useMemo(() => {
+    return apiQuestions.map(q => ({
+      id: q.id,
+      text: q.prompt,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      category: q.categoryId || 'General',
+      difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+      explanation: '',
+      verse: '',
+      tags: [],
+      createdAt: new Date().toISOString(),
+      createdBy: user?.username || 'unknown',
+      isActive: q.isActive,
+      usageCount: 0
+    }));
+  }, [apiQuestions, user]);
 
   useEffect(() => {
     filterQuestions();
   }, [questions, searchTerm, filterCategory, filterDifficulty, filterStatus]);
-
-  const loadQuestions = () => {
-    const savedQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || generateMockQuestions();
-    setQuestions(savedQuestions);
-    storage.set(STORAGE_KEYS.QUESTIONS, savedQuestions);
-  };
-
-  const generateMockQuestions = (): Question[] => {
-    return [
-      {
-        id: 'q1',
-        text: 'Who was the first man created by God?',
-        options: ['Adam', 'Noah', 'Abraham', 'Moses'],
-        correctAnswer: 0,
-        category: 'Genesis',
-        difficulty: 'easy',
-        explanation: 'Adam was the first man created by God in the Garden of Eden.',
-        verse: 'Genesis 2:7',
-        tags: ['creation', 'adam', 'genesis'],
-        createdAt: '2024-10-20T10:00:00Z',
-        createdBy: 'admin',
-        isActive: true,
-        usageCount: 15
-      },
-      {
-        id: 'q2',
-        text: 'How many days did it take God to create the world?',
-        options: ['5 days', '6 days', '7 days', '8 days'],
-        correctAnswer: 1,
-        category: 'Genesis',
-        difficulty: 'easy',
-        explanation: 'God created the world in 6 days and rested on the 7th day.',
-        verse: 'Genesis 1:31, 2:2',
-        tags: ['creation', 'days', 'genesis'],
-        createdAt: '2024-10-19T14:30:00Z',
-        createdBy: 'admin',
-        isActive: true,
-        usageCount: 22
-      },
-      {
-        id: 'q3',
-        text: 'Who wrote the book of Psalms?',
-        options: ['Solomon', 'David', 'Moses', 'Multiple authors'],
-        correctAnswer: 3,
-        category: 'Psalms',
-        difficulty: 'medium',
-        explanation: 'The book of Psalms was written by multiple authors, including David, Solomon, and others.',
-        verse: 'Psalm 1:1',
-        tags: ['psalms', 'authors', 'david'],
-        createdAt: '2024-10-18T09:15:00Z',
-        createdBy: 'admin',
-        isActive: true,
-        usageCount: 8
-      },
-      {
-        id: 'q4',
-        text: 'What are the fruits of the Spirit mentioned in Galatians?',
-        options: [
-          'Love, Joy, Peace, Patience, Kindness, Goodness, Faithfulness, Gentleness, Self-control',
-          'Faith, Hope, Love',
-          'Wisdom, Knowledge, Understanding',
-          'Truth, Justice, Mercy'
-        ],
-        correctAnswer: 0,
-        category: 'New Testament',
-        difficulty: 'hard',
-        explanation: 'The nine fruits of the Spirit are listed in Galatians 5:22-23.',
-        verse: 'Galatians 5:22-23',
-        tags: ['fruits', 'spirit', 'galatians'],
-        createdAt: '2024-10-17T16:45:00Z',
-        createdBy: 'admin',
-        isActive: true,
-        usageCount: 12
-      },
-      {
-        id: 'q5',
-        text: 'Who betrayed Jesus Christ?',
-        options: ['Peter', 'Judas Iscariot', 'Thomas', 'Matthew'],
-        correctAnswer: 1,
-        category: 'New Testament',
-        difficulty: 'easy',
-        explanation: 'Judas Iscariot betrayed Jesus for thirty pieces of silver.',
-        verse: 'Matthew 26:14-16',
-        tags: ['betrayal', 'judas', 'jesus'],
-        createdAt: '2024-10-16T11:20:00Z',
-        createdBy: 'admin',
-        isActive: false,
-        usageCount: 5
-      }
-    ];
-  };
 
   const filterQuestions = () => {
     let filtered = questions;
@@ -385,6 +324,37 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
   };
 
   const stats = getQuestionStats();
+
+  // Loading state
+  if (questionsLoading || categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (questionsError || categoriesError) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-red-600 mb-4">Error Loading Questions</h2>
+            <p className="text-gray-600 mb-4">{questionsError || categoriesError}</p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => refetchQuestions()}>Try Again</Button>
+              <Button variant="outline" onClick={onBack}>Back to Dashboard</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Allow super_admin, org_admin, and question_manager to access question bank
   if (!user || (!hasPermission(user, 'questions.read') && user.role !== 'org_admin' && user.role !== 'super_admin' && user.role !== 'question_manager')) {
