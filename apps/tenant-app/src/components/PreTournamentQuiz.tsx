@@ -11,6 +11,7 @@ import {
   Loader2, Target, BarChart, TrendingUp 
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthSystem';
+import { useTournaments } from '@/hooks/useTournaments';
 import {
   TournamentApplication,
   QuizAttempt,
@@ -35,6 +36,7 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
   onBack 
 }) => {
   const { user } = useAuth();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
   const [application, setApplication] = useState<TournamentApplication | null>(null);
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -58,11 +60,12 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
     if (app) {
       setApplication(app);
       // Load tournament to get qualification config
-      const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-      const tourn = tournaments.find((t: Tournament) => t.id === app.tournamentId);
-      setTournament(tourn || null);
+      if (!tournamentsLoading && apiTournaments) {
+        const tourn = apiTournaments.find((t: Tournament) => t.id === app.tournamentId);
+        setTournament(tourn || null);
+      }
     }
-  }, [applicationId]);
+  }, [applicationId, apiTournaments, tournamentsLoading]);
 
   useEffect(() => {
     if (quizStarted && timeRemaining > 0) {
