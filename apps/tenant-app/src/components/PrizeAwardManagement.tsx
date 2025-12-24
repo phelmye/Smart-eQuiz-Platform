@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, CheckCircle, Clock, XCircle, DollarSign, Upload, FileText, Mail, Eye, Edit } from 'lucide-react';
+import { Trophy, CheckCircle, Clock, XCircle, DollarSign, Upload, FileText, Mail, Eye, Edit, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,8 @@ import {
   STORAGE_KEYS,
   mockTournaments
 } from '@/lib/mockData';
+import { useUsers } from '@/hooks/useUsers';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface PrizeAwardManagementProps {
   tournamentId: string;
@@ -43,10 +45,16 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
     referenceNumber: '',
     notes: ''
   });
+  
+  // Fetch data from APIs
+  const { users: apiUsers, loading: usersLoading } = useUsers();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
 
   useEffect(() => {
-    loadAwards();
-  }, [tournamentId]);
+    if (!usersLoading && !tournamentsLoading) {
+      loadAwards();
+    }
+  }, [tournamentId, usersLoading, tournamentsLoading]);
 
   useEffect(() => {
     filterAwards();
@@ -66,12 +74,11 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
   };
 
   const getUserDetails = (userId: string): User | null => {
-    const users = storage.get(STORAGE_KEYS.USERS) || [];
-    return users.find((u: User) => u.id === userId) || null;
+    return apiUsers.find((u: User) => u.id === userId) || null;
   };
 
   const getTournamentDetails = (): Tournament | null => {
-    return mockTournaments.find(t => t.id === tournamentId) || null;
+    return apiTournaments.find(t => t.id === tournamentId) || null;
   };
 
   const getStatusBadge = (status: PrizeAward['status']) => {
@@ -150,6 +157,16 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
   const tournament = getTournamentDetails();
   const statusCounts = getStatusCounts();
   const totalValue = getTotalPrizeValue();
+  
+  // Loading state
+  if (usersLoading || tournamentsLoading) {
+    return (
+      <div className=\"flex items-center justify-center p-8\">
+        <Loader2 className=\"h-8 w-8 animate-spin text-blue-600 mr-3\" />
+        <span className=\"text-gray-600\">Loading prize awards...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
