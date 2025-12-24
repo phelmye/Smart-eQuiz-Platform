@@ -17,6 +17,8 @@ import {
   User
 } from '@/lib/mockData';
 import { useMatchLeaderboard } from '@/hooks/useMatchLeaderboard';
+import { useUsers } from '@/hooks/useUsers';
+import { useUsers } from '@/hooks/useUsers';
 
 interface DualLeaderboardProps {
   tournament: Tournament;
@@ -28,14 +30,13 @@ export const DualLeaderboard: React.FC<DualLeaderboardProps> = ({ tournament, te
   const [parishLeaderboard, setParishLeaderboard] = useState<ParishTournamentStats[]>([]);
   const fieldLabels = getFieldLabels(tenantId);
   
-  // Use real API for match leaderboard
+  // Use real API for match leaderboard and users
   const { leaderboard: matchLeaderboard, loading: matchLoading } = useMatchLeaderboard(tournament.id);
+  const { users: apiUsers, loading: usersLoading } = useUsers();
 
-  // Helper function to get user by ID
+  // Helper function to get user by ID from API data
   const getUserById = (userId: string): User | null => {
-    const users = storage.get(STORAGE_KEYS.USERS);
-    if (!users) return null;
-    return users.find((u: User) => u.id === userId) || null;
+    return apiUsers.find((u: User) => u.id === userId) || null;
   };
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export const DualLeaderboard: React.FC<DualLeaderboardProps> = ({ tournament, te
   const showParish = displayMode === 'parish_only' || displayMode === 'dual';
 
   // Show loading state while fetching API data
-  if (matchLoading && individualLeaderboard.length === 0) {
+  if ((matchLoading || usersLoading) && individualLeaderboard.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 flex flex-col items-center justify-center">
