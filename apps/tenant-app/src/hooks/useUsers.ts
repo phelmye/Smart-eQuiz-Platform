@@ -58,9 +58,8 @@ export function useUsers(search?: string, tenantId?: string) {
     try {
       setLoading(true);
       setError(null);
-      // Note: This would need a new method in apiClient
-      // For now, returning empty array
-      setUsers([]);
+      const data = await apiClient.getUsers({ search, tenantId });
+      setUsers(data);
     } catch (err: any) {
       console.error('Failed to fetch users:', err);
       setError(err.message || 'Failed to load users');

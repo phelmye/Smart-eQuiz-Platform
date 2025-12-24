@@ -113,6 +113,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getUsers(params?: { search?: string; tenantId?: string }) {
+    const response = await this.client.get('/users', { params });
+    return response.data;
+  }
+
   // Categories
   async getCategories() {
     const response = await this.client.get('/questions/categories');

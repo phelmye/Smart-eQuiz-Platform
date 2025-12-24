@@ -7,9 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSign, Users, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, User, Tenant, UserRole, mockUsers, getAvailableRolesForTenant, canCreateMoreUsers, defaultPlans, hasPermission, getAssignableRoles, canAssignRole, logAuditEvent } from '@/lib/mockData';
+import { useUsers } from '@/hooks/useUsers';
 
 interface UserManagementProps {
   onBack: () => void;
@@ -18,7 +19,15 @@ interface UserManagementProps {
 
 const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }) => {
   const { user: currentUser, tenant, logout } = useAuth();
-  const [users, setUsers] = useState<User[]>([]);
+  
+  // Fetch users from API
+  const { 
+    users: apiUsers, 
+    loading: usersLoading, 
+    error: usersError,
+    refetch: refetchUsers 
+  } = useUsers(undefined, currentUser?.role === 'org_admin' ? currentUser.tenantId : undefined);
+  
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'add');
@@ -35,29 +44,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
     isActive: true
   });
 
+  // Filter users based on role
+  const users = React.useMemo(() => {
+    if (currentUser?.role === 'super_admin') {
+      return apiUsers;
+    } else if (currentUser?.role === 'org_admin') {
+      return apiUsers.filter((u: User) => u.tenantId === currentUser.tenantId);
+    }
+    return [];
+  }, [apiUsers, currentUser]);
+
   useEffect(() => {
-    loadUsers();
     loadTenants();
   }, [currentUser, tenant]);
 
   useEffect(() => {
     filterUsers();
   }, [users, searchTerm, filterRole, filterStatus]);
-
-  const loadUsers = () => {
-    const savedUsers = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-    let filteredUsers = savedUsers;
-
-    if (currentUser?.role === 'super_admin') {
-      filteredUsers = savedUsers;
-    } else if (currentUser?.role === 'org_admin') {
-      filteredUsers = savedUsers.filter((u: User) => u.tenantId === currentUser.tenantId);
-    } else {
-      filteredUsers = [];
-    }
-
-    setUsers(filteredUsers);
-  };
 
   const loadTenants = () => {
     const savedTenants = storage.get(STORAGE_KEYS.TENANTS) || [];
@@ -315,6 +318,36 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
             <h2 className="text-xl font-bold text-red-600 mb-4">Access Denied</h2>
             <p className="text-gray-600 mb-4">You need admin privileges to manage users.</p>
             <Button onClick={onBack}>Back to Dashboard</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (usersLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (usersError) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-bold text-red-600 mb-4">Error Loading Users</h2>
+            <p className="text-gray-600 mb-4">{usersError}</p>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => refetchUsers()}>Try Again</Button>
+              <Button variant="outline" onClick={onBack}>Back to Dashboard</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
