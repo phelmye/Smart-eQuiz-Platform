@@ -26,6 +26,8 @@ import {
   getAIGenerationRequests,
   updateQuestionStatus
 } from '@/lib/mockData';
+import { useQuestions } from '@/hooks/useQuestions';
+import { useQuestions } from '@/hooks/useQuestions';
 
 interface AIQuestionGeneratorProps {
   onBack: () => void;
@@ -51,6 +53,10 @@ interface PendingQuestion extends Question {
 
 export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack }) => {
   const { user, tenant } = useAuth();
+  
+  // Fetch existing questions from API
+  const { questions: apiQuestions, loading: questionsLoading, refetch: refetchQuestions } = useQuestions();
+  
   const [settings, setSettings] = useState<GenerationSettings>({
     category: '',
     difficulty: 'medium',
@@ -314,6 +320,9 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     allQuestions.push(...questionsToSave);
     storage.set(STORAGE_KEYS.QUESTIONS, allQuestions);
 
+    // Refetch questions from API to update the list
+    refetchQuestions();
+    
     alert(`${questionsToSave.length} questions saved successfully!`);
     setGeneratedQuestions([]);
     setSelectedQuestions([]);
