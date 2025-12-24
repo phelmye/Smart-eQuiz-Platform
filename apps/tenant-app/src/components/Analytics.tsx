@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, BarChart3, TrendingUp, Users, Trophy, DollarSign, Calendar, Download, RefreshCw, LogOut } from 'lucide-react';
+import { ArrowLeft, BarChart3, TrendingUp, Users, Trophy, DollarSign, Calendar, Download, RefreshCw, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
+import { useTournaments } from '@/hooks/useTournaments';
+import { useQuestions } from '@/hooks/useQuestions';
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -34,24 +36,26 @@ interface ExtendedUser extends User {
 
 export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
   const { user, logout } = useAuth();
+  
+  // Fetch data from APIs
+  const { tournaments, loading: tournamentsLoading } = useTournaments();
+  const { questions, loading: questionsLoading } = useQuestions();
+  
   const [timeRange, setTimeRange] = useState('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadAnalyticsData();
-  }, [user, timeRange]);
+    if (!tournamentsLoading && !questionsLoading) {
+      loadAnalyticsData();
+    }
+  }, [user, timeRange, tournaments, questions, tournamentsLoading, questionsLoading]);
 
   const loadAnalyticsData = async () => {
-    setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      // Use mock users for now (users hook will be added later)
       const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
-      const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
-      const questions = storage.get(STORAGE_KEYS.QUESTIONS) || mockQuestions;
+      // Use tournaments and questions from hooks
 
     // Filter data based on user role
     const filteredUsers = user?.role === 'super_admin' ? users : 
@@ -138,10 +142,8 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
       revenueByMonth
     });
 
-    setIsLoading(false);
   } catch (error) {
     console.error('Error loading analytics data:', error);
-    setIsLoading(false);
     // Set default empty data on error
     setAnalyticsData({
       totalUsers: 0,
@@ -195,7 +197,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
     );
   }
 
-  if (isLoading || !analyticsData) {
+  if (tournamentsLoading || questionsLoading || !analyticsData) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -210,7 +212,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
           </div>
           
           <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
         </div>
       </div>
