@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Star, Calendar, Building2, Award, MessageSquare, ExternalLink, ChevronRight } from 'lucide-react';
+import { Trophy, Star, Calendar, Building2, Award, MessageSquare, ExternalLink, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,8 @@ import {
   STORAGE_KEYS,
   mockTournaments
 } from '@/lib/mockData';
+import { useUsers } from '@/hooks/useUsers';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface WinnersHallOfFameProps {
   tenantId?: string;
@@ -35,10 +37,16 @@ export const WinnersHallOfFame: React.FC<WinnersHallOfFameProps> = ({
   const [winners, setWinners] = useState<PrizeAward[]>([]);
   const [selectedView, setSelectedView] = useState<'recent' | 'top_champions'>('recent');
   const [loading, setLoading] = useState(true);
+  
+  // Fetch data from APIs
+  const { users: apiUsers, loading: usersLoading } = useUsers();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
 
   useEffect(() => {
-    loadWinners();
-  }, [tenantId, tournamentId, limit]);
+    if (!usersLoading && !tournamentsLoading) {
+      loadWinners();
+    }
+  }, [tenantId, tournamentId, limit, usersLoading, tournamentsLoading]);
 
   const loadWinners = () => {
     setLoading(true);
@@ -57,15 +65,14 @@ export const WinnersHallOfFame: React.FC<WinnersHallOfFameProps> = ({
     }
   };
 
-  // Get user details
+  // Get user details from API
   const getUserDetails = (userId: string): User | null => {
-    const users = storage.get(STORAGE_KEYS.USERS) || [];
-    return users.find((u: User) => u.id === userId) || null;
+    return apiUsers.find((u: User) => u.id === userId) || null;
   };
 
-  // Get tournament details
+  // Get tournament details from API
   const getTournamentDetails = (tournamentId: string): Tournament | null => {
-    return mockTournaments.find(t => t.id === tournamentId) || null;
+    return apiTournaments.find(t => t.id === tournamentId) || null;
   };
 
   // Get medal emoji
@@ -246,22 +253,13 @@ export const WinnersHallOfFame: React.FC<WinnersHallOfFameProps> = ({
     );
   };
 
-  if (loading) {
+  if (loading || usersLoading || tournamentsLoading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gray-200" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/3" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
+          <span className="text-gray-600">Loading winners...</span>
+        </div>
       </div>
     );
   }
