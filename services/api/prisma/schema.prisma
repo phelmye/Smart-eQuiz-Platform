@@ -63,6 +63,7 @@ model Tenant {
   subscriptionStatus     String?
   isActive               Boolean                @default(true)
   trialEndsAt            DateTime?
+  isSample               Boolean                @default(false) // Flag for demo/sample data
   createdAt              DateTime               @default(now())
   users                  UserTenant[]
   tournaments            Tournament[]
@@ -86,6 +87,7 @@ model User {
   lastName          String?
   phone             String?
   role              Role               @default(PARTICIPANT)
+  isSample          Boolean            @default(false) // Flag for demo/sample data
   createdAt         DateTime           @default(now())
   tenants           UserTenant[]
   tournamentEntries TournamentEntry[]
@@ -552,6 +554,9 @@ model AuditLog {
   ipAddress String?
   userAgent String?
 
+  // Sample data flag
+  isSample Boolean @default(false) // Flag for demo/sample data
+
   // Timestamp
   createdAt DateTime @default(now())
 
@@ -768,6 +773,7 @@ model SupportTicket {
   resolvedAt  DateTime?
   resolvedBy  String?
   resolution  String?        @db.Text
+  isSample    Boolean        @default(false) // Flag for demo/sample data
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -993,6 +999,7 @@ model MarketingBlogPost {
   category       String
   tags           String[] // Array of tags
   status         BlogPostStatus  @default(DRAFT)
+  isSample       Boolean         @default(false) // Flag for demo/sample data
   createdBy      String // User ID
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt

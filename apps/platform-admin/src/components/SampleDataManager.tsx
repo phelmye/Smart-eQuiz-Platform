@@ -18,6 +18,15 @@ interface SampleDataStatus {
   };
 }
 
+interface ClearSampleDataResult {
+  tenants: number;
+  users: number;
+  supportTickets: number;
+  auditLogs: number;
+  blogPosts: number;
+  message: string;
+}
+
 export function SampleDataManager() {
   const [status, setStatus] = useState<SampleDataStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +80,7 @@ export function SampleDataManager() {
 
     try {
       setActing(true);
-      const result = await api.delete('/admin/sample-data');
+      const result = await api.delete<ClearSampleDataResult>('/admin/sample-data');
       toast({
         title: 'Sample Data Cleared',
         description: `Removed ${result.tenants} tenants, ${result.users} users, ${result.auditLogs} logs.`,
