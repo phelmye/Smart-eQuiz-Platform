@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CreditCard, DollarSign, Download, FileText, TrendingUp, Filter, CheckCircle } from 'lucide-react';
+import { formatCurrency } from '@smart-equiz/utils';
 import { useToast } from '../hooks/use-toast';
 import { useBilling } from '../hooks/useBilling';
 import { Button } from '../components/ui/button';

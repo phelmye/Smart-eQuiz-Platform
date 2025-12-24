@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Tenants from './pages/Tenants';
-import Users from './pages/Users';
+// import Users from './pages/Users'; // Temporarily disabled
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Media from './pages/Media';
@@ -35,7 +35,7 @@ export default function App() {
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/tenants" element={<Tenants />} />
-                    <Route path="/users" element={<Users />} />
+                    {/* <Route path="/users" element={<Users />} /> */}
                     <Route path="/analytics" element={<Analytics />} />
                     <Route path="/billing" element={<Billing />} />
                     <Route path="/payments" element={<PaymentIntegration />} />

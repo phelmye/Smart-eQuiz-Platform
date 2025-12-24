@@ -45,8 +45,8 @@ export default function Tenants() {
     createTenant,
     updateTenant,
     deleteTenant,
-    suspendTenant,
-    activateTenant,
+    // suspendTenant,
+    // activateTenant,
   } = useTenants();
   
   const [sorting, setSorting] = useState<SortingState>([]);

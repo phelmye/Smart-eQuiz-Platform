@@ -345,14 +345,10 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mb-1">
-                    {tenant.plan}
+                    Premium
                   </span>
                   <p className="text-xs text-gray-500">
-                    {tenant.status === 'active' ? (
-                      <span className="text-green-600">● Active</span>
-                    ) : (
-                      <span className="text-yellow-600">● Trial</span>
-                    )}
+                    <span className="text-green-600">● Active</span>
                   </p>
                 </div>
               </div>

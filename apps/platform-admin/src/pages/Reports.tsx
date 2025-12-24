@@ -134,7 +134,7 @@ export default function Reports() {
     // Future enhancement: API call to generate and download report file
   };
 
-  const scheduleReport = (reportId: string) => {
+  const scheduleReport = (_reportId: string) => {
     toast({
       title: "Schedule Report",
       description: "Opening scheduling configuration...",
