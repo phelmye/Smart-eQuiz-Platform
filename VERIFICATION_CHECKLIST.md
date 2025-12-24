@@ -1,37 +1,45 @@
 # Platform Verification Checklist
 
-## ✅ CRITICAL FIX APPLIED - December 24, 2025
+## ✅ CRITICAL FIX APPLIED - January 11, 2025
 
-**🚨 AUTHENTICATION TOKEN FIX DEPLOYED** (Commits: 631e2de, 43fc587, 1d06bf6)
+**🚨 STALE HEADERS BUG FIX DEPLOYED** (Commit: 2627bb8)
 
-**Issue Fixed:** Token storage key mismatch causing 401 errors on:
-- `/api/audit/logs`
-- `/api/audit/stats`
-- `/api/marketing-cms/blog-posts/*`
+**Issue Fixed:** Marketing CMS API calls returning 401 despite successful login
+- Blog post updates failing
+- Features/testimonials/pricing management broken
+- All CMS operations returning Unauthorized
 
-**Root Cause:** AuthContext saved token as `platform_admin_token`, but API client read `token`
+**Root Cause:** Headers object created once at hook initialization, captured stale/null token
 
-**Solution:** Updated all localStorage calls to use consistent key `platform_admin_token`
+**Solution:** Changed to `getHeaders()` function that creates headers dynamically with current token
 
-**Status:** ✅ Built successfully, ✅ Pushed to trigger deployment, ⏳ Vercel deploying
+**Files Fixed:**
+- `apps/platform-admin/src/hooks/useMarketingCMS.ts` - 4 methods updated
+- `apps/platform-admin/src/hooks/useMarketingContent.ts` - 12 methods updated
 
-**See:** [TOKEN_AUTH_FIX_SUMMARY.md](TOKEN_AUTH_FIX_SUMMARY.md) for complete details
+**Status:** ✅ Built successfully, ✅ Pushed (2627bb8), ⏳ Vercel deploying
+
+**See:** [STALE_HEADERS_BUG_FIX.md](STALE_HEADERS_BUG_FIX.md) for technical details
 
 ---
 
-## ✅ Completed Tasks
+## ✅ Previously Completed Tasks
 
 - [x] Payment system backend deployed to Render
 - [x] All TypeScript errors fixed (36+ errors)
 - [x] E2E tests passing (6/6)
-- [x] **Token authentication fixed** (commit 631e2de)
+- [x] **Token authentication fixed** (commit 631e2de - Dec 24, 2025)
   - Fixed platform-admin token key mismatch
   - Changed from 'token' to 'platform_admin_token'
-  - Resolved 401 errors on audit logs, billing, marketing CMS
-- [x] **Marketing site token fix** (commit 6b8a6b0)
+  - Resolved 401 errors on audit logs, billing, media library
+- [x] **Marketing site token fix** (commit 6b8a6b0 - Dec 24, 2025)
   - Fixed signup token key from 'access_token' to 'accessToken'
   - Added refreshToken storage for token refresh flow
   - Users no longer need to re-login after signup
+- [x] **Stale headers bug fix** (commit 2627bb8 - Jan 11, 2025)
+  - Fixed useMarketingCMS headers created once at init
+  - Fixed useMarketingContent missing authentication entirely
+  - All marketing CMS operations now authenticated
 - [x] **Comprehensive token storage audit** (4 apps checked)
   - Platform-admin: Fixed
   - Marketing-site: Fixed
@@ -41,8 +49,7 @@
 - [x] Fixed 10 files with 20+ handlers
 - [x] Removed 15 console.log, 1 alert()
 - [x] Verified all navigation links
-- [x] Committed fixes (commits: 631e2de, 6b8a6b0, 6ccea89)
-- [x] Pushed to trigger auto-deployment
+- [x] All changes committed and pushed
 
 ## 🔄 Backend API Verification (Do This First)
 
@@ -148,21 +155,74 @@ VITE_API_URL = https://smart-equiz-api.onrender.com/api
 - ✅ Login successful
 - ✅ Dashboard loads without errors
 - ✅ Navigation menu visible
-- ✅ **NO 401 errors on audit/logs, audit/stats endpoints**
-- ✅ Audit Logs page loads data (was failing before)
+- ✅ **NO 401 errors on audit/logs, audit/stats endpoints** (fixed 631e2de)
+- ✅ Audit Logs page loads data
 - ✅ Billing page shows 4 gateways
+- ✅ **Marketing CMS operations work** (fixed 2627bb8)
+
+**Token Verification (Browser Console):**
+```javascript
+// Should return JWT token string
+localStorage.getItem('platform_admin_token');
+
+// Check it's not null or undefined
+console.log('Token loaded:', !!localStorage.getItem('platform_admin_token'));
+```
 
 **✅ Checklist:**
 - [ ] Login works
 - [ ] Dashboard displays
 - [ ] No console errors (F12)
-- [ ] **No 401 authentication errors** (CRITICAL TEST)
+- [ ] **No 401 authentication errors** (CRITICAL - fixed in 631e2de)
+- [ ] **Token stored correctly** (check console)
 - [ ] Audit Logs page works
 - [ ] Billing page shows gateways
 
 ---
 
-### 4. Test Tenant Operations (CRITICAL FIX) (5 minutes)
+### 4. Test Marketing CMS Operations (NEW TEST - 5 minutes)
+
+**This verifies the stale headers fix (commit 2627bb8)**
+
+**Go to:** Admin Dashboard → Marketing → Marketing Management
+
+**Test Blog Post Update:**
+1. Click on an existing blog post
+2. Edit the title (add " - Updated" to the end)
+3. Click **Save Changes**
+4. **Open browser console (F12) and check Network tab**
+5. Look for: `PUT /api/marketing-cms/blog-posts/{id}`
+6. Should return **200 OK** (not 401 Unauthorized)
+7. Verify changes saved
+
+**Check Request Headers (Network Tab):**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+```
+
+**Test Other CMS Sections:**
+- Features: Try editing a feature
+- Testimonials: Try editing a testimonial
+- Pricing: Try editing a pricing plan
+
+**Expected:**
+- ✅ All PUT requests return 200 OK (not 401)
+- ✅ Authorization header present in all requests
+- ✅ Changes save successfully
+- ✅ No "Unauthorized" errors in console
+
+**✅ Checklist:**
+- [ ] Blog post update works (no 401)
+- [ ] Authorization header present in requests
+- [ ] Changes persist after save
+- [ ] Features management works
+- [ ] Testimonials management works
+- [ ] Pricing management works
+
+---
+
+### 5. Test Tenant Operations (CRITICAL FIX) (5 minutes)
 
 **This verifies the tenant CRUD fix (commit acced03)**
 
