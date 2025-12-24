@@ -26,7 +26,8 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Plus, Edit, Shield, Users, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Shield, Users, AlertCircle, Loader2 } from 'lucide-react';
+import { useUsers } from '@/hooks/useUsers';
 import { 
   User, 
   UserRole,
@@ -44,6 +45,7 @@ interface RoleManagementProps {
 }
 
 export default function RoleManagement({ user }: RoleManagementProps) {
+  const { users: apiUsers, loading: usersLoading, refetch: refetchUsers } = useUsers('', user.tenantId);
   const [users, setUsers] = useState<User[]>([]);
   const [availableRoles, setAvailableRoles] = useState<RolePermission[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
@@ -61,12 +63,11 @@ export default function RoleManagement({ user }: RoleManagementProps) {
       loadUsers();
       setAvailableRoles(getAvailableRolesForTenant(user.tenantId));
     }
-  }, [user.tenantId]);
+  }, [user.tenantId, apiUsers, usersLoading]);
 
   const loadUsers = () => {
-    if (user.tenantId) {
-      const tenantUsers = getUsersByTenant(user.tenantId);
-      setUsers(tenantUsers);
+    if (user.tenantId && !usersLoading && apiUsers) {
+      setUsers(apiUsers);
     }
   };
 
@@ -106,6 +107,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
     // Reset form
     setNewUser({ name: '', email: '', role: '' as UserRole, password: '' });
     setIsAddUserOpen(false);
+    refetchUsers(); // Refresh API data
     loadUsers();
     
     console.log(`✅ User created: ${newUser.name} with role ${newUser.role}`);
@@ -118,6 +120,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
     if (userIndex !== -1) {
       allUsers[userIndex].role = newRole;
       storage.set(STORAGE_KEYS.USERS, allUsers);
+      refetchUsers(); // Refresh API data
       loadUsers();
       setIsEditUserOpen(false);
       setSelectedUser(null);
@@ -133,6 +136,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
     if (userIndex !== -1) {
       allUsers[userIndex].isActive = !allUsers[userIndex].isActive;
       storage.set(STORAGE_KEYS.USERS, allUsers);
+      refetchUsers(); // Refresh API data
       loadUsers();
       
       const status = allUsers[userIndex].isActive ? 'Active' : 'Inactive';
@@ -166,6 +170,18 @@ export default function RoleManagement({ user }: RoleManagementProps) {
         return <Users className="w-4 h-4" />;
     }
   };
+
+  // Show loading state
+  if (usersLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading users...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
