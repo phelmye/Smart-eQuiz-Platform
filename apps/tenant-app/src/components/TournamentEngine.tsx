@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Calendar, DollarSign, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Calendar, DollarSign, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface TournamentEngineProps {
   onBack: () => void;
@@ -19,6 +20,7 @@ interface TournamentEngineProps {
 
 export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, initialAction }) => {
   const { user, tenant, logout } = useAuth();
+  const { tournaments: apiTournaments, loading: tournamentsLoading, refetch: refetchTournaments } = useTournaments();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(initialAction === 'create');
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
@@ -36,11 +38,12 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
 
   useEffect(() => {
     loadTournaments();
-  }, [user, tenant]);
+  }, [user, tenant, apiTournaments, tournamentsLoading]);
 
   const loadTournaments = () => {
-    const savedTournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-    const tenantTournaments = savedTournaments.filter((t: Tournament) => 
+    if (tournamentsLoading || !apiTournaments) return;
+    
+    const tenantTournaments = apiTournaments.filter((t: Tournament) => 
       user?.role === 'super_admin' || t.tenantId === user?.tenantId
     );
     setTournaments(tenantTournaments);
@@ -85,6 +88,7 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
       storage.set(STORAGE_KEYS.TOURNAMENTS, allTournaments);
     }
 
+    refetchTournaments(); // Refresh API data
     loadTournaments();
     setIsCreateDialogOpen(false);
     setEditingTournament(null);
@@ -112,6 +116,7 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
       const allTournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
       const updatedTournaments = allTournaments.filter((t: Tournament) => t.id !== tournamentId);
       storage.set(STORAGE_KEYS.TOURNAMENTS, updatedTournaments);
+      refetchTournaments(); // Refresh API data
       loadTournaments();
     }
   };
@@ -122,6 +127,7 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
       t.id === tournamentId ? { ...t, status: newStatus } : t
     );
     storage.set(STORAGE_KEYS.TOURNAMENTS, updatedTournaments);
+    refetchTournaments(); // Refresh API data
     loadTournaments();
   };
 
@@ -160,6 +166,20 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
             <Button onClick={onBack}>Back to Dashboard</Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (tournamentsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading tournaments...</span>
+          </div>
+        </div>
       </div>
     );
   }
