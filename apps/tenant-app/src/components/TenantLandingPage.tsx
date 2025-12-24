@@ -10,6 +10,7 @@ import { TenantAvatar } from '@/components/TenantAvatar';
 import { PrivacyPolicy } from '@/components/PrivacyPolicy';
 import { TermsOfService } from '@/components/TermsOfService';
 import { useLandingPageContent } from '@/hooks/useLandingPageContent';
+import { useTournaments } from '@/hooks/useTournaments';
 
 // Local currency formatter
 const formatCurrency = (amount: number, currency: string = 'USD', locale: string = 'en-US'): string => {
@@ -119,10 +120,14 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
     features: (apiContent.FEATURES?.content as TenantLandingContent['features']) || defaultLandingContent(tenant.name).features,
     branding: (apiContent.BRANDING?.content as TenantLandingContent['branding']) || defaultLandingContent(tenant.name).branding,
   };
+  
+  // Fetch tournaments from API
+  const { tournaments, loading: tournamentsLoading } = useTournaments();
 
   useEffect(() => {
+    if (tournamentsLoading) return;
+    
     // Load tournaments for this tenant
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || mockTournaments;
     const tenantTournaments = tournaments.filter((t: Tournament) => t.tenantId === tenant.id);
     
     // Priority 1: Show upcoming/active tournament
@@ -152,7 +157,7 @@ export const TenantLandingPage: React.FC<TenantLandingPageProps> = ({ tenant, on
     const plans = storage.get(STORAGE_KEYS.PLANS) || defaultPlans;
     const tenantPlan = plans.find((p: Plan) => p.id === tenant.planId);
     setPlan(tenantPlan || null);
-  }, [tenant.id, tenant.planId]);
+  }, [tenant.id, tenant.planId, tournaments, tournamentsLoading]);
 
   const handleCTAClick = () => {
     setShowAuthModal(true);
