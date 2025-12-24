@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Crown, Users, Building2, Trophy, TrendingUp } from 'lucide-react';
+import { Crown, Users, Building2, Trophy, TrendingUp, Loader2 } from 'lucide-react';
 import {
   Tournament,
   TournamentApplication,
@@ -16,6 +16,7 @@ import {
   STORAGE_KEYS,
   User
 } from '@/lib/mockData';
+import { useMatchLeaderboard } from '@/hooks/useMatchLeaderboard';
 
 interface DualLeaderboardProps {
   tournament: Tournament;
@@ -26,6 +27,9 @@ export const DualLeaderboard: React.FC<DualLeaderboardProps> = ({ tournament, te
   const [individualLeaderboard, setIndividualLeaderboard] = useState<TournamentApplication[]>([]);
   const [parishLeaderboard, setParishLeaderboard] = useState<ParishTournamentStats[]>([]);
   const fieldLabels = getFieldLabels(tenantId);
+  
+  // Use real API for match leaderboard
+  const { leaderboard: matchLeaderboard, loading: matchLoading } = useMatchLeaderboard(tournament.id);
 
   // Helper function to get user by ID
   const getUserById = (userId: string): User | null => {
@@ -36,23 +40,38 @@ export const DualLeaderboard: React.FC<DualLeaderboardProps> = ({ tournament, te
 
   useEffect(() => {
     loadLeaderboards();
-  }, [tournament.id]);
+  }, [tournament.id, matchLeaderboard]);
 
   const loadLeaderboards = () => {
-    // Get all applications for this tournament
-    const applications = getTournamentApplications(tournament.id);
-    
-    // Individual leaderboard: Sort by final score
-    const qualifiedApps = applications.filter(app => 
-      app.status === 'qualified' || app.status === 'auto_qualified'
-    );
-    const sortedIndividual = qualifiedApps
-      .filter(app => app.finalScore !== undefined)
-      .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
-    
-    setIndividualLeaderboard(sortedIndividual);
+    // Use real API data for individual leaderboard if available
+    if (matchLeaderboard && matchLeaderboard.length > 0) {
+      // Convert match leaderboard to TournamentApplication format for display
+      const apiBasedLeaderboard = matchLeaderboard.map((entry, index) => ({
+        id: entry.userId,
+        tournamentId: tournament.id,
+        userId: entry.userId,
+        status: 'qualified' as const,
+        finalScore: entry.score,
+        rank: index + 1,
+        // Optional fields
+        applicationDate: new Date().toISOString(),
+        parishId: undefined,
+        customFields: {},
+      }));
+      setIndividualLeaderboard(apiBasedLeaderboard);
+    } else {
+      // Fallback to mock data for backwards compatibility
+      const applications = getTournamentApplications(tournament.id);
+      const qualifiedApps = applications.filter(app => 
+        app.status === 'qualified' || app.status === 'auto_qualified'
+      );
+      const sortedIndividual = qualifiedApps
+        .filter(app => app.finalScore !== undefined)
+        .sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
+      setIndividualLeaderboard(sortedIndividual);
+    }
 
-    // Parish leaderboard
+    // Parish leaderboard (still using mock data - TODO: Create API endpoint)
     if (tournament.parishScoringConfig?.enabled) {
       const parishStats = getParishLeaderboard(tournament.id);
       setParishLeaderboard(parishStats);
@@ -69,6 +88,18 @@ export const DualLeaderboard: React.FC<DualLeaderboardProps> = ({ tournament, te
   const displayMode = tournament.parishScoringConfig?.displayMode || 'dual';
   const showIndividual = displayMode === 'individual_only' || displayMode === 'dual';
   const showParish = displayMode === 'parish_only' || displayMode === 'dual';
+
+  // Show loading state while fetching API data
+  if (matchLoading && individualLeaderboard.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-8 flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-4" />
+          <p className="text-gray-600">Loading leaderboard...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // If only one view is enabled, show it directly
   if (showIndividual && !showParish) {
