@@ -169,6 +169,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getLiveTournament(id: string) {
+    const response = await this.client.get(`/tournaments/${id}/live`);
+    return response.data;
+  }
+
   async createTournament(data: {
     name: string;
     description?: string;

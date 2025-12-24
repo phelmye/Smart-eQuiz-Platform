@@ -144,4 +144,75 @@ export class TournamentsService {
       },
     });
   }
+
+  async getLiveData(tenantId: string, tournamentId: string) {
+    const tournament = await this.prisma.tournament.findFirst({
+      where: { id: tournamentId, tenantId },
+      include: {
+        TournamentParticipant: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            score: 'desc',
+          },
+        },
+        questions: true,
+      },
+    });
+
+    if (!tournament) {
+      throw new Error('Tournament not found');
+    }
+
+    // Calculate metrics
+    const participants = tournament.TournamentParticipant || [];
+    const totalParticipants = participants.length;
+    const activeParticipants = participants.filter(p => !p.completedAt).length;
+    const finishedParticipants = participants.filter(p => p.completedAt).length;
+    
+    // Format participant data
+    const participantData = participants.map((p, index) => ({
+      userId: p.userId,
+      displayName: p.user?.email || 'Unknown',
+      currentScore: p.score || 0,
+      correctAnswers: p.correctAnswers || 0,
+      averageTime: p.averageResponseTime || 0,
+      status: p.completedAt ? 'finished' : 'active',
+      rank: index + 1,
+    }));
+
+    // Calculate averages
+    const totalScore = participants.reduce((sum, p) => sum + (p.score || 0), 0);
+    const averageScore = totalParticipants > 0 ? Math.round(totalScore / totalParticipants) : 0;
+    
+    const totalTime = participants.reduce((sum, p) => sum + (p.averageResponseTime || 0), 0);
+    const averageTimePerQuestion = totalParticipants > 0 ? Math.round(totalTime / totalParticipants) : 0;
+
+    return {
+      tournamentId: tournament.id,
+      status: tournament.status,
+      participants: participantData,
+      metrics: {
+        totalParticipants,
+        activeParticipants,
+        finishedParticipants,
+        droppedParticipants: 0, // TODO: Track disconnections
+        averageScore,
+        averageTimePerQuestion,
+      },
+      questionProgress: {
+        currentQuestion: tournament.currentQuestionIndex || 0,
+        totalQuestions: tournament.questions?.length || 0,
+        answeredBy: activeParticipants,
+        averageTime: averageTimePerQuestion,
+      },
+      lastUpdated: new Date().toISOString(),
+    };
+  }
 }

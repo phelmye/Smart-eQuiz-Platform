@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +14,11 @@ import {
 } from '@/components/ui/table';
 import { 
   Trophy, Eye, Clock, Users, TrendingUp, 
-  BarChart, Activity, Zap, Award, Target 
+  BarChart, Activity, Zap, Award, Target, AlertCircle 
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthSystem';
-import { Tournament, LiveTournamentView } from '@/lib/mockData';
+import { Tournament } from '@/lib/mockData';
+import { useLiveTournament } from '@/hooks/useLiveTournament';
 
 interface LiveTournamentSpectatorProps {
   tournament: Tournament;
@@ -30,95 +31,39 @@ export const LiveTournamentSpectator: React.FC<LiveTournamentSpectatorProps> = (
 }) => {
   const { user } = useAuth();
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [liveData, setLiveData] = useState<LiveTournamentView>({
-    tournamentId: tournament.id,
-    status: tournament.status as 'upcoming' | 'in_progress' | 'completed',
-    participants: [
-      {
-        userId: 'user_1',
-        displayName: 'John Doe',
-        currentScore: 850,
-        correctAnswers: 17,
-        averageTime: 45,
-        status: 'active',
-        rank: 1
-      },
-      {
-        userId: 'user_2',
-        displayName: 'Jane Smith',
-        currentScore: 820,
-        correctAnswers: 16,
-        averageTime: 52,
-        status: 'active',
-        rank: 2
-      },
-      {
-        userId: 'user_3',
-        displayName: 'Mike Johnson',
-        currentScore: 780,
-        correctAnswers: 15,
-        averageTime: 48,
-        status: 'active',
-        rank: 3
-      },
-      {
-        userId: 'user_4',
-        displayName: 'Sarah Wilson',
-        currentScore: 750,
-        correctAnswers: 15,
-        averageTime: 55,
-        status: 'finished',
-        rank: 4
-      },
-      {
-        userId: 'user_5',
-        displayName: 'Tom Brown',
-        currentScore: 720,
-        correctAnswers: 14,
-        averageTime: 60,
-        status: 'active',
-        rank: 5
-      },
-    ],
-    metrics: {
-      totalParticipants: 50,
-      activeParticipants: 48,
-      finishedParticipants: 2,
-      droppedParticipants: 0,
-      averageScore: 650,
-      averageTimePerQuestion: 52
-    },
-    questionProgress: {
-      currentQuestion: 17,
-      totalQuestions: 20,
-      answeredBy: 48,
-      averageTime: 48
-    },
-    lastUpdated: new Date().toISOString()
-  });
+  const { data: liveData, loading, error } = useLiveTournament(tournament.id, autoRefresh, 3000);
 
-  // Simulate real-time updates
-  useEffect(() => {
-    if (!autoRefresh) return;
+  if (loading && !liveData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Activity className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-lg text-gray-600">Loading live tournament data...</p>
+        </div>
+      </div>
+    );
+  }
 
-    const interval = setInterval(() => {
-      // Simulate score updates
-      setLiveData(prev => ({
-        ...prev,
-        participants: prev.participants.map(p => ({
-          ...p,
-          currentScore: p.currentScore + Math.floor(Math.random() * 10),
-          correctAnswers: p.correctAnswers + (Math.random() > 0.7 ? 1 : 0)
-        })).sort((a, b) => b.currentScore - a.currentScore).map((p, idx) => ({
-          ...p,
-          rank: idx + 1
-        })),
-        lastUpdated: new Date().toISOString()
-      }));
-    }, 3000); // Update every 3 seconds
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Live Data</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            {onBack && (
+              <Button onClick={onBack}>← Go Back</Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
+  if (!liveData) {
+    return null;
+  }
 
   const getRankBadge = (rank: number) => {
     if (rank === 1) return '🥇';

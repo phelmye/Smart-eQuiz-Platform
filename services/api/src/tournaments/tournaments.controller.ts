@@ -108,4 +108,10 @@ export class TournamentsController {
     const userId = req.user.sub;
     return this.tournamentsService.enterTournament(tournamentId, userId);
   }
+
+  @Get(':id/live')
+  getLiveData(@Request() req, @Param('id') id: string) {
+    const tenantId = req.user.tenantId || 'default';
+    return this.tournamentsService.getLiveData(tenantId, id);
+  }
 }
