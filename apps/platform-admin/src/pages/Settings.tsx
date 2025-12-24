@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { SampleDataManager } from '@/components/SampleDataManager';
 
 export default function Settings() {
   const { toast } = useToast();
@@ -129,6 +130,10 @@ export default function Settings() {
             <Globe className="mr-2 h-4 w-4" />
             General
           </TabsTrigger>
+          <TabsTrigger value="data">
+            <Globe className="mr-2 h-4 w-4" />
+            Data Management
+          </TabsTrigger>
           <TabsTrigger value="security">
             <Shield className="mr-2 h-4 w-4" />
             Security
@@ -218,6 +223,11 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Data Management Settings */}
+        <TabsContent value="data">
+          <SampleDataManager />
         </TabsContent>
 
         {/* Security Settings */}
