@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, Edit, Trash2, Building, Users, Calendar, Crown } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Building, Users, Calendar, Crown, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tenant, User, Tournament, hasPermission } from '@/lib/mockData';
+import { useUsers } from '@/hooks/useUsers';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface TenantManagementProps {
   onBack: () => void;
@@ -17,6 +19,8 @@ interface TenantManagementProps {
 
 export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) => {
   const { user } = useAuth();
+  const { users: apiUsers, loading: usersLoading } = useUsers();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -33,7 +37,7 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
   useEffect(() => {
     loadTenants();
     loadUsers();
-  }, []);
+  }, [apiUsers, usersLoading]);
 
   const loadTenants = () => {
     const savedTenants = storage.get(STORAGE_KEYS.TENANTS) || [];
@@ -41,8 +45,9 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
   };
 
   const loadUsers = () => {
-    const savedUsers = storage.get(STORAGE_KEYS.USERS) || [];
-    setUsers(savedUsers);
+    if (!usersLoading && apiUsers) {
+      setUsers(apiUsers);
+    }
   };
 
   const handleCreateTenant = () => {
@@ -114,8 +119,7 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
 
   const getTenantStats = (tenantId: string) => {
     const tenantUsers = users.filter(u => u.tenantId === tenantId);
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-    const tenantTournaments = tournaments.filter((t: Tournament) => t.tenantId === tenantId);
+    const tenantTournaments = apiTournaments?.filter((t: Tournament) => t.tenantId === tenantId) || [];
     
     return {
       userCount: tenantUsers.length,
@@ -147,6 +151,20 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
             <Button onClick={onBack}>Back to Dashboard</Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (usersLoading || tournamentsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading tenant data...</span>
+          </div>
+        </div>
       </div>
     );
   }
