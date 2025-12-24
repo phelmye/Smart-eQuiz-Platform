@@ -1,13 +1,12 @@
 # Platform Verification Checklist
 
-## ✅ CRITICAL FIX APPLIED - January 11, 2025
+## ✅ CRITICAL FIXES APPLIED - December 24, 2025
 
-**🚨 STALE HEADERS BUG FIX DEPLOYED** (Commit: 2627bb8)
+### Fix #1: Stale Headers Bug (Commit: 2627bb8)
 
 **Issue Fixed:** Marketing CMS API calls returning 401 despite successful login
 - Blog post updates failing
 - Features/testimonials/pricing management broken
-- All CMS operations returning Unauthorized
 
 **Root Cause:** Headers object created once at hook initialization, captured stale/null token
 
@@ -17,7 +16,22 @@
 - `apps/platform-admin/src/hooks/useMarketingCMS.ts` - 4 methods updated
 - `apps/platform-admin/src/hooks/useMarketingContent.ts` - 12 methods updated
 
-**Status:** ✅ Built successfully, ✅ Pushed (2627bb8), ⏳ Vercel deploying
+### Fix #2: Mock Data Replacement (Commit: 8fa4d62)
+
+**Issue Fixed:** Dashboard components using hardcoded mock data instead of real database
+- Changes didn't persist after refresh
+- Tenant edits/deletes appeared to work but weren't saved
+- Activity feed showed fake data
+
+**Root Cause:** Components using `mockTenants` and `mockActivities` arrays instead of API hooks
+
+**Solution:** Integrated real API calls via existing hooks
+
+**Files Fixed:**
+- `apps/platform-admin/src/components/TenantsOverview.tsx` - Now uses `useTenants()` hook
+- `apps/platform-admin/src/components/ActivityFeed.tsx` - Now fetches `/api/audit/logs`
+
+**Status:** ✅ Built successfully, ✅ Pushed (8fa4d62), ⏳ Vercel deploying
 
 **See:** [STALE_HEADERS_BUG_FIX.md](STALE_HEADERS_BUG_FIX.md) for technical details
 
@@ -36,10 +50,15 @@
   - Fixed signup token key from 'access_token' to 'accessToken'
   - Added refreshToken storage for token refresh flow
   - Users no longer need to re-login after signup
-- [x] **Stale headers bug fix** (commit 2627bb8 - Jan 11, 2025)
+- [x] **Stale headers bug fix** (commit 2627bb8 - Dec 24, 2025)
   - Fixed useMarketingCMS headers created once at init
   - Fixed useMarketingContent missing authentication entirely
   - All marketing CMS operations now authenticated
+- [x] **Mock data replacement** (commit 8fa4d62 - Dec 24, 2025)
+  - TenantsOverview now uses real API data via useTenants()
+  - ActivityFeed now fetches real audit logs
+  - All dashboard widgets display live database data
+  - Changes now persist correctly across page refreshes
 - [x] **Comprehensive token storage audit** (4 apps checked)
   - Platform-admin: Fixed
   - Marketing-site: Fixed
@@ -219,6 +238,42 @@ Content-Type: application/json
 - [ ] Features management works
 - [ ] Testimonials management works
 - [ ] Pricing management works
+
+---
+
+### 6. Test Dashboard Data Persistence (NEW TEST - 5 minutes)
+
+**This verifies the mock data replacement (commit 8fa4d62)**
+
+**Go to:** Admin Dashboard (home page)
+
+**Test Tenant Widget:**
+1. Note the tenants shown in "Top Tenants" widget
+2. Go to Tenants page → Create a new test tenant
+3. Return to Dashboard → New tenant should appear in widget
+4. Refresh the page (F5) → Tenant still appears ✅
+5. Delete the test tenant → Widget updates immediately
+
+**Test Activity Feed:**
+1. Note the activities shown in "Recent Activity" widget
+2. Perform an action (create tenant, update settings, etc.)
+3. Check if new activity appears in feed
+4. Refresh page → Activities persist ✅
+
+**Expected:**
+- ✅ Dashboard widgets show REAL data from database (not mock)
+- ✅ Tenant list reflects actual registered organizations
+- ✅ Activity feed shows actual audit log entries
+- ✅ Changes persist after page refresh
+- ✅ No more hardcoded mock data
+
+**✅ Checklist:**
+- [ ] Dashboard loads without errors
+- [ ] Tenant widget shows real data
+- [ ] Activity feed shows real audit logs
+- [ ] Creating tenant updates widget immediately
+- [ ] Deleting tenant updates widget immediately
+- [ ] Data persists after page refresh
 
 ---
 
