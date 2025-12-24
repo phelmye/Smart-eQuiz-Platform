@@ -50,6 +50,8 @@ import ReportingExports from './ReportingExports';
 import { ChatPage } from '../pages/ChatPage';
 import ApiManagementPage from '../pages/ApiManagementPage';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
+import { usePracticeStats } from '@/hooks/usePracticeStats';
+import { usePracticeLeaderboard } from '@/hooks/usePracticeLeaderboard';
 
 interface DashboardProps {
   onNavigate: (page: string) => void;
@@ -57,18 +59,22 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user, tenant, logout } = useAuth();
+  const { stats: practiceStats } = usePracticeStats();
+  const { leaderboard: practiceLeaderboard } = usePracticeLeaderboard(undefined, 5);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [currentAction, setCurrentAction] = useState<string | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [checkoutData, setCheckoutData] = useState<any>(null);
-  const [userStats, setUserStats] = useState({
-    totalQuizzes: 0,
-    averageScore: 0,
-    winRate: 0,
-    currentStreak: 0
-  });
+
+  // User stats derived from practice stats API
+  const userStats = {
+    totalQuizzes: practiceStats?.totalQuizzes || 0,
+    averageScore: Math.round(practiceStats?.accuracy || 0),
+    winRate: Math.round(practiceStats?.accuracy || 0), // Using accuracy as proxy for win rate
+    currentStreak: practiceStats?.currentStreak || 0
+  };
 
   // Check if user has admin or management role (should see sidebar)
   const isAdmin = user?.role && ['super_admin', 'org_admin', 'question_manager', 'account_officer', 'inspector', 'moderator'].includes(user.role.toLowerCase());
@@ -81,14 +87,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     } else {
       setTournaments(savedTournaments.filter((t: Tournament) => t.tenantId === user?.tenantId));
     }
-
-    // Calculate user stats (mock data)
-    setUserStats({
-      totalQuizzes: Math.floor(Math.random() * 50) + 10,
-      averageScore: Math.floor(Math.random() * 30) + 70,
-      winRate: Math.floor(Math.random() * 40) + 30,
-      currentStreak: Math.floor(Math.random() * 10) + 1
-    });
   }, [user]);
 
   const getCurrentLevel = () => {
