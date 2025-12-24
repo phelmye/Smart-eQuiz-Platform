@@ -17,8 +17,8 @@ const API_BASE = process.env.API_URL || 'http://localhost:3000/api';
 
 // Test credentials (super_admin)
 const TEST_USER = {
-  email: 'admin@demo.local',
-  password: 'password123'
+  email: 'super@admin.com',
+  password: 'SuperAdmin123!'
 };
 
 /**
@@ -252,7 +252,7 @@ async function run() {
     const token = await login();
 
     // Test 2: List gateways
-    const gateways = await testGetGateways(token);
+    const gatewaysData = await testGetGateways(token);
 
     // Test 3: Get all transactions
     const transactions = await testGetAllTransactions(token);
@@ -275,7 +275,7 @@ async function run() {
     console.log('✅ ALL TESTS PASSED');
     console.log('='.repeat(50));
     console.log('\nResults:');
-    console.log(`- Configured Gateways: ${gateways.filter(g => g.configured).length}/${gateways.length}`);
+    console.log(`- Configured Gateways: ${gatewaysData.gateways.filter(g => g.configured).length}/${gatewaysData.totalGateways}`);
     console.log(`- Total Transactions: ${transactions.length}`);
     console.log(`- Total Revenue: $${(stats.totalRevenue / 100).toFixed(2)}`);
     console.log(`- Providers with revenue: ${stats.byProvider.length}`);
