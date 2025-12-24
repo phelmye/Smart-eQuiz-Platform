@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target, Layers, BookTemplate, Tags } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, Trophy, DollarSign, Settings, Play, Shield, Target, Layers, BookTemplate, Tags, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { 
   storage, 
@@ -29,6 +29,7 @@ import {
   getAllParishes,
   RoundQuestionConfig
 } from '@/lib/mockData';
+import { useQuestions } from '@/hooks/useQuestions';
 import { UpgradePrompt } from './UpgradePrompt';
 import RoundQuestionConfigBuilder from './RoundQuestionConfigBuilder';
 import { TemplateLibrary } from './TemplateLibrary';
@@ -41,9 +42,33 @@ interface TournamentBuilderProps {
 
 export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, onNavigate }) => {
   const { user, tenant } = useAuth();
+  
+  // Fetch questions from API
+  const { questions: apiQuestions, loading: questionsLoading } = useQuestions();
+  
   const [currentStep, setCurrentStep] = useState(1);
-  const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
   const [parishes, setParishes] = useState<any[]>([]);
+  
+  // Filter questions by tenant and map to local format
+  const availableQuestions = React.useMemo(() => {
+    return apiQuestions.map(q => ({
+      id: q.id,
+      text: q.prompt,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
+      category: q.categoryId || 'General',
+      difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+      tenantId: user?.tenantId || '',
+      tags: [],
+      createdAt: new Date().toISOString(),
+      createdBy: user?.username || 'unknown',
+      isActive: q.isActive,
+      usageCount: 0
+    } as Question)).filter((q: Question) => 
+      user?.role === 'super_admin' || q.tenantId === user?.tenantId
+    );
+  }, [apiQuestions, user]);
+  
   const [roundConfigDialogOpen, setRoundConfigDialogOpen] = useState(false);
   const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [customCategoryOpen, setCustomCategoryOpen] = useState(false);
@@ -91,17 +116,8 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   });
 
   useEffect(() => {
-    loadQuestions();
     loadParishes();
   }, [user, tenant]);
-
-  const loadQuestions = () => {
-    const savedQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
-    const tenantQuestions = savedQuestions.filter((q: Question) => 
-      user?.role === 'super_admin' || q.tenantId === user?.tenantId
-    );
-    setAvailableQuestions(tenantQuestions);
-  };
 
   const loadParishes = () => {
     const allParishes = getAllParishes();
@@ -213,6 +229,18 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
             <Button onClick={onBack}>Back to Dashboard</Button>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (questionsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading questions...</p>
+        </div>
       </div>
     );
   }
