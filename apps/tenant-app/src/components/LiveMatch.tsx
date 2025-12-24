@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Clock, Users, Trophy, Zap, Crown, Target } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Trophy, Zap, Crown, Target, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tournament, Question, User } from '@/lib/mockData';
+import { useMatches } from '@/hooks/useMatches';
+import { useMatchLeaderboard } from '@/hooks/useMatchLeaderboard';
 
 interface LiveMatchProps {
   onBack: () => void;
@@ -18,10 +20,10 @@ interface MatchState {
   currentQuestionIndex: number;
   timeLeft: number;
   participants: User[];
-  leaderboard: { userId: string; score: number; timeUsed: number }[];
   userAnswers: { [questionId: string]: number };
   isSpectating: boolean;
   matchPhase: 'waiting' | 'active' | 'between' | 'completed';
+  matchId?: string;
 }
 
 export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
@@ -29,10 +31,27 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   const [matchState, setMatchState] = useState<MatchState | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
+  
+  // Load active tournament first to get tournament ID
+  const activeTournament = React.useMemo(() => {
+    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
+    return tournaments.find((t: Tournament) => 
+      t.status === 'active' && (
+        user?.role === 'super_admin' || 
+        t.tenantId === user?.tenantId
+      )
+    );
+  }, [user]);
+  
+  // Use real API hooks
+  const { matches, loading: matchesLoading } = useMatches(activeTournament?.id);
+  const { leaderboard, loading: leaderboardLoading } = useMatchLeaderboard(activeTournament?.id || '');
 
   useEffect(() => {
-    loadActiveTournament();
-  }, [user]);
+    if (activeTournament && matches.length > 0) {
+      loadActiveTournament();
+    }
+  }, [activeTournament, matches, user]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -47,17 +66,11 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   }, [matchState?.timeLeft, matchState?.matchPhase]);
 
   const loadActiveTournament = () => {
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-    const activeTournament = tournaments.find((t: Tournament) => 
-      t.status === 'active' && (
-        user?.role === 'super_admin' || 
-        t.tenantId === user?.tenantId
-      )
-    );
+    if (!activeTournament) return;
 
-    if (!activeTournament) {
-      return;
-    }
+    // Find active match
+    const activeMatch = matches.find(m => m.status === 'active');
+    if (!activeMatch) return;
 
     const questions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     const tournamentQuestions = questions.filter((q: Question) => 
@@ -72,23 +85,16 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
     const isParticipating = user && activeTournament.participants.includes(user.id);
     const isSpectating = !isParticipating;
 
-    // Generate mock leaderboard
-    const leaderboard = participants.map((participant: User) => ({
-      userId: participant.id,
-      score: Math.floor(Math.random() * 8) + 2, // Random score between 2-10
-      timeUsed: Math.floor(Math.random() * 300) + 60 // Random time between 60-360 seconds
-    })).sort((a, b) => b.score - a.score || a.timeUsed - b.timeUsed);
-
     setMatchState({
       tournament: activeTournament,
       questions: tournamentQuestions,
-      currentQuestionIndex: Math.floor(Math.random() * tournamentQuestions.length), // Simulate current question
-      timeLeft: 25, // 25 seconds left on current question
+      currentQuestionIndex: activeMatch.currentQuestionIndex || 0,
+      timeLeft: 25, // Default time, would come from match in production
       participants,
-      leaderboard,
       userAnswers: {},
       isSpectating,
-      matchPhase: 'active'
+      matchPhase: activeMatch.status as 'waiting' | 'active' | 'completed',
+      matchId: activeMatch.id,
     });
   };
 
@@ -109,17 +115,10 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
     setMatchState(prev => prev ? { ...prev, userAnswers: newAnswers } : null);
     setHasAnswered(true);
 
-    // Update user's score in leaderboard
-    const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
-    if (isCorrect && user) {
-      const updatedLeaderboard = matchState.leaderboard.map(entry => 
-        entry.userId === user.id 
-          ? { ...entry, score: entry.score + 1 }
-          : entry
-      ).sort((a, b) => b.score - a.score || a.timeUsed - b.timeUsed);
-
-      setMatchState(prev => prev ? { ...prev, leaderboard: updatedLeaderboard } : null);
-    }
+    // TODO: Submit answer to API
+    // const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+    // await apiClient.submitMatchAnswer(matchState.matchId, currentQuestion.id, selectedAnswer);
+    // Leaderboard will auto-update from useMatchLeaderboard hook
   };
 
   const handleTimeUp = () => {
@@ -147,9 +146,22 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   };
 
   const getUserRank = () => {
-    if (!user || !matchState) return 0;
-    return matchState.leaderboard.findIndex(entry => entry.userId === user.id) + 1;
+    if (!user || !leaderboard) return 0;
+    const index = leaderboard.findIndex(entry => entry.userId === user.id);
+    return index !== -1 ? index + 1 : 0;
   };
+
+  // Loading state
+  if (matchesLoading || leaderboardLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <p className="text-lg text-gray-600">Loading match data...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!matchState) {
     return (
@@ -181,7 +193,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   }
 
   if (matchState.matchPhase === 'completed') {
-    const userEntry = matchState.leaderboard.find(entry => entry.userId === user?.id);
+    const userEntry = leaderboard.find(entry => entry.userId === user?.id);
     const userRank = getUserRank();
 
     return (
@@ -212,7 +224,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
                   Final Leaderboard
                 </h3>
                 <div className="space-y-2">
-                  {matchState.leaderboard.slice(0, 10).map((entry, index) => {
+                  {leaderboard.slice(0, 10).map((entry, index) => {
                     const participant = getUserById(entry.userId);
                     if (!participant) return null;
 
@@ -397,7 +409,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {matchState.leaderboard.slice(0, 8).map((entry, index) => {
+                  {leaderboard.slice(0, 8).map((entry, index) => {
                     const participant = getUserById(entry.userId);
                     if (!participant) return null;
 
