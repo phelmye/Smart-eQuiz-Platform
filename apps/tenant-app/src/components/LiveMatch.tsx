@@ -9,6 +9,8 @@ import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tournament, Question, User } from '@/lib/mockData';
 import { useMatches } from '@/hooks/useMatches';
 import { useMatchLeaderboard } from '@/hooks/useMatchLeaderboard';
+import { useQuestions } from '@/hooks/useQuestions';
+import { useUsers } from '@/hooks/useUsers';
 
 interface LiveMatchProps {
   onBack: () => void;
@@ -28,6 +30,11 @@ interface MatchState {
 
 export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   const { user } = useAuth();
+  
+  // Fetch data from APIs
+  const { questions: apiQuestions, loading: questionsLoading } = useQuestions();
+  const { users: apiUsers, loading: usersLoading } = useUsers();
+  
   const [matchState, setMatchState] = useState<MatchState | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -72,13 +79,25 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
     const activeMatch = matches.find(m => m.status === 'active');
     if (!activeMatch) return;
 
-    const questions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
-    const tournamentQuestions = questions.filter((q: Question) => 
-      activeTournament.questions.includes(q.id)
-    );
+    // Use API questions and users
+    const tournamentQuestions = apiQuestions
+      .filter(q => activeTournament.questions.includes(q.id))
+      .map(q => ({
+        id: q.id,
+        text: q.prompt,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        category: q.categoryId || 'General',
+        difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+        tenantId: user?.tenantId || '',
+        tags: [],
+        createdAt: new Date().toISOString(),
+        createdBy: user?.username || 'unknown',
+        isActive: q.isActive,
+        usageCount: 0
+      } as Question));
 
-    const users = storage.get(STORAGE_KEYS.USERS) || [];
-    const participants = users.filter((u: User) => 
+    const participants = apiUsers.filter((u: User) => 
       activeTournament.participants.includes(u.id)
     );
 
@@ -152,7 +171,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   };
 
   // Loading state
-  if (matchesLoading || leaderboardLoading) {
+  if (matchesLoading || leaderboardLoading || questionsLoading || usersLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-6 flex items-center justify-center">
         <div className="text-center">
