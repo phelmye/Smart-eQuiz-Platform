@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Award, Download, Printer, Mail, Eye } from 'lucide-react';
+import { Award, Download, Printer, Mail, Eye, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { PrizeAward, Tournament, User, mockTournaments, storage, STORAGE_KEYS } from '@/lib/mockData';
+import { useUsers } from '@/hooks/useUsers';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface CertificateGeneratorProps {
   award: PrizeAward;
@@ -17,19 +19,32 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   userId
 }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // Fetch data from APIs
+  const { users: apiUsers, loading: usersLoading } = useUsers();
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
 
   const getTournament = (): Tournament | null => {
-    return mockTournaments.find(t => t.id === award.tournamentId) || null;
+    return apiTournaments.find(t => t.id === award.tournamentId) || null;
   };
 
   const getUser = (): User | null => {
     if (!userId) return null;
-    const users = storage.get(STORAGE_KEYS.USERS) || [];
-    return users.find((u: User) => u.id === userId) || null;
+    return apiUsers.find((u: User) => u.id === userId) || null;
   };
 
   const tournament = getTournament();
   const user = getUser();
+  
+  // Loading state
+  if (usersLoading || tournamentsLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
+        <span className="text-gray-600">Loading certificate data...</span>
+      </div>
+    );
+  }
 
   const handleDownload = () => {
     // In production, this would generate a PDF
