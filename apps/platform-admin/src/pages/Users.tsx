@@ -58,6 +58,7 @@ import { useToast } from '../hooks/use-toast';
 
 // Note: User interface now imported from useUsers hook
 
+/* Mock data removed - using API data
 const mockUsers_REMOVED = [
   {
     id: '1',
@@ -146,12 +147,13 @@ const roleColors = {
 };
 
 export default function Users() {
-  const { users, loading, error, createUser, updateUser, deleteUser, suspendUser, activateUser } = useUsers();
+  const { users, loading, error, createUser, updateUser, deleteUser } = useUsers();
+  // suspendUser, activateUser not currently used in this component
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
+  // const [isSaving, setIsSaving] = useState(false); // Not currently used
   
   // Dialogs
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -166,7 +168,7 @@ export default function Users() {
     email: '',
     password: 'Welcome123!',
     role: 'user',
-    tenantId: '',
+    // tenantId removed - using tenants array in User model
     status: 'active',
   });
 
@@ -321,8 +323,9 @@ export default function Users() {
       name: user.name,
       email: user.email,
       role: user.role,
-      tenantId: user.tenantId,
+      password: '', // Add password field (empty for edit)
       status: user.status,
+      // Note: tenants is an array, not tenantId
     });
     setIsEditModalOpen(true);
   };
@@ -866,7 +869,11 @@ export default function Users() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-gray-500">Tenant</Label>
-                  <p className="font-medium">{selectedUser.tenant}</p>
+                  <p className="font-medium">
+                    {selectedUser.tenants && selectedUser.tenants.length > 0 
+                      ? selectedUser.tenants.map(t => t.name).join(', ')
+                      : 'No tenants'}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-gray-500">Email Verified</Label>

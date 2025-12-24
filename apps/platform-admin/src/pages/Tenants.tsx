@@ -23,14 +23,14 @@ import { exportToCSV, generateFilename } from '../lib/exportHelpers';
 import { useToast } from '../hooks/use-toast';
 import { useTenants, type Tenant } from '../hooks/useTenants';
 
-const statusColors = {
+const statusColors: { [key: string]: string } = {
   active: 'bg-green-100 text-green-800',
   trial: 'bg-yellow-100 text-yellow-800',
   suspended: 'bg-red-100 text-red-800',
   cancelled: 'bg-gray-100 text-gray-800',
 };
 
-const planColors = {
+const planColors: { [key: string]: string } = {
   Starter: 'bg-blue-100 text-blue-800',
   Professional: 'bg-purple-100 text-purple-800',
   Enterprise: 'bg-orange-100 text-orange-800',
@@ -41,7 +41,7 @@ export default function Tenants() {
     tenants,
     loading,
     error,
-    fetchTenants,
+    // fetchTenants, // Not used in this component
     createTenant,
     updateTenant,
     deleteTenant,
@@ -281,6 +281,8 @@ export default function Tenants() {
     }
   };
 
+  // handleSuspendTenant function (currently unused - using table row menu actions instead)
+  /*
   const handleSuspendTenant = async (tenant: Tenant) => {
     try {
       if (tenant.status === 'suspended') {
@@ -304,6 +306,7 @@ export default function Tenants() {
       });
     }
   };
+  */
 
   const handleCreateTenant = async () => {
     if (!formData.name || !formData.adminEmail) {
@@ -573,8 +576,8 @@ export default function Tenants() {
         <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
             Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, data.length)} of{' '}
-            {data.length} results
+            {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, tenants.length)} of{' '}
+            {tenants.length} results
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -806,7 +809,7 @@ export default function Tenants() {
                 <Label htmlFor="edit-tenant-status">Status</Label>
                 <Select 
                   value={formData.status}
-                  onValueChange={(value) => setFormData({...formData, status: value})}
+                  onValueChange={(value: string) => setFormData({...formData, status: value as 'active' | 'trial' | 'suspended' | 'cancelled'})}
                 >
                   <SelectTrigger id="edit-tenant-status">
                     <SelectValue />

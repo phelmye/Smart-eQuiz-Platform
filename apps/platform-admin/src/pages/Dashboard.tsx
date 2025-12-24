@@ -124,8 +124,13 @@ export default function Dashboard() {
   ];
 
   // Recent activity from backend
-  const recentActivities = data?.activities || [];
-
+  // const recentActivities = data?.activities || [];
+  // Mock recent tenants data
+  const recentTenants = [
+    { name: 'Demo Church', joined: '2 days ago' },
+    { name: 'First Baptist', joined: '5 days ago' },
+    { name: 'Grace Community', joined: '1 week ago' },
+  ];
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
@@ -160,8 +165,7 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-600">{stat.name}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
-                  <p className="mt-2 text-sm flex items-center gap-1" 
-                     className={stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}>
+                  <p className={`mt-2 text-sm flex items-center gap-1 ${stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
                     <TrendingUp className="w-4 h-4" />
                     {stat.change}
                   </p>
