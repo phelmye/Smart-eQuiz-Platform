@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -129,6 +130,7 @@ const DEFAULT_HERO: HeroContent = {
 };
 
 export function useMarketingContent(): UseMarketingContentReturn {
+  const { token } = useAuth();
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -140,6 +142,12 @@ export function useMarketingContent(): UseMarketingContentReturn {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Create headers dynamically to always use current token
+  const getHeaders = () => ({
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  });
+
   // Load all content on mount
   useEffect(() => {
     loadContent();
@@ -150,7 +158,9 @@ export function useMarketingContent(): UseMarketingContentReturn {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/marketing-cms/all`);
+      const response = await fetch(`${API_BASE_URL}/marketing-cms/all`, {
+        headers: getHeaders(),
+      });
       if (!response.ok) throw new Error('Failed to fetch content');
       
       const data = await response.json();
@@ -181,7 +191,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
       
       const response = await fetch(url, {
         method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(post),
       });
       
@@ -208,6 +218,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/blog-posts/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
       
       if (!response.ok) throw new Error('Failed to delete blog post');
@@ -235,7 +246,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
       
       const response = await fetch(url, {
         method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(feature),
       });
       
@@ -262,6 +273,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/features/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
       
       if (!response.ok) throw new Error('Failed to delete feature');
@@ -289,7 +301,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
       
       const response = await fetch(url, {
         method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(testimonial),
       });
       
@@ -316,6 +328,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/testimonials/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
       
       if (!response.ok) throw new Error('Failed to delete testimonial');
@@ -343,7 +356,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
       
       const response = await fetch(url, {
         method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(plan),
       });
       
@@ -370,6 +383,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/pricing-plans/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
       
       if (!response.ok) throw new Error('Failed to delete pricing plan');
@@ -397,7 +411,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
       
       const response = await fetch(url, {
         method: isUpdate ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(faq),
       });
       
@@ -424,6 +438,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/faqs/${id}`, {
         method: 'DELETE',
+        headers: getHeaders(),
       });
       
       if (!response.ok) throw new Error('Failed to delete FAQ');
@@ -446,7 +461,7 @@ export function useMarketingContent(): UseMarketingContentReturn {
     try {
       const response = await fetch(`${API_BASE_URL}/marketing-cms/hero`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify(newHero),
       });
       

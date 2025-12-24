@@ -95,10 +95,11 @@ export function useMarketingCMS<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const headers = {
+  // Create headers dynamically to always use current token
+  const getHeaders = () => ({
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
-  };
+  });
 
   const fetchData = async () => {
     try {
@@ -106,7 +107,7 @@ export function useMarketingCMS<T>(
       setError(null);
       
       const response = await fetch(`${API_URL}/marketing-cms/${endpoint}`, {
-        headers,
+        headers: getHeaders(),
       });
 
       if (!response.ok) {
@@ -131,7 +132,7 @@ export function useMarketingCMS<T>(
     try {
       const response = await fetch(`${API_URL}/marketing-cms/${endpoint}`, {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -159,7 +160,7 @@ export function useMarketingCMS<T>(
     try {
       const response = await fetch(`${API_URL}/marketing-cms/${endpoint}/${id}`, {
         method: 'PUT',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -189,7 +190,7 @@ export function useMarketingCMS<T>(
     try {
       const response = await fetch(`${API_URL}/marketing-cms/${endpoint}/${id}`, {
         method: 'DELETE',
-        headers,
+        headers: getHeaders(),
       });
 
       if (!response.ok) {
