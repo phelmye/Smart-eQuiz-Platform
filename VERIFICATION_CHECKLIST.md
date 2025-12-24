@@ -24,12 +24,24 @@
 - [x] Payment system backend deployed to Render
 - [x] All TypeScript errors fixed (36+ errors)
 - [x] E2E tests passing (6/6)
-- [x] Tenant CRUD fix committed (acced03)
+- [x] **Token authentication fixed** (commit 631e2de)
+  - Fixed platform-admin token key mismatch
+  - Changed from 'token' to 'platform_admin_token'
+  - Resolved 401 errors on audit logs, billing, marketing CMS
+- [x] **Marketing site token fix** (commit 6b8a6b0)
+  - Fixed signup token key from 'access_token' to 'accessToken'
+  - Added refreshToken storage for token refresh flow
+  - Users no longer need to re-login after signup
+- [x] **Comprehensive token storage audit** (4 apps checked)
+  - Platform-admin: Fixed
+  - Marketing-site: Fixed
+  - Tenant-app: Already consistent
+  - Mobile-app: Already consistent
 - [x] Click handler audit completed (100+ files)
 - [x] Fixed 10 files with 20+ handlers
 - [x] Removed 15 console.log, 1 alert()
 - [x] Verified all navigation links
-- [x] Committed fixes (12a4085)
+- [x] Committed fixes (commits: 631e2de, 6b8a6b0, 6ccea89)
 - [x] Pushed to trigger auto-deployment
 
 ## 🔄 Backend API Verification (Do This First)
@@ -72,12 +84,17 @@ Write-Host "Gateways found: $($gateways.totalGateways)"
 1. Find `platform-admin` project
 2. Click on latest deployment
 3. Verify status is **Ready** (green checkmark)
-4. Check commit hash matches: `12a4085` or later
+4. Check commit hash matches: `6b8a6b0` or later
 5. Note: Build should have 0 errors
 
+**Also check `marketing-site` project:**
+1. Verify latest deployment includes marketing token fix
+2. Check commit hash: `6b8a6b0` or later
+
 **✅ Checklist:**
-- [ ] Deployment status: Ready
-- [ ] Latest commit deployed
+- [ ] Platform-admin deployment: Ready
+- [ ] Marketing-site deployment: Ready
+- [ ] Latest commits deployed
 - [ ] No build errors
 
 ---
@@ -124,16 +141,24 @@ VITE_API_URL = https://smart-equiz-api.onrender.com/api
 2. Enter credentials
 3. Click Sign In
 4. Should redirect to Dashboard
+5. **Open browser console (F12)**
+6. **Check for 401 errors** (should be GONE now!)
 
 **Expected:**
 - ✅ Login successful
 - ✅ Dashboard loads without errors
 - ✅ Navigation menu visible
+- ✅ **NO 401 errors on audit/logs, audit/stats endpoints**
+- ✅ Audit Logs page loads data (was failing before)
+- ✅ Billing page shows 4 gateways
 
 **✅ Checklist:**
 - [ ] Login works
 - [ ] Dashboard displays
 - [ ] No console errors (F12)
+- [ ] **No 401 authentication errors** (CRITICAL TEST)
+- [ ] Audit Logs page works
+- [ ] Billing page shows gateways
 
 ---
 
@@ -211,7 +236,43 @@ VITE_API_URL = https://smart-equiz-api.onrender.com/api
 
 ---
 
-### 6. Test Click Handlers (Code Quality Fix) (5 minutes)
+### 7. Test Marketing Site Signup → Tenant Login (NEW - CRITICAL)
+
+**This tests the marketing site token fix (commit 6b8a6b0)**
+
+**Go to:** https://smartequiz.com/signup (or your staging URL)
+
+**Steps:**
+1. Fill out signup form with new tenant details
+2. Submit registration
+3. Note the subdomain created (e.g., "testchurch")
+4. Should redirect to welcome page or tenant subdomain
+5. **Check browser storage (F12 → Application → Local Storage):**
+   - Should see key: `accessToken` ✅ (NOT `access_token`)
+   - Should see key: `refreshToken` ✅ (new)
+   - Should see: `tenant_id`, `subdomain`
+6. If redirected to tenant app, should be automatically logged in
+7. **Should NOT need to login again** (was broken before)
+
+**Expected Results:**
+- ✅ Signup succeeds
+- ✅ Token stored as `accessToken` (correct key)
+- ✅ RefreshToken stored
+- ✅ **Automatically logged into tenant app** (NO re-login needed)
+- ✅ Seamless user experience
+
+**✅ Checklist:**
+- [ ] Signup form works
+- [ ] Token key is `accessToken` (not `access_token`)
+- [ ] RefreshToken present
+- [ ] Auto-login to tenant app works
+- [ ] No re-login required after signup
+
+**Impact:** This fix eliminates the "just signed up but must login again" frustration!
+
+---
+
+### 8. Test Click Handlers (Code Quality Fix) (5 minutes)
 
 **These were fixed in commit 12a4085**
 
