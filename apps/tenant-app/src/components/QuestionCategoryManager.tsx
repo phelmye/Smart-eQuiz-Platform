@@ -24,8 +24,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut } from 'lucide-react';
+import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
+import { useCategories } from '@/hooks/useQuestions';
 import { 
   User, 
   Plan, 
@@ -56,6 +57,7 @@ interface QuestionCategoryManagerProps {
 
 export default function QuestionCategoryManager({ user, onBack }: QuestionCategoryManagerProps) {
   const { logout } = useAuth();
+  const { categories: apiCategories, loading: categoriesLoading, refetch: refetchCategories } = useCategories();
   const [categories, setCategories] = useState<QuestionCategory[]>([]);
   const [userPlan, setUserPlan] = useState<Plan | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -77,11 +79,11 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
   useEffect(() => {
     loadCategories();
     loadUserPlan();
-  }, [user]);
+  }, [user, apiCategories, categoriesLoading]);
 
   const loadCategories = () => {
-    const allCategories = storage.get(STORAGE_KEYS.QUESTIONS) || [];
-    const tenantCategories = allCategories.filter(c => c.tenantId === user.tenantId);
+    if (categoriesLoading || !apiCategories) return;
+    const tenantCategories = apiCategories.filter(c => c.tenantId === user.tenantId);
     setCategories(tenantCategories);
   };
 
@@ -139,6 +141,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
     setCategories(prev => [...prev, categoryToCreate]);
     setNewCategory({ name: '', description: '', color: '#3b82f6' });
     setIsCreateDialogOpen(false);
+    refetchCategories(); // Refresh API data
     setSuccess('Category created successfully!');
     setTimeout(() => setSuccess(''), 3000);
   };
@@ -173,6 +176,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
         : c
     ));
 
+    refetchCategories(); // Refresh API data
     setIsEditDialogOpen(false);
     setSelectedCategory(null);
     setSuccess('Category updated successfully!');
@@ -187,6 +191,7 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
     const updatedCategories = allCategories.filter(c => c.id !== categoryId);
     storage.set(STORAGE_KEYS.QUESTIONS, updatedCategories);
 
+    refetchCategories(); // Refresh API data
     setCategories(prev => prev.filter(c => c.id !== categoryId));
     setSuccess('Category deleted successfully!');
     setTimeout(() => setSuccess(''), 3000);
@@ -196,6 +201,20 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
     setError('');
     setSuccess('');
   };
+
+  // Show loading state
+  if (categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-gray-600">Loading categories...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
