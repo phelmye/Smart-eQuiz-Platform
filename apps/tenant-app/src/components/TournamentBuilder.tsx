@@ -30,6 +30,7 @@ import {
   RoundQuestionConfig
 } from '@/lib/mockData';
 import { useQuestions } from '@/hooks/useQuestions';
+import { useTournaments } from '@/hooks/useTournaments';
 import { UpgradePrompt } from './UpgradePrompt';
 import RoundQuestionConfigBuilder from './RoundQuestionConfigBuilder';
 import { TemplateLibrary } from './TemplateLibrary';
@@ -45,6 +46,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
   
   // Fetch questions from API
   const { questions: apiQuestions, loading: questionsLoading } = useQuestions();
+  const { refetch: refetchTournaments } = useTournaments();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [parishes, setParishes] = useState<any[]>([]);
@@ -198,6 +200,7 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     allTournaments.push(newTournament);
     storage.set(STORAGE_KEYS.TOURNAMENTS, allTournaments);
 
+    refetchTournaments(); // Refresh API data
     alert('Tournament created successfully!');
     onBack();
   };
