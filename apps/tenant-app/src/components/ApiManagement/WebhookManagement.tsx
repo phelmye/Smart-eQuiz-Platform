@@ -138,7 +138,7 @@ export default function WebhookManagement() {
         retryAttempts: 3,
         timeout: 30000
       });
-      console.log('Webhook created successfully');
+      logger.success('Webhook created successfully');
     } catch (err) {
       logger.error('Failed to create webhook:', err);
       alert('Failed to create webhook');
@@ -152,7 +152,7 @@ export default function WebhookManagement() {
       await apiManagementClient.deleteWebhook(deleteDialog.webhook.id);
       await loadWebhooks();
       setDeleteDialog({ open: false, webhook: null });
-      console.log('Webhook deleted successfully');
+      logger.success('Webhook deleted successfully');
     } catch (err) {
       logger.error('Failed to delete webhook:', err);
       alert('Failed to delete webhook');
@@ -162,7 +162,7 @@ export default function WebhookManagement() {
   const handleTest = async (webhook: Webhook) => {
     try {
       await apiManagementClient.testWebhook(webhook.id);
-      console.log('Test webhook sent successfully');
+      logger.success('Test webhook sent successfully', { url: webhook.url });
       alert(`Test event sent to ${webhook.url}`);
     } catch (err) {
       logger.error('Failed to test webhook:', err);
