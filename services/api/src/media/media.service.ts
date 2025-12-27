@@ -4,6 +4,7 @@ import * as sharp from 'sharp';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { mediaLogger } from '../common/logger.service';
 
 export interface MediaAsset {
   id: string;
@@ -38,7 +39,7 @@ export class MediaService {
       await fs.mkdir(this.uploadDir, { recursive: true });
       await fs.mkdir(path.join(this.uploadDir, 'thumbnails'), { recursive: true });
     } catch (error) {
-      console.error('Failed to create upload directory:', error);
+      mediaLogger.uploadFailed('upload-dir', error as Error);
     }
   }
 
@@ -102,7 +103,10 @@ export class MediaService {
 
           thumbnailUrl = `${this.publicUrl}/uploads/media/thumbnails/${thumbnailFilename}`;
         } catch (error) {
-          console.error('Failed to process image:', error);
+          mediaLogger.processingStart(filename, 'thumbnail');
+          if (error instanceof Error) {
+            mediaLogger.uploadFailed(`thumb_${filename}`, error);
+          }
         }
       }
 
@@ -213,7 +217,7 @@ export class MediaService {
         }
       }
     } catch (error) {
-      console.error('Failed to delete files:', error);
+      mediaLogger.deleteFailed(error as Error);
     }
 
     // Delete database record

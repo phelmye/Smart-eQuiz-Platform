@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../prisma.service';
+import { healthLogger } from '../common/logger.service';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy' | 'degraded';
@@ -129,7 +130,7 @@ export class HealthController {
       await this.prisma.$queryRaw`SELECT 1`;
       return true;
     } catch (error) {
-      console.error('Database health check failed:', error);
+      healthLogger.checkFailed('database', error as Error);
       return false;
     }
   }
@@ -140,7 +141,7 @@ export class HealthController {
       // For now, return true
       return true;
     } catch (error) {
-      console.error('Redis health check failed:', error);
+      healthLogger.checkFailed('redis', error as Error);
       return false;
     }
   }

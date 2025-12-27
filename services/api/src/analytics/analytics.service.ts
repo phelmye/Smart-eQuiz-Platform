@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { analyticsLogger } from '../common/logger.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -642,7 +643,7 @@ export class AnalyticsService {
         activities,
       };
     } catch (error) {
-      console.error('Dashboard stats error:', error);
+      analyticsLogger.statsFailed(error as Error, 'dashboard_stats');
       throw new HttpException(
         'Failed to get dashboard statistics',
         HttpStatus.INTERNAL_SERVER_ERROR,

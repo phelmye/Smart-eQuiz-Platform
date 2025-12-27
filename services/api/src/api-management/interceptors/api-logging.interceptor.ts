@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ApiLogService } from '../api-log.service';
+import { apiLogger } from '../../common/logger.service';
 
 @Injectable()
 export class ApiLoggingInterceptor implements NestInterceptor {
@@ -71,7 +72,7 @@ export class ApiLoggingInterceptor implements NestInterceptor {
       });
     } catch (error) {
       // Don't fail request if logging fails
-      console.error('Failed to log API request:', error);
+      apiLogger.logFailed(error as Error);
     }
   }
 }

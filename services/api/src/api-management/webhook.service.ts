@@ -5,6 +5,7 @@ import { UpdateWebhookDto } from './dto/update-webhook.dto';
 import { WebhookEvent, WebhookStatus, WebhookDeliveryStatus } from '@prisma/client';
 import * as crypto from 'crypto';
 import axios from 'axios';
+import { webhookLogger } from '../common/logger.service';
 
 @Injectable()
 export class WebhookService {
@@ -171,7 +172,7 @@ export class WebhookService {
     // Trigger deliveries asynchronously
     deliveries.forEach(delivery => {
       this.deliverWebhook(delivery.id).catch(err => {
-        console.error(`Webhook delivery ${delivery.id} failed:`, err);
+        webhookLogger.deliveryFailed(delivery.id, err as Error);
       });
     });
 
@@ -268,8 +269,11 @@ export class WebhookService {
 
       // Schedule retry if needed
       if (shouldRetry) {
+        webhookLogger.retryScheduled(deliveryId, webhook.failureCount + 1);
         setTimeout(() => {
-          this.deliverWebhook(deliveryId).catch(console.error);
+          this.deliverWebhook(deliveryId).catch((err) => {
+            webhookLogger.deliveryFailed(deliveryId, err as Error);
+          });
         }, updateData.nextRetryAt.getTime() - Date.now());
       }
     }

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
+import { notificationLogger } from '../common/logger.service';
 
 interface RegisterTokenDto {
   userId: string;
@@ -68,7 +69,7 @@ export class NotificationsService {
 
       return { success: true, message: 'Token registered successfully' };
     } catch (error) {
-      console.error('Error registering push token:', error);
+      notificationLogger.pushError(error as Error, { userId, deviceType });
       throw new BadRequestException('Failed to register push token');
     }
   }
@@ -94,7 +95,7 @@ export class NotificationsService {
 
       return { success: true, message: 'Token unregistered successfully' };
     } catch (error) {
-      console.error('Error unregistering push token:', error);
+      notificationLogger.pushError(error as Error, { token });
       throw new BadRequestException('Failed to unregister push token');
     }
   }
@@ -165,11 +166,11 @@ export class NotificationsService {
             successCount++;
           } else {
             failureCount++;
-            console.error('Push notification error:', ticket);
+            notificationLogger.pushError(new Error('Push notification failed'), ticket);
           }
         });
       } catch (error) {
-        console.error('Error sending push notification chunk:', error);
+        notificationLogger.pushError(error as Error, { chunkSize: chunk.length });
         failureCount += chunk.length;
       }
     }
@@ -248,7 +249,7 @@ export class NotificationsService {
           }
         });
       } catch (error) {
-        console.error('Error broadcasting notification:', error);
+        notificationLogger.pushError(error as Error, { chunkSize: chunk.length, broadcast: true });
         failureCount += chunk.length;
       }
     }

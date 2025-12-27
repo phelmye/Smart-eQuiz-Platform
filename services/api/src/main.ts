@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
+import { logger } from './common/logger.service';
 
 async function bootstrap() {
   // Initialize Sentry for error monitoring
@@ -15,9 +16,9 @@ async function bootstrap() {
       // Performance Monitoring
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
     });
-    console.log('✅ Sentry error monitoring initialized');
+    logger.info('✅ Sentry error monitoring initialized', 'Bootstrap');
   } else {
-    console.log('⚠️  Sentry DSN not configured - error monitoring disabled');
+    logger.warn('⚠️  Sentry DSN not configured - error monitoring disabled', 'Bootstrap');
   }
 
   try {
@@ -178,42 +179,42 @@ while tenant-level users are automatically scoped to their organization.
     });
     
     const port = process.env.PORT || 3001;
-    console.log(`📚 API Documentation available at http://localhost:${port}/api/docs`);
+    logger.info(`📚 API Documentation available at http://localhost:${port}/api/docs`, 'Bootstrap');
     
     await app.listen(port);
-    console.log(`API server listening on http://localhost:${port}`);
+    logger.info(`API server listening on http://localhost:${port}`, 'Bootstrap');
     
     // Keep process alive and handle graceful shutdown
     process.on('SIGINT', async () => {
-      console.log('Received SIGINT, shutting down gracefully...');
+      logger.info('Received SIGINT, shutting down gracefully...', 'Bootstrap');
       await app.close();
       process.exit(0);
     });
     
     process.on('SIGTERM', async () => {
-      console.log('Received SIGTERM, shutting down gracefully...');
+      logger.info('Received SIGTERM, shutting down gracefully...', 'Bootstrap');
       await app.close();
       process.exit(0);
     });
     
   } catch (error) {
-    console.error('Failed to start application:', error);
+    logger.error('Failed to start application', error as Error, 'Bootstrap');
     process.exit(1);
   }
 }
 
 // Catch unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection', new Error(String(reason)), 'Process', { promise: String(promise) });
 });
 
 // Catch uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception', error, 'Process');
   process.exit(1);
 });
 
 bootstrap().catch(err => {
-  console.error('Bootstrap failed:', err);
+  logger.error('Bootstrap failed', err as Error, 'Main');
   process.exit(1);
 });

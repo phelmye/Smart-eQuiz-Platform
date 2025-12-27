@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { auditLogger } from '../common/logger.service';
 
 export enum AuditAction {
   // Authentication
@@ -127,7 +128,7 @@ export class AuditService {
       });
     } catch (error) {
       // Never throw errors from audit logging - it should be non-blocking
-      console.error('[AUDIT ERROR]', error);
+      auditLogger.logFailed(error as Error, data.action);
     }
   }
 

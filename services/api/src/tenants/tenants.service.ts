@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../prisma.service';
 import { CreateTenantDto, UpdateTenantDto, TenantStatus } from './dto/tenant.dto';
 import * as bcrypt from 'bcrypt';
+import { tenantLogger } from '../common/logger.service';
 
 @Injectable()
 export class TenantsService {
@@ -127,7 +128,10 @@ export class TenantsService {
       });
     } catch (error) {
       // If user creation fails, log but don't fail tenant creation
-      console.error('Failed to create admin user:', error);
+      tenantLogger.create(tenant.id, tenant.name);
+      if (error instanceof Error) {
+        tenantLogger.update(tenant.id, [`admin_user_creation_failed: ${error.message}`]);
+      }
     }
 
     return {
