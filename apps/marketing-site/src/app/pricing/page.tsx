@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PricingContent from './PricingContent';
+import { pageLogger } from '@/lib/logger';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -97,7 +98,7 @@ export default function PricingPage() {
           setPricingPlans(uniquePlans);
         }
       } catch (error) {
-        console.error('Error fetching pricing plans:', error);
+        pageLogger.dataFetchError('Pricing', error as Error);
       } finally {
         setLoading(false);
       }

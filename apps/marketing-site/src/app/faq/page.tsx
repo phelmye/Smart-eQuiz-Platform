@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import FAQContent from './FAQContent';
+import { pageLogger } from '@/lib/logger';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -79,7 +80,7 @@ export default function FAQPage() {
           setFaqs(data.filter((faq: FAQ) => faq.isActive));
         }
       } catch (error) {
-        console.error('Error fetching FAQs:', error);
+        pageLogger.dataFetchError('FAQ', error as Error);
       } finally {
         setLoading(false);
       }

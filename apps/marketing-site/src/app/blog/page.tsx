@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, User, ArrowRight } from 'lucide-react';
 import { BlogContent } from './BlogContent';
+import { pageLogger } from '@/lib/logger';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -20,7 +21,7 @@ export default function BlogPage() {
           setApiPosts(posts.filter((post: any) => post.status === 'PUBLISHED'));
         }
       } catch (error) {
-        console.error('Error fetching blog posts:', error);
+        pageLogger.dataFetchError('Blog', error as Error);
       } finally {
         setLoading(false);
       }

@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { pageLogger } from '@/lib/logger';
 
 function SignupForm() {
   const router = useRouter();
@@ -185,7 +186,7 @@ function SignupForm() {
         router.push(`/welcome?subdomain=${data.subdomain}&new=true`);
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      pageLogger.formError('signup', error as Error);
       setErrors({ submit: 'An error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);

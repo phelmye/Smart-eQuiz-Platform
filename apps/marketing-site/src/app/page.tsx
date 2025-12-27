@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Testimonials from '@/components/Testimonials';
+import { pageLogger } from '@/lib/logger';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -95,7 +96,7 @@ export default function HomePage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        pageLogger.dataFetchError('Home', error as Error);
         // Keep using fallback content
       } finally {
         setLoading(false);

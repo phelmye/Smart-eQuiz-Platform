@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { pageLogger } from '@/lib/logger';
 
 /**
  * Affiliate Registration Page
@@ -104,7 +105,7 @@ export default function AffiliatePage() {
     if (!validateStep3()) return;
 
     // TODO: Send to API
-    console.log('Affiliate application submitted:', formData);
+    pageLogger.formSubmit('affiliate', formData);
     setSubmitted(true);
   };
 
