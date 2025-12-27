@@ -41,14 +41,12 @@ const typeColors = {
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Fetch recent audit logs and convert to notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        setLoading(true);
         const logs = await api.get<AuditLog[]>('/audit/logs?limit=20');
         
         // Convert audit logs to notifications
@@ -91,8 +89,6 @@ export function NotificationCenter() {
         setNotifications(notificationItems);
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

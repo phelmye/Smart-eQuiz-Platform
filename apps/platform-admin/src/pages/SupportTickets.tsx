@@ -184,7 +184,7 @@ export default function SupportTickets() {
   const { toast } = useToast();
 
   // Use real API hook
-  const { tickets, loading, error, updateTicket, addMessage } = useSupportTickets();
+  const { tickets, updateTicket, addMessage } = useSupportTickets();
 
   const columns: ColumnDef<Ticket>[] = [
     {
