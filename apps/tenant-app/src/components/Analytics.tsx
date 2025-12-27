@@ -10,6 +10,7 @@ import { useAuth } from './AuthSystem';
 import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTournaments, mockQuestions, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 import { useTournaments } from '@/hooks/useTournaments';
 import { useQuestions } from '@/hooks/useQuestions';
+import { useUsers } from '@/hooks/useUsers';
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -40,21 +41,22 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
   // Fetch data from APIs
   const { tournaments, loading: tournamentsLoading } = useTournaments();
   const { questions, loading: questionsLoading } = useQuestions();
+  const { users: apiUsers, loading: usersLoading } = useUsers();
   
   const [timeRange, setTimeRange] = useState('30d');
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
   useEffect(() => {
-    if (!tournamentsLoading && !questionsLoading) {
+    if (!tournamentsLoading && !questionsLoading && !usersLoading) {
       loadAnalyticsData();
     }
-  }, [user, timeRange, tournaments, questions, tournamentsLoading, questionsLoading]);
+  }, [user, timeRange, tournaments, questions, apiUsers, tournamentsLoading, questionsLoading, usersLoading]);
 
   const loadAnalyticsData = async () => {
     
     try {
-      // Use mock users for now (users hook will be added later)
-      const users = storage.get(STORAGE_KEYS.USERS) || mockUsers;
+      // Use apiUsers from hook
+      const users = apiUsers || [];
       // Use tournaments and questions from hooks
 
     // Filter data based on user role
@@ -197,7 +199,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
     );
   }
 
-  if (tournamentsLoading || questionsLoading || !analyticsData) {
+  if (tournamentsLoading || questionsLoading || usersLoading || !analyticsData) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
