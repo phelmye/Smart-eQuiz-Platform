@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { logger } from '@/lib/logger';
 import { 
   CreditCard, 
   Users, 
@@ -59,8 +60,9 @@ export const TournamentCheckout: React.FC<TournamentCheckoutProps> = ({
       const registrationId = `reg-${tournamentId}-${Date.now()}`;
       
       // Mock registration success
-      console.log('✅ Tournament registration successful:', {
+      logger.success('Tournament registration successful', {
         tournamentId,
+        tournamentName,
         registrationId,
         amount: total,
         timestamp: new Date().toISOString()

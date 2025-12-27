@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { logger } from '@/lib/logger';
 import { 
   CreditCard, 
   Check, 
@@ -127,10 +128,11 @@ export const SubscriptionCheckout: React.FC<SubscriptionCheckoutProps> = ({
         storage.set(STORAGE_KEYS.BILLING, billingRecords);
 
         // Send success notification (would be email in production)
-        console.log('✅ Subscription activated:', {
-          plan: plan.name,
-          cycle: billingCycle,
-          amount: price
+        logger.success('Subscription activated', {
+          planName: plan.name,
+          billingCycle: billingCycle,
+          amount: price,
+          tenantId: tenant.id
         });
 
         if (onSuccess) {

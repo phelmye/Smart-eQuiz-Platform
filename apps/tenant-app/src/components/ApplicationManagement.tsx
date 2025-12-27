@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logger } from '@/lib/logger';
 import {
   Table,
   TableBody,
@@ -117,7 +118,11 @@ export const ApplicationManagement: React.FC<ApplicationManagementProps> = ({
 
   const executeAction = () => {
     // TODO: Implement actual approval/rejection logic
-    console.log('Execute action:', actionDialog.action, actionData);
+    logger.info('Application action executed', { 
+      action: actionDialog.action, 
+      applicationId: actionDialog.application?.id,
+      actionData 
+    });
     setActionDialog({ open: false, action: null });
     setActionData({});
     loadApplications();

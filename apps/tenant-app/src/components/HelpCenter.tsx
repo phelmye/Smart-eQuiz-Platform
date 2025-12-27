@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { logger } from '@/lib/logger';
 import { 
   HelpCircle,
   Search,
@@ -141,7 +142,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
 
         <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => {
           // TODO: Implement video tutorials feature
-          console.log('Navigate to video tutorials');
+          logger.info('Video tutorials feature requested');
         }}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -154,7 +155,7 @@ export const HelpCenter: React.FC<HelpCenterProps> = ({ onBack }) => {
 
         <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => {
           // TODO: Implement live chat feature
-          console.log('Open live chat');
+          logger.info('Live chat feature requested');
         }}>
           <CardContent className="pt-6 text-center">
             <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">

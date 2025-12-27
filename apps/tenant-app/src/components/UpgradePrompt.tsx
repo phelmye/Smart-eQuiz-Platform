@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Lock, Zap, Crown, CheckCircle2, ArrowRight } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface UpgradePromptProps {
   feature: string;
@@ -29,7 +30,7 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
       onUpgrade();
     } else {
       // Navigate to billing/plans page
-      console.log('Navigating to upgrade page for:', requiredPlan);
+      logger.info('Upgrade navigation requested', { requiredPlan, feature });
       // TODO: Implement navigation
     }
   };

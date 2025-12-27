@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Clock, Users, CheckCircle2, XCircle, AlertCircle, Loader2, Target, Building2 } from 'lucide-react';
 import { useAuth } from '@/components/AuthSystem';
+import { logger } from '@/lib/logger';
 import {
   Tournament,
   TournamentApplication as TournamentApplicationType,
@@ -511,7 +512,10 @@ export const TournamentApplication: React.FC<TournamentApplicationProps> = ({ to
                                   className="mt-2"
                                   onClick={() => {
                                     // Navigate to quiz
-                                    console.log('Take quiz for application:', app.id);
+                                    logger.info('Quiz navigation requested', { 
+                                      applicationId: app.id,
+                                      isRetake: !!app.quizAttempts?.length 
+                                    });
                                   }}
                                 >
                                   {app.quizAttempts?.length ? 'Retake Quiz' : 'Take Quiz'}
