@@ -76,6 +76,7 @@ export class MediaController {
 
       const userId = req.user.id;
       const userEmail = req.user.email;
+      const tenantId = req.user.tenantId;
 
       const tags = metadata.tags ? metadata.tags.split(',').map(t => t.trim()) : [];
 
@@ -88,6 +89,7 @@ export class MediaController {
         },
         userId,
         userEmail,
+        tenantId, // Tenant isolation
       );
 
       return {
@@ -110,6 +112,7 @@ export class MediaController {
   @Get()
   @Roles('super_admin', 'org_admin')
   async listAssets(
+    @Request() req: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('category') category?: string,
@@ -118,8 +121,10 @@ export class MediaController {
     try {
       const pageNum = parseInt(page) || 1;
       const limitNum = parseInt(limit) || 20;
+      const tenantId = req.user.tenantId;
 
       const result = await this.mediaService.listAssets({
+        tenantId, // Tenant isolation
         page: pageNum,
         limit: limitNum,
         category,
@@ -147,9 +152,13 @@ export class MediaController {
    */
   @Get(':id')
   @Roles('super_admin', 'org_admin')
-  async getAsset(@Param('id') id: string): Promise<MediaAsset> {
+  async getAsset(
+    @Param('id') id: string,
+    @Request() req: any
+  ): Promise<MediaAsset> {
     try {
-      const asset = await this.mediaService.getAsset(id);
+      const tenantId = req.user.tenantId;
+      const asset = await this.mediaService.getAsset(id, tenantId);
       if (!asset) {
         throw new HttpException('Asset not found', HttpStatus.NOT_FOUND);
       }
@@ -173,7 +182,8 @@ export class MediaController {
     @Request() req: any,
   ): Promise<{ success: boolean; message: string }> {
     try {
-      await this.mediaService.deleteAsset(id);
+      const tenantId = req.user.tenantId;
+      await this.mediaService.deleteAsset(id, tenantId);
       return {
         success: true,
         message: 'Asset deleted successfully',

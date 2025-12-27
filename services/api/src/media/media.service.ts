@@ -51,6 +51,7 @@ export class MediaService {
     metadata: { category: string; altText?: string; tags: string[] },
     userId: string,
     userEmail: string,
+    tenantId: string, // Required for tenant isolation
   ): Promise<MediaAsset> {
     try {
       // Validate file type
@@ -127,6 +128,7 @@ export class MediaService {
           uploadedBy: userId,
           uploadedByEmail: userEmail,
           tags: metadata.tags,
+          tenantId, // Tenant isolation
         },
       });
 
@@ -143,15 +145,16 @@ export class MediaService {
    * List assets with pagination and filtering
    */
   async listAssets(params: {
+    tenantId: string; // Required for tenant isolation
     page: number;
     limit: number;
     category?: string;
     search?: string;
   }): Promise<{ assets: MediaAsset[]; total: number }> {
-    const { page, limit, category, search } = params;
+    const { tenantId, page, limit, category, search } = params;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { tenantId }; // Always filter by tenant
 
     if (category) {
       where.category = category;
@@ -184,9 +187,9 @@ export class MediaService {
   /**
    * Get a single asset by ID
    */
-  async getAsset(id: string): Promise<MediaAsset | null> {
-    const asset = await this.prisma.mediaAsset.findUnique({
-      where: { id },
+  async getAsset(id: string, tenantId: string): Promise<MediaAsset | null> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, tenantId }, // Tenant isolation
     });
 
     return asset ? this.formatAsset(asset) : null;
@@ -195,9 +198,9 @@ export class MediaService {
   /**
    * Delete an asset
    */
-  async deleteAsset(id: string): Promise<void> {
-    const asset = await this.prisma.mediaAsset.findUnique({
-      where: { id },
+  async deleteAsset(id: string, tenantId: string): Promise<void> {
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, tenantId }, // Tenant isolation
     });
 
     if (!asset) {
@@ -253,7 +256,17 @@ export class MediaService {
   /**
    * Increment usage count for an asset
    */
-  async incrementUsage(id: string): Promise<void> {
+  async incrementUsage(id: string, tenantId: string): Promise<void> {
+    // First verify the asset belongs to this tenant
+    const asset = await this.prisma.mediaAsset.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+
+    if (!asset) {
+      throw new HttpException('Asset not found or access denied', HttpStatus.NOT_FOUND);
+    }
+
     await this.prisma.mediaAsset.update({
       where: { id },
       data: {
