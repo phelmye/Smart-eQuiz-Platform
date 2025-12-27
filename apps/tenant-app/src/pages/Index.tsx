@@ -147,23 +147,16 @@ const AppContent: React.FC = () => {
   if (!isAuthenticated || !user) {
     logger.debug('Index.tsx - Showing tenant landing page for unauthenticated visitor');
     
-    if (currentTenant) {
-      return (
-        <TenantLandingPage
-          tenant={currentTenant}
-          onAuthSuccess={() => {
-            logger.debug('Index.tsx - Landing page auth success');
-            setCurrentPage('dashboard');
-          }}
-        />
-      );
-    }
-    
-    // Fallback to auth system if tenant not detected
-    return <AuthSystem onAuthSuccess={() => {
-      logger.debug('Index.tsx - onAuthSuccess callback triggered');
-      setCurrentPage('dashboard');
-    }} />;
+    // Tenant should always exist here (already validated above)
+    return (
+      <TenantLandingPage
+        tenant={tenant}
+        onAuthSuccess={() => {
+          logger.debug('Index.tsx - Landing page auth success');
+          setCurrentPage('dashboard');
+        }}
+      />
+    );
   }
 
   // Show main application content
