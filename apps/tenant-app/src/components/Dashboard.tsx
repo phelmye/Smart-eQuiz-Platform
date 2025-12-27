@@ -34,7 +34,7 @@ import QuestionCategoryManager from './QuestionCategoryManager';
 import AccessControl from './AccessControl';
 import ComponentAccessControl from './ComponentAccessControl';
 import AuditLogViewer from './AuditLogViewer';
-import TenantRoleCustomization from './TenantRoleCustomization';
+import TenantRoleCustomizationComponent from './TenantRoleCustomization';
 import TermsOfService from './TermsOfService';
 import PrivacyPolicy from './PrivacyPolicy';
 import SubscriptionCheckout from './SubscriptionCheckout';
@@ -50,6 +50,7 @@ import TeamManagement from './TeamManagement';
 import ReportingExports from './ReportingExports';
 import { ChatPage } from '../pages/ChatPage';
 import ApiManagementPage from '../pages/ApiManagementPage';
+import type { TenantRoleCustomization as TenantRoleCustomizationType } from '@/lib/mockData';
 import { Tournament, User, XP_LEVELS, AVAILABLE_BADGES, storage, STORAGE_KEYS, mockTournaments, defaultPlans, mockBilling, canAccessPage } from '@/lib/mockData';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { usePracticeLeaderboard } from '@/hooks/usePracticeLeaderboard';
@@ -249,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             requiredPermission="roles.manage"
             fallbackMessage="Only organization administrators can customize role permissions."
           >
-            <TenantRoleCustomization 
+            <TenantRoleCustomizationComponent 
               tenantId={tenant?.id || user.tenantId} 
               currentUser={user}
               onBack={handleBackToDashboard}

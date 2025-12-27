@@ -57,7 +57,7 @@ interface TenantRoleCustomizationProps {
   onBack: () => void;
 }
 
-export function TenantRoleCustomization({ tenantId, currentUser, onBack }: TenantRoleCustomizationProps) {
+function TenantRoleCustomizationComponent({ tenantId, currentUser, onBack }: TenantRoleCustomizationProps) {
   const [customizations, setCustomizations] = useState<TenantRoleCustomization[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
@@ -633,4 +633,4 @@ export function TenantRoleCustomization({ tenantId, currentUser, onBack }: Tenan
   );
 }
 
-export default TenantRoleCustomization;
+export default TenantRoleCustomizationComponent;
