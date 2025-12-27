@@ -161,9 +161,9 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
   // Loading state
   if (usersLoading || tournamentsLoading) {
     return (
-      <div className=\"flex items-center justify-center p-8\">
-        <Loader2 className=\"h-8 w-8 animate-spin text-blue-600 mr-3\" />
-        <span className=\"text-gray-600\">Loading prize awards...</span>
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
+        <span className="text-gray-600">Loading prize awards...</span>
       </div>
     );
   }

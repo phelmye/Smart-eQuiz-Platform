@@ -1075,11 +1075,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          {tournaments.filter(t => t.status === 'scheduled' || t.status === 'active').slice(0, 2).map(tournament => (
+                          {tournaments.filter(t => t.status === 'upcoming' || t.status === 'active').slice(0, 2).map(tournament => (
                             <div key={tournament.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                               <div>
                                 <p className="font-medium text-sm">{tournament.name}</p>
-                                <p className="text-xs text-gray-500">{tournament.category}</p>
+                                <p className="text-xs text-gray-500">{tournament.description}</p>
                               </div>
                               <Badge variant={tournament.status === 'active' ? 'default' : 'secondary'}>
                                 {tournament.status}
@@ -1114,7 +1114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                               <CardTitle className="text-lg">{tournament.name}</CardTitle>
                               <Badge variant={
                                 tournament.status === 'active' ? 'default' :
-                                tournament.status === 'scheduled' ? 'secondary' :
+                                tournament.status === 'upcoming' ? 'secondary' :
                                 tournament.status === 'completed' ? 'outline' : 'destructive'
                               }>
                                 {tournament.status}
@@ -1133,15 +1133,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             </div>
                             <div className="flex justify-between text-sm">
                               <span>Participants:</span>
-                              <span>{tournament.currentParticipants}/{tournament.maxParticipants}</span>
+                              <span>{tournament.participants?.length || 0}/{tournament.maxParticipants}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span>Spectators:</span>
-                              <span>{tournament.spectatorCount}</span>
+                              <span>Questions:</span>
+                              <span>{tournament.questions?.length || 0}</span>
                             </div>
                             
                             <div className="pt-2">
-                              {tournament.status === 'scheduled' && (
+                              {tournament.status === 'upcoming' && (
                                 <Button 
                                   className="w-full" 
                                   disabled={tournament.participants.includes(user.id)}
