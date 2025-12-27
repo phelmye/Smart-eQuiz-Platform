@@ -11,6 +11,7 @@ import { useMatches } from '@/hooks/useMatches';
 import { useMatchLeaderboard } from '@/hooks/useMatchLeaderboard';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useUsers } from '@/hooks/useUsers';
+import { useTournaments } from '@/hooks/useTournaments';
 
 interface LiveMatchProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   const { user } = useAuth();
   
   // Fetch data from APIs
+  const { tournaments: apiTournaments, loading: tournamentsLoading } = useTournaments();
   const { questions: apiQuestions, loading: questionsLoading } = useQuestions();
   const { users: apiUsers, loading: usersLoading } = useUsers();
   
@@ -41,14 +43,14 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   
   // Load active tournament first to get tournament ID
   const activeTournament = React.useMemo(() => {
-    const tournaments = storage.get(STORAGE_KEYS.TOURNAMENTS) || [];
-    return tournaments.find((t: Tournament) => 
+    if (tournamentsLoading || !apiTournaments) return null;
+    return apiTournaments.find((t: Tournament) => 
       t.status === 'active' && (
         user?.role === 'super_admin' || 
         t.tenantId === user?.tenantId
       )
     );
-  }, [user]);
+  }, [apiTournaments, tournamentsLoading, user]);
   
   // Use real API hooks
   const { matches, loading: matchesLoading } = useMatches(activeTournament?.id);
@@ -171,7 +173,7 @@ export const LiveMatch: React.FC<LiveMatchProps> = ({ onBack }) => {
   };
 
   // Loading state
-  if (matchesLoading || leaderboardLoading || questionsLoading || usersLoading) {
+  if (matchesLoading || leaderboardLoading || questionsLoading || usersLoading || tournamentsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-6 flex items-center justify-center">
         <div className="text-center">
