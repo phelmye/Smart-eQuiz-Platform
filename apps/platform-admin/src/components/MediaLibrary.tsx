@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 export type MediaAsset = {
   id: string;
@@ -84,7 +85,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
       setAssets(data.assets);
       setTotal(data.total);
     } catch (error) {
-      console.error('Error fetching assets:', error);
+      logger.error('Error fetching assets', error as Error);
     } finally {
       setLoading(false);
     }
@@ -117,7 +118,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
 
       await fetchAssets();
     } catch (error) {
-      console.error('Error uploading files:', error);
+      logger.error('Error uploading files', error as Error);
       toast({
         variant: "destructive",
         title: "Upload Failed",
@@ -148,7 +149,7 @@ export function MediaLibrary({ onSelect, category, multiSelect = false }: MediaL
 
       await fetchAssets();
     } catch (error) {
-      console.error('Error deleting asset:', error);
+      logger.error('Error deleting asset', error as Error);
       toast({
         variant: "destructive",
         title: "Delete Failed",

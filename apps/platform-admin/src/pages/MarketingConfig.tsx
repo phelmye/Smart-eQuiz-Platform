@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { logger } from '../lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -101,7 +102,7 @@ export default function MarketingSiteConfig() {
     };
     
     // TODO: Save to API
-    console.log('Saving marketing config:', config);
+    logger.info('Saving marketing config', { config });
     alert('Marketing configuration saved successfully!');
   };
 
@@ -357,7 +358,7 @@ export default function MarketingSiteConfig() {
 
                 <Button variant="outline" onClick={() => {
                   // Add new social link
-                  console.log('Add new social link');
+                  logger.info('Add new social link');
                 }}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Social Link

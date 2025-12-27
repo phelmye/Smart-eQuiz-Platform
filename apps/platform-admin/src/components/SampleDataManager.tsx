@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useToast } from '../hooks/use-toast';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 interface SampleDataStatus {
   hasSampleData: boolean;
@@ -39,7 +40,7 @@ export function SampleDataManager() {
       const data = await api.get<SampleDataStatus>('/admin/sample-data/status');
       setStatus(data);
     } catch (error) {
-      console.error('Failed to fetch sample data status:', error);
+      logger.error('Failed to fetch sample data status', error as Error);
     } finally {
       setLoading(false);
     }

@@ -6,6 +6,8 @@
  * appear in plan listings and billing pages.
  */
 
+import { logger } from './logger';
+
 // Import feature requirements from tenant app (single source of truth)
 // NOTE: In production, this should come from a shared package or database
 
@@ -305,7 +307,7 @@ export function syncPlanFeatures(plans: PlanTier[]): PlanTier[] {
  */
 export function registerNewFeature(feature: Feature): void {
   FEATURE_REGISTRY[feature.id] = feature;
-  console.log(`✅ Feature "${feature.name}" registered for plans: ${feature.availableInPlans.join(', ')}`);
+  logger.info(`Feature "${feature.name}" registered for plans: ${feature.availableInPlans.join(', ')}`);
 }
 
 /**

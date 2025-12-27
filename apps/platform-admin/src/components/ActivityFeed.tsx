@@ -3,6 +3,7 @@ import { Activity, User, Building2, AlertCircle, CheckCircle, XCircle, Clock, Lo
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 interface ActivityItem {
   id: string;
@@ -86,7 +87,7 @@ export function ActivityFeed() {
         
         setActivities(activityItems);
       } catch (error) {
-        console.error('Failed to fetch audit logs:', error);
+        logger.error('Failed to fetch audit logs', error as Error);
         // Keep activities empty on error
       } finally {
         setLoading(false);

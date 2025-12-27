@@ -13,6 +13,7 @@
  * - Security alerts and anomaly detection
  * - Revenue attribution for usage-based billing
  */
+import { logger } from '../lib/logger';
 
 import { useState, useEffect } from 'react';
 import {
@@ -149,7 +150,7 @@ export default function ApiGovernance() {
         ]
       });
     } catch (err) {
-      console.error('Failed to load API governance stats:', err);
+      logger.error('Failed to load API governance stats', err as Error);
     } finally {
       setLoading(false);
     }

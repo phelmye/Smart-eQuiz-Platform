@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Check, X, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 interface Notification {
   id: string;
@@ -88,7 +89,7 @@ export function NotificationCenter() {
         
         setNotifications(notificationItems);
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
+        logger.error('Failed to fetch notifications', error as Error);
       }
     };
 

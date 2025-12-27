@@ -10,6 +10,7 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from '@tanstack/react-table';
+import { logger } from '../lib/logger';
 import { 
   Search, 
   Download, 
@@ -108,7 +109,7 @@ export default function AuditLogs() {
       setLogs(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch audit logs');
-      console.error('Error fetching audit logs:', err);
+      logger.error('Error fetching audit logs', err as Error);
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,7 @@ export default function AuditLogs() {
       const data = await api.get<AuditStats>('/audit/stats', { period: 'week' });
       setStats(data);
     } catch (err) {
-      console.error('Error fetching audit stats:', err);
+      logger.error('Error fetching audit stats', err as Error);
     }
   };
 
@@ -292,7 +293,7 @@ export default function AuditLogs() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(downloadUrl);
     } catch (err) {
-      console.error('Error exporting logs:', err);
+      logger.error('Error exporting logs', err as Error);
       alert('Failed to export logs. Please try again.');
     }
   };
@@ -321,7 +322,7 @@ export default function AuditLogs() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Error exporting logs:', err);
+      logger.error('Error exporting logs', err as Error);
       alert('Failed to export logs. Please try again.');
     }
   };

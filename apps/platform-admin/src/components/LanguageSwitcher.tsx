@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Globe } from 'lucide-react';
+import { logger } from '../lib/logger';
 import {
   Select,
   SelectContent,
@@ -71,7 +72,7 @@ export function LanguageSwitcher({
     }
 
     // TODO: Trigger i18n system to reload translations
-    console.log(`Language changed to: ${languageCode}`);
+    logger.info(`Language changed to: ${languageCode}`);
     
     // For now, show a message (until full i18n is implemented)
     if (languageCode !== 'en') {
@@ -206,7 +207,7 @@ export async function detectLanguageFromIP(): Promise<string> {
     const supported = SUPPORTED_LANGUAGES.find(l => l.code === browserLang);
     return supported?.code || 'en';
   } catch (error) {
-    console.error('Failed to detect language from IP:', error);
+    logger.error('Failed to detect language from IP', error as Error);
     return 'en';
   }
 }

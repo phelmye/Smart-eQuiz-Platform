@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { logger } from '../lib/logger';
 import {
   BarChart3,
   TrendingUp,
@@ -78,7 +79,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
       setDeviceStats(deviceData);
 
     } catch (err) {
-      console.error('Failed to fetch analytics:', err);
+      logger.error('Failed to fetch analytics', err as Error);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
       
       // Fallback to empty/default state on error

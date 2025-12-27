@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, RefreshCw } from 'lucide-react';
 import { formatCurrency, convertCurrency, getSupportedCurrencies, type CurrencyCode } from '@smart-equiz/utils';
+import { logger } from '../lib/logger';
 import {
   Select,
   SelectContent,
@@ -69,7 +70,7 @@ export function CurrencyConverter({
         );
         setConvertedAmount(converted);
       } catch (error) {
-        console.error('Currency conversion error:', error);
+        logger.error('Currency conversion error', error as Error);
         setConvertedAmount(amount / 100);
       } finally {
         setIsLoading(false);

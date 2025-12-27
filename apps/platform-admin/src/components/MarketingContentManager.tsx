@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, Edit2, Trash2, Save, X, AlertCircle } from 'lucide-react';
 import { useMarketingCMS } from '@/hooks/useMarketingCMS';
 import type { BlogPost, Feature, Testimonial, PricingPlan, FAQ, HeroContent } from '@/hooks/useMarketingCMS';
+import { logger } from '@/lib/logger';
 
 export function MarketingContentManager() {
   const [activeSection, setActiveSection] = useState<string>('hero');
@@ -83,7 +84,7 @@ export function MarketingContentManager() {
       setEditingBlog(null);
     } catch (err) {
       setError('Failed to save blog post');
-      console.error(err);
+      logger.error('Failed to save blog post', err as Error);
     }
   };
 
@@ -96,7 +97,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to delete blog post');
-      console.error(err);
+      logger.error('Failed to delete blog post', err as Error);
     }
   };
 
@@ -126,7 +127,7 @@ export function MarketingContentManager() {
       setEditingFeature(null);
     } catch (err) {
       setError('Failed to save feature');
-      console.error(err);
+      logger.error('Failed to save feature', err as Error);
     }
   };
 
@@ -139,7 +140,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to delete feature');
-      console.error(err);
+      logger.error('Failed to delete feature', err as Error);
     }
   };
 
@@ -171,7 +172,7 @@ export function MarketingContentManager() {
       setEditingTestimonial(null);
     } catch (err) {
       setError('Failed to save testimonial');
-      console.error(err);
+      logger.error('Failed to save testimonial', err as Error);
     }
   };
 
@@ -184,7 +185,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to delete testimonial');
-      console.error(err);
+      logger.error('Failed to delete testimonial', err as Error);
     }
   };
 
@@ -216,7 +217,7 @@ export function MarketingContentManager() {
       setEditingPricing(null);
     } catch (err) {
       setError('Failed to save pricing plan');
-      console.error(err);
+      logger.error('Failed to save pricing plan', err as Error);
     }
   };
 
@@ -229,7 +230,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to delete pricing plan');
-      console.error(err);
+      logger.error('Failed to delete pricing plan', err as Error);
     }
   };
 
@@ -258,7 +259,7 @@ export function MarketingContentManager() {
       setEditingFAQ(null);
     } catch (err) {
       setError('Failed to save FAQ');
-      console.error(err);
+      logger.error('Failed to save FAQ', err as Error);
     }
   };
 
@@ -271,7 +272,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to delete FAQ');
-      console.error(err);
+      logger.error('Failed to delete FAQ', err as Error);
     }
   };
 
@@ -287,7 +288,7 @@ export function MarketingContentManager() {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError('Failed to save hero content');
-      console.error(err);
+      logger.error('Failed to save hero content', err as Error);
     }
   };
 
