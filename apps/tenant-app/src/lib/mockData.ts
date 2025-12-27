@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 // Storage keys for localStorage
 export const STORAGE_KEYS = {
   PLANS: 'equiz_plans',
@@ -2869,19 +2871,19 @@ export const mockQuestions: Question[] = [
 // Storage utility functions with robust persistence
 export const storage = {
   get: (key: string) => {
-    console.log(`🔍 storage.get called for key: ${key}`);
+    logger.debug(`storage.get called for key: ${key}`);
     try {
       // For current user, also check URL hash as emergency backup
       if (key === STORAGE_KEYS.CURRENT_USER) {
         // Check URL hash first for current user (survives all reloads)
         const hash = window.location.hash;
-        console.log(`🔍 Checking URL hash for user: '${hash}'`);
+        logger.debug(`Checking URL hash for user: '${hash}'`);
         if (hash.includes('user=')) {
           try {
             const userMatch = hash.match(/user=([^&]+)/);
             if (userMatch) {
               const userEmail = decodeURIComponent(userMatch[1]);
-              console.log(`Found user in URL hash: ${userEmail}`);
+              logger.debug(`Found user in URL hash: ${userEmail}`);
               
               // Get full user details from users list (avoid recursive storage call)
               let allUsers = mockUsers;
@@ -2898,15 +2900,15 @@ export const storage = {
               const fullUser = (allUsers as User[]).find(u => u.email === userEmail);
               
               if (fullUser) {
-                console.log(`Found full user details for ${userEmail}, restoring to storage`);
+                logger.debug(`Found full user details for ${userEmail}, restoring to storage`);
                 // Immediately save full user details back to storage to prevent future lookups
                 try {
                   const jsonValue = JSON.stringify(fullUser);
                   localStorage.setItem(key, jsonValue);
                   sessionStorage.setItem(key, jsonValue);
-                  console.log(`Restored ${userEmail} to storage from URL hash`);
+                  logger.debug(`Restored ${userEmail} to storage from URL hash`);
                 } catch (restoreError) {
-                  console.warn('Could not restore user to storage:', restoreError);
+                  logger.warn('Could not restore user to storage:', restoreError);
                 }
                 return fullUser;
               } else {
@@ -2934,7 +2936,7 @@ export const storage = {
           const item = getSource();
           if (item) {
             const parsed = JSON.parse(item);
-            console.log(`Found ${key} in storage:`, key === STORAGE_KEYS.CURRENT_USER ? parsed?.email : 'data');
+            logger.debug(`Found ${key} in storage:`, key === STORAGE_KEYS.CURRENT_USER ? parsed?.email : 'data');
             return parsed;
           }
         } catch (sourceError) {
@@ -2943,10 +2945,10 @@ export const storage = {
         }
       }
       
-      console.log(`No ${key} found in any storage location`);
+      logger.debug(`No ${key} found in any storage location`);
       return null;
     } catch (error) {
-      console.error('Error reading from storage:', error);
+      logger.error('Error reading from storage:', error);
       return null;
     }
   },
@@ -2968,9 +2970,9 @@ export const storage = {
           const newHash = cleanHash + separator + userParam;
           
           window.location.hash = newHash;
-          console.log(`Saved user to URL hash: ${value.email}`);
+          logger.debug(`Saved user to URL hash: ${value.email}`);
         } catch (hashError) {
-          console.warn('Could not save to URL hash:', hashError);
+          logger.warn('Could not save to URL hash:', hashError);
         }
       }
       
@@ -2993,12 +2995,12 @@ export const storage = {
         }
       });
       
-      console.log(`Saved ${key} to ${successCount}/4 storage locations + URL hash`);
+      logger.debug(`Saved ${key} to ${successCount}/4 storage locations + URL hash`);
       if (key === STORAGE_KEYS.CURRENT_USER && isUser(value)) {
-        console.log('User saved:', value.email);
+        logger.debug('User saved:', value.email);
       }
     } catch (error) {
-      console.error('Error writing to storage:', error);
+      logger.error('Error writing to storage:', error);
     }
   },
   
@@ -3010,9 +3012,9 @@ export const storage = {
           const currentHash = window.location.hash;
           const cleanHash = currentHash.replace(/[&#]?user=[^&]*&?/g, '');
           window.location.hash = cleanHash;
-          console.log('Removed user from URL hash');
+          logger.debug('Removed user from URL hash');
         } catch (hashError) {
-          console.warn('Could not remove from URL hash:', hashError);
+          logger.warn('Could not remove from URL hash:', hashError);
         }
       }
       
@@ -3032,9 +3034,9 @@ export const storage = {
         }
       });
       
-      console.log(`Removed ${key} from all storage locations + URL hash`);
+      logger.debug(`Removed ${key} from all storage locations + URL hash`);
     } catch (error) {
-      console.error('Error removing from storage:', error);
+      logger.error('Error removing from storage:', error);
     }
   }
 };
@@ -3513,7 +3515,7 @@ export const initializeMockData = () => {
   
   // Initialize role permissions
   if (!storage.get(STORAGE_KEYS.ROLE_PERMISSIONS)) {
-    console.log('🔧 Initializing ROLE_PERMISSIONS for the first time...');
+    logger.info('Initializing ROLE_PERMISSIONS for the first time...');
     // Initialize with component-based features structure for ComponentAccessControl
     const roleComponentFeatures = [
       {
@@ -3575,13 +3577,13 @@ export const initializeMockData = () => {
       }
     ];
     storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, roleComponentFeatures);
-    console.log('✅ ROLE_PERMISSIONS initialized successfully');
-    console.log('ORG_ADMIN features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
+    logger.info('ROLE_PERMISSIONS initialized successfully');
+    logger.debug('ORG_ADMIN features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
   } else {
-    console.log('✓ ROLE_PERMISSIONS already exists in storage');
+    logger.info('ROLE_PERMISSIONS already exists in storage');
     const existing = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS);
     const orgAdmin = existing?.find((r: any) => r.roleName?.toLowerCase() === 'org_admin');
-    console.log('ORG_ADMIN features from storage:', orgAdmin?.componentFeatures);
+    logger.debug('ORG_ADMIN features from storage:', orgAdmin?.componentFeatures);
   }
   
   // Initialize audit logs
@@ -4516,7 +4518,7 @@ export function updateTenantCustomText(
     storage.set(brandingKey, branding);
     return true;
   } catch (error) {
-    console.error('Failed to update custom text:', error);
+    logger.error('Failed to update custom text:', error);
     return false;
   }
 }
@@ -7890,7 +7892,7 @@ export function approveBonusQuestions(
  * Call this if users are experiencing "Access Restricted" errors
  */
 export function forceReinitializeRolePermissions() {
-  console.log('🔄 Force reinitializing ROLE_PERMISSIONS...');
+  logger.info('Force reinitializing ROLE_PERMISSIONS...');
   
   const roleComponentFeatures = [
     {
@@ -7949,8 +7951,8 @@ export function forceReinitializeRolePermissions() {
   ];
   
   storage.set(STORAGE_KEYS.ROLE_PERMISSIONS, roleComponentFeatures);
-  console.log('✅ ROLE_PERMISSIONS reinitialized successfully');
-  console.log('ORG_ADMIN now has features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
+  logger.info('ROLE_PERMISSIONS reinitialized successfully');
+  logger.debug('ORG_ADMIN now has features:', roleComponentFeatures.find(r => r.roleName === 'org_admin')?.componentFeatures);
   
   return roleComponentFeatures;
 }
