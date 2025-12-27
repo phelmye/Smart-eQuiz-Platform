@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { logger } from '@/lib/logger';
 
 class ChatSocketService {
   private socket: Socket | null = null;
@@ -32,7 +33,7 @@ class ChatSocketService {
     });
 
     this.socket.on('error', (error) => {
-      console.error('Socket.IO error:', error);
+      logger.error('Socket.IO error:', error);
     });
 
     return this.socket;
@@ -95,3 +96,4 @@ class ChatSocketService {
 }
 
 export const chatSocket = new ChatSocketService();
+

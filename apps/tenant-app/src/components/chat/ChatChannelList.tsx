@@ -28,7 +28,7 @@ export const ChatChannelList: React.FC<ChatChannelListProps> = ({
       const response = await chatApi.getChannels();
       setChannels(response.data);
     } catch (error) {
-      console.error('Failed to load channels:', error);
+      logger.error('Failed to load channels:', error);
     } finally {
       setLoading(false);
     }
@@ -159,3 +159,4 @@ export const ChatChannelList: React.FC<ChatChannelListProps> = ({
     </div>
   );
 };
+

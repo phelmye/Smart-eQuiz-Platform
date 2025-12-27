@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Trash2, Edit, Plus, Shield, DollarSign, Users, Trophy, HelpCircle } from 'lucide-react';
 import { Plan, storage, STORAGE_KEYS, defaultPlans, calculateYearlyPrice, calculateYearlyDiscount, formatCurrency } from '@/lib/mockData';
+import { logger } from '@/lib/logger';
 
 interface PlanManagementProps {
   onBack: () => void;
@@ -33,7 +34,7 @@ const PlanManagement: React.FC<PlanManagementProps> = ({ onBack }) => {
       const storedPlans = storage.get(STORAGE_KEYS.PLANS) || defaultPlans;
       setPlans(storedPlans);
     } catch (error) {
-      console.error('Error loading plans:', error);
+      logger.error('Error loading plans', error);
       setError('Failed to load plans');
     }
   };
@@ -45,7 +46,7 @@ const PlanManagement: React.FC<PlanManagementProps> = ({ onBack }) => {
       setSuccess('Plans updated successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error saving plans:', error);
+      logger.error('Error saving plans', error);
       setError('Failed to save plans');
     }
   };

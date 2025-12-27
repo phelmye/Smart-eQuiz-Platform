@@ -23,6 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 import {
   Dialog,
   DialogContent,
@@ -113,7 +114,7 @@ export default function WebhookManagement() {
       const data = await apiManagementClient.listWebhooks();
       setWebhooks(data);
     } catch (err) {
-      console.error('Failed to load webhooks:', err);
+      logger.error('Failed to load webhooks:', err);
       setError(err instanceof Error ? err.message : 'Failed to load webhooks');
     } finally {
       setLoading(false);
@@ -139,7 +140,7 @@ export default function WebhookManagement() {
       });
       console.log('Webhook created successfully');
     } catch (err) {
-      console.error('Failed to create webhook:', err);
+      logger.error('Failed to create webhook:', err);
       alert('Failed to create webhook');
     }
   };
@@ -153,7 +154,7 @@ export default function WebhookManagement() {
       setDeleteDialog({ open: false, webhook: null });
       console.log('Webhook deleted successfully');
     } catch (err) {
-      console.error('Failed to delete webhook:', err);
+      logger.error('Failed to delete webhook:', err);
       alert('Failed to delete webhook');
     }
   };
@@ -164,7 +165,7 @@ export default function WebhookManagement() {
       console.log('Test webhook sent successfully');
       alert(`Test event sent to ${webhook.url}`);
     } catch (err) {
-      console.error('Failed to test webhook:', err);
+      logger.error('Failed to test webhook:', err);
       alert('Failed to send test webhook');
     }
   };
@@ -175,7 +176,7 @@ export default function WebhookManagement() {
       setDeliveries(data);
       setDeliveriesDialog({ open: true, webhook });
     } catch (err) {
-      console.error('Failed to load deliveries:', err);
+      logger.error('Failed to load deliveries:', err);
       alert('Failed to load delivery logs');
     }
   };
@@ -606,3 +607,4 @@ export default function WebhookManagement() {
     </>
   );
 }
+

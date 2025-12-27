@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logger } from '@/lib/logger';
 import { 
   Trophy, 
   GitBranch, 
@@ -83,7 +84,7 @@ export default function KnockoutTournamentEngine({
       setBracket(newBracket);
       loadBracketData();
     } catch (error) {
-      console.error('Failed to generate bracket:', error);
+      logger.error('Failed to generate bracket:', error);
       alert('Failed to generate bracket. Please try again.');
     } finally {
       setGenerating(false);
@@ -422,3 +423,4 @@ export default function KnockoutTournamentEngine({
     </div>
   );
 }
+

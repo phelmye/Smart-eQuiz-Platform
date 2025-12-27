@@ -85,7 +85,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       const keys = await apiManagementClient.listApiKeys();
       setApiKeys(keys);
     } catch (err) {
-      console.error('Failed to load API keys:', err);
+      logger.error('Failed to load API keys:', err);
       setError(err instanceof Error ? err.message : 'Failed to load API keys');
     } finally {
       setLoading(false);
@@ -123,7 +123,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       // TODO: Show success toast
       console.log('API key revoked successfully');
     } catch (err) {
-      console.error('Failed to revoke API key:', err);
+      logger.error('Failed to revoke API key:', err);
       // TODO: Show error toast
     }
   };
@@ -143,7 +143,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       // TODO: Show success toast
       console.log('API key deleted successfully');
     } catch (err) {
-      console.error('Failed to delete API key:', err);
+      logger.error('Failed to delete API key:', err);
       // TODO: Show error toast
     }
   };
@@ -461,3 +461,4 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
     </>
   );
 }
+

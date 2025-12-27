@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 
 export interface Tenant {
   id: string;
@@ -28,7 +29,7 @@ export function useTenants() {
       // For now, return empty until platform-admin integration
       setTenants([]);
     } catch (err: any) {
-      console.error('Failed to fetch tenants:', err);
+      apiLogger.error('/api fetch tenants:', err);
       setError(err.message || 'Failed to load tenants');
       setTenants([]);
     } finally {
@@ -61,7 +62,7 @@ export function useTenant(id: string) {
       // const data = await api.get(`/tenants/${id}`);
       setTenant(null);
     } catch (err: any) {
-      console.error('Failed to fetch tenant:', err);
+      apiLogger.error('/api fetch tenant:', err);
       setError(err.message || 'Failed to load tenant');
       setTenant(null);
     } finally {
@@ -82,3 +83,4 @@ export function useTenant(id: string) {
     refetch: fetchTenant,
   };
 }
+

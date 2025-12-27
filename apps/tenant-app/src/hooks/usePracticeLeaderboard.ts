@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface LeaderboardEntry {
@@ -24,7 +25,7 @@ export function usePracticeLeaderboard(categoryId?: string, limit: number = 10) 
         const data = await apiClient.getPracticeLeaderboard(categoryId, limit);
         setLeaderboard(data);
       } catch (err: any) {
-        console.error('Failed to fetch practice leaderboard:', err);
+        apiLogger.error('/api fetch practice leaderboard:', err);
         setError(err.message || 'Failed to load leaderboard');
         setLeaderboard([]);
       } finally {
@@ -37,3 +38,4 @@ export function usePracticeLeaderboard(categoryId?: string, limit: number = 10) 
 
   return { leaderboard, loading, error };
 }
+

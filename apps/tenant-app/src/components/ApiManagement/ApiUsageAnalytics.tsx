@@ -58,7 +58,7 @@ export default function ApiUsageAnalytics() {
       const data = await apiManagementClient.getApiStats(timeRange);
       setStats(data);
     } catch (err) {
-      console.error('Failed to load API statistics:', err);
+      logger.error('Failed to load API statistics:', err);
       setError(err instanceof Error ? err.message : 'Failed to load statistics');
     } finally {
       setLoading(false);
@@ -384,3 +384,4 @@ export default function ApiUsageAnalytics() {
     </div>
   );
 }
+

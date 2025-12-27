@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface User {
@@ -29,7 +30,7 @@ export function useCurrentUser() {
       const data = await apiClient.getCurrentUser();
       setUser(data);
     } catch (err: any) {
-      console.error('Failed to fetch current user:', err);
+      apiLogger.error('/api fetch current user:', err);
       setError(err.message || 'Failed to load user');
       setUser(null);
     } finally {
@@ -61,7 +62,7 @@ export function useUsers(search?: string, tenantId?: string) {
       const data = await apiClient.getUsers({ search, tenantId });
       setUsers(data);
     } catch (err: any) {
-      console.error('Failed to fetch users:', err);
+      apiLogger.error('/api fetch users:', err);
       setError(err.message || 'Failed to load users');
       setUsers([]);
     } finally {
@@ -80,3 +81,4 @@ export function useUsers(search?: string, tenantId?: string) {
     refetch: fetchUsers,
   };
 }
+

@@ -5,6 +5,7 @@ import { ChatWindow } from '@/components/chat/ChatWindow';
 import { CreateSupportTicketDialog } from '@/components/chat/CreateSupportTicketDialog';
 import { ChatChannel, chatApi } from '@/lib/chatApi';
 import { chatSocket } from '@/lib/chatSocket';
+import { logger } from '@/lib/logger';
 
 interface ChatPageProps {
   currentUserId: string;
@@ -50,7 +51,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       alert('Ticket escalated to platform support successfully.');
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Failed to escalate:', error);
+      logger.error('Failed to escalate:', error);
       alert('Failed to escalate ticket. Please try again.');
     }
   };
@@ -64,11 +65,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     try {
       // TODO: Implement assign channel API endpoint
       // await chatApi.assignChannel(selectedChannel.id, assignee);
-      console.log('Assigning channel to:', assignee);
+      logger.info('Assigning channel to:', assignee);
       alert(`Channel assigned to ${assignee} successfully.`);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Failed to assign:', error);
+      logger.error('Failed to assign:', error);
       alert('Failed to assign channel. Please try again.');
     }
   };
@@ -83,7 +84,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       alert('Channel marked as resolved.');
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Failed to resolve:', error);
+      logger.error('Failed to resolve:', error);
       alert('Failed to resolve channel. Please try again.');
     }
   };
@@ -101,7 +102,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       setSelectedChannel(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      console.error('Failed to archive:', error);
+      logger.error('Failed to archive:', error);
       alert('Failed to archive channel. Please try again.');
     }
   };
@@ -157,3 +158,4 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     </div>
   );
 };
+

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ScrollArea } from '@/components/ui/scroll-area';import { logger } from '@/lib/logger';import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { checkAcceptanceStatus, acceptLegalDocument, LegalDocumentType, useLegalDocument } from '@/hooks/useLegalDocument';
@@ -53,7 +52,7 @@ export const LegalAcceptanceModal: React.FC<LegalAcceptanceModalProps> = ({
         setIsOpen(true);
       }
     } catch (error) {
-      console.error('Failed to check acceptance status:', error);
+      logger.error('Failed to check acceptance status', error);
     }
   };
 
@@ -262,3 +261,4 @@ function Label({ htmlFor, className, children }: { htmlFor: string; className?: 
     </label>
   );
 }
+

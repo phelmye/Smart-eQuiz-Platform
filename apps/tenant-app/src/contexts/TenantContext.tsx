@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Tenant } from '@smart-equiz/types';
 import { loadSavedTheme } from '@/lib/theme';
+import { logger } from '@/lib/logger';
 
 interface TenantContextType {
   tenant: Tenant | null;
@@ -66,7 +67,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
         // In production, fetch tenant data from API
         fetchTenantData(extractedSubdomain);
       } else {
-        console.error('Invalid subdomain format');
+        logger.error('Invalid subdomain format');
         setIsLoading(false);
       }
     }
@@ -76,7 +77,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
   useEffect(() => {
     if (tenant?.id) {
       loadSavedTheme(tenant.id);
-      console.log('Loading theme for tenant:', tenant.id, tenant.name);
+      logger.info('Loading theme for tenant:', tenant.id, tenant.name);
     }
   }, [tenant?.id]);
 
@@ -103,7 +104,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
         updatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Failed to fetch tenant data:', error);
+      logger.error('Failed to fetch tenant data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -149,3 +150,4 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
     </TenantContext.Provider>
   );
 };
+

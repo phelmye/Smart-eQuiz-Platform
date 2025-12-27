@@ -1,5 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { Sentry } from '../lib/sentry';
+import { logger } from '@/lib/logger';
 
 interface Props {
   children: ReactNode;
@@ -29,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
         },
       },
     });
-    console.error('Error caught by boundary:', error, errorInfo);
+    logger.error('Error caught by boundary:', error, errorInfo);
   }
 
   render() {
@@ -95,3 +96,4 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+

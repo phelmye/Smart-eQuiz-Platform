@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface MatchLeaderboardEntry {
@@ -25,7 +26,7 @@ export function useMatchLeaderboard(tournamentId: string) {
         const data = await apiClient.getMatchLeaderboard(tournamentId);
         setLeaderboard(data);
       } catch (err: any) {
-        console.error('Failed to fetch match leaderboard:', err);
+        apiLogger.error('/api fetch match leaderboard:', err);
         setError(err.message || 'Failed to load match leaderboard');
         setLeaderboard([]);
       } finally {
@@ -40,3 +41,4 @@ export function useMatchLeaderboard(tournamentId: string) {
 
   return { leaderboard, loading, error };
 }
+

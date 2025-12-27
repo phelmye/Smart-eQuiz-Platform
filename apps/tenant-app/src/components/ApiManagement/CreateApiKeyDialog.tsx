@@ -102,7 +102,7 @@ export default function CreateApiKeyDialog({
       setStep('success');
       
     } catch (err) {
-      console.error('Failed to create API key:', err);
+      logger.error('Failed to create API key:', err);
       setError(err instanceof Error ? err.message : 'Failed to create API key');
     } finally {
       setLoading(false);
@@ -517,3 +517,4 @@ export default function CreateApiKeyDialog({
     </Dialog>
   );
 }
+

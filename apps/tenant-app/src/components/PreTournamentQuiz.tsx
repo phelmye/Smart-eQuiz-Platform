@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { logger } from '@/lib/logger';
 import { 
   Trophy, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Loader2, Target, BarChart, TrendingUp 
@@ -199,7 +200,7 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
       setQuizCompleted(true);
 
     } catch (error) {
-      console.error('Error submitting quiz:', error);
+      logger.error('Error submitting quiz:', error);
       alert('Failed to submit quiz. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -586,3 +587,4 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
     </div>
   );
 };
+

@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/apiClient';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/use-toast';
 import { canAccessPracticeMode } from '@/lib/mockData';
+import { logger, apiLogger } from '@/lib/logger';
 
 interface PracticeModeProps {
   onBack: () => void;
@@ -103,7 +104,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
       const data = await apiClient.getPracticeStats();
       setStats(data);
     } catch (error: any) {
-      console.error('Failed to load stats:', error);
+      apiLogger.error('/api/practice/stats', error);
     }
   };
 
@@ -112,7 +113,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
       const data = await apiClient.getPracticeLeaderboard();
       setLeaderboard(data);
     } catch (error: any) {
-      console.error('Failed to load leaderboard:', error);
+      apiLogger.error('/api/practice/leaderboard', error);
     }
   };
 
@@ -260,7 +261,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
         }
       }, 2500);
     } catch (error: any) {
-      console.error('Failed to submit time-up answer:', error);
+      logger.error('Failed to submit time-up answer', error);
     }
   };
 

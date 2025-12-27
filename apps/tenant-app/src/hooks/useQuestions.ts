@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface Question {
@@ -39,7 +40,7 @@ export function useQuestions(filters?: QuestionFilters) {
       const data = await apiClient.getQuestions(filters);
       setQuestions(data);
     } catch (err: any) {
-      console.error('Failed to fetch questions:', err);
+      apiLogger.error('/api fetch questions:', err);
       setError(err.message || 'Failed to load questions');
       setQuestions([]);
     } finally {
@@ -71,7 +72,7 @@ export function useCategories() {
       const data = await apiClient.getCategories();
       setCategories(data);
     } catch (err: any) {
-      console.error('Failed to fetch categories:', err);
+      apiLogger.error('/api fetch categories:', err);
       setError(err.message || 'Failed to load categories');
       setCategories([]);
     } finally {
@@ -90,3 +91,4 @@ export function useCategories() {
     refetch: fetchCategories,
   };
 }
+

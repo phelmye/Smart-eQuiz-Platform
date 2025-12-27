@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 import { 
   Save, 
   Eye, 
@@ -218,7 +219,7 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
 
       showMessage('success', 'Landing page content published successfully!');
     } catch (error) {
-      console.error('Failed to save landing page:', error);
+      logger.error('Failed to save landing page:', error);
       showMessage('error', `Failed to save landing page content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
@@ -580,3 +581,4 @@ export default function TenantLandingSettings({ user, tenant }: TenantLandingSet
     </div>
   );
 }
+

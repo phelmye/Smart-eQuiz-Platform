@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileText, Save, Eye, History, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { User } from '@/lib/mockData';
+import { logger } from '@/lib/logger';
 
 interface LegalDocument {
   id: string;
@@ -93,7 +94,7 @@ export const LegalDocumentEditor: React.FC<LegalDocumentEditorProps> = ({ user }
         setDocuments(data);
       }
     } catch (error) {
-      console.error('Failed to load documents:', error);
+      logger.error('Failed to load document', error);
     } finally {
       setLoading(false);
     }
@@ -118,7 +119,7 @@ export const LegalDocumentEditor: React.FC<LegalDocumentEditorProps> = ({ user }
         });
       }
     } catch (error) {
-      console.error('Failed to load document:', error);
+      logger.error('Failed to load document', error);
       // New document
       setEditingDocument(null);
       setFormData({
@@ -145,7 +146,7 @@ export const LegalDocumentEditor: React.FC<LegalDocumentEditorProps> = ({ user }
         setShowHistory(true);
       }
     } catch (error) {
-      console.error('Failed to load version history:', error);
+      logger.error('Failed to load version history', error);
     } finally {
       setLoading(false);
     }
@@ -183,7 +184,7 @@ export const LegalDocumentEditor: React.FC<LegalDocumentEditorProps> = ({ user }
         setSaveStatus('error');
       }
     } catch (error) {
-      console.error('Failed to save document:', error);
+      logger.error('Failed to save document', error);
       setSaveStatus('error');
     }
   };
@@ -204,7 +205,7 @@ export const LegalDocumentEditor: React.FC<LegalDocumentEditorProps> = ({ user }
         loadVersionHistory(selectedType);
       }
     } catch (error) {
-      console.error('Failed to activate version:', error);
+      logger.error('Failed to activate version', error);
     }
   };
 
@@ -553,3 +554,5 @@ For privacy-related questions, please contact us at privacy@${orgName}.com`;
     </div>
   );
 };
+
+

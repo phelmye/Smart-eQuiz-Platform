@@ -70,7 +70,7 @@ export const CreateSupportTicketDialog: React.FC<CreateSupportTicketDialogProps>
         onTicketCreated();
       }
     } catch (error) {
-      console.error('Failed to create ticket:', error);
+      logger.error('Failed to create ticket:', error);
       alert('Failed to create support ticket. Please try again.');
     } finally {
       setSubmitting(false);
@@ -187,3 +187,4 @@ export const CreateSupportTicketDialog: React.FC<CreateSupportTicketDialogProps>
     </Dialog>
   );
 };
+

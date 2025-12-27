@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface LiveParticipant {
@@ -48,7 +49,7 @@ export function useLiveTournament(tournamentId: string, autoRefresh: boolean = t
       setData(response);
       setLoading(false);
     } catch (err: any) {
-      console.error('Failed to fetch live tournament data:', err);
+      apiLogger.error('/api fetch live tournament data:', err);
       setError(err.message || 'Failed to load live data');
       setLoading(false);
     }
@@ -77,3 +78,4 @@ export function useLiveTournament(tournamentId: string, autoRefresh: boolean = t
     refresh: fetchLiveData,
   };
 }
+

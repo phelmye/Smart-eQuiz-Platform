@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface Match {
@@ -24,7 +25,7 @@ export function useMatches(tournamentId?: string) {
       const data = await apiClient.getMatches(tournamentId);
       setMatches(data);
     } catch (err: any) {
-      console.error('Failed to fetch matches:', err);
+      apiLogger.error('/api fetch matches:', err);
       setError(err.message || 'Failed to load matches');
       setMatches([]);
     } finally {
@@ -43,3 +44,4 @@ export function useMatches(tournamentId?: string) {
     refetch: fetchMatches,
   };
 }
+

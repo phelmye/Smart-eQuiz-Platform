@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 
 export enum LegalDocumentType {
   TERMS_OF_SERVICE = 'TERMS_OF_SERVICE',
@@ -99,7 +100,7 @@ export const acceptLegalDocument = async (documentId: string, version: number): 
 
     return response.ok;
   } catch (error) {
-    console.error('Failed to accept document:', error);
+    apiLogger.error('/api accept document:', error);
     return false;
   }
 };
@@ -127,7 +128,8 @@ export const checkAcceptanceStatus = async (tenantId: string): Promise<{
 
     return { hasAcceptedAll: true, pendingDocuments: [] };
   } catch (error) {
-    console.error('Failed to check acceptance status:', error);
+    apiLogger.error('/api check acceptance status:', error);
     return { hasAcceptedAll: true, pendingDocuments: [] };
   }
 };
+

@@ -93,7 +93,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       const response = await chatApi.getChannel(channel.id);
       setMessages(response.data.messages || []);
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      logger.error('Failed to load messages:', error);
     }
   };
 
@@ -114,7 +114,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       
       setInputValue('');
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
     } finally {
       setSending(false);
     }
@@ -284,3 +284,4 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     </Card>
   );
 };
+

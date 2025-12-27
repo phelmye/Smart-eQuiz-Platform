@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import axios from 'axios';
 
 interface LandingPageContent {
@@ -78,7 +79,7 @@ export function useLandingPageContent(tenantId: string): UseLandingPageContentRe
       setContent(response.data);
     } catch (err) {
       const error = err as Error;
-      console.error('Failed to fetch landing page content:', error);
+      apiLogger.error('/api fetch landing page content:', error);
       setError(error);
     } finally {
       setLoading(false);
@@ -169,3 +170,4 @@ export async function getLandingPageHistory(
 
   return response.data;
 }
+

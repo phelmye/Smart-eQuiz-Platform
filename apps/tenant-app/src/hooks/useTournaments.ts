@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface Tournament {
@@ -30,7 +31,7 @@ export function useTournaments() {
       const data = await apiClient.getTournaments();
       setTournaments(data);
     } catch (err: any) {
-      console.error('Failed to fetch tournaments:', err);
+      apiLogger.error('/api fetch tournaments:', err);
       setError(err.message || 'Failed to load tournaments');
       setTournaments([]);
     } finally {
@@ -49,3 +50,4 @@ export function useTournaments() {
     refetch: fetchTournaments,
   };
 }
+

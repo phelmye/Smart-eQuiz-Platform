@@ -11,6 +11,7 @@ import { User, Tournament, Question, storage, STORAGE_KEYS, mockUsers, mockTourn
 import { useTournaments } from '@/hooks/useTournaments';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useUsers } from '@/hooks/useUsers';
+import { logger } from '@/lib/logger';
 
 interface AnalyticsProps {
   onBack: () => void;
@@ -145,7 +146,7 @@ export const Analytics: React.FC<AnalyticsProps> = ({ onBack }) => {
     });
 
   } catch (error) {
-    console.error('Error loading analytics data:', error);
+    logger.error('Error loading analytics data', error);
     // Set default empty data on error
     setAnalyticsData({
       totalUsers: 0,

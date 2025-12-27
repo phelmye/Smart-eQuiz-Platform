@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';import { logger } from '@/lib/logger';import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -188,7 +187,7 @@ export default function BonusQuestionManager({
         setActiveTab('requests');
       }, 1000);
     } catch (error) {
-      console.error('Error creating bonus question request:', error);
+      logger.error('Error creating bonus question request', error);
       alert('Failed to create bonus question request');
       setIsProcessing(false);
       setProcessingStatus('');
@@ -827,3 +826,4 @@ export default function BonusQuestionManager({
     </div>
   );
 }
+

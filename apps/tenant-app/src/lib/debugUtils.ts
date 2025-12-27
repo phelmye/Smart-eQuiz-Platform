@@ -15,6 +15,7 @@ import {
   initializeSampleTemplates,
   initializeSampleQuestions
 } from './sampleData';
+import { logger } from '@/lib/logger';
 
 import {
   getCustomCategories,
@@ -23,6 +24,7 @@ import {
   STORAGE_KEYS,
   storage
 } from './mockData';
+import { logger } from '@/lib/logger';
 
 // Expose functions to window for console access
 declare global {
@@ -53,7 +55,7 @@ window.initSampleData = () => {
     });
     return result;
   } catch (error) {
-    console.error('❌ Error initializing sample data:', error);
+    logger.error('❌ Error initializing sample data:', error);
   }
 };
 
@@ -63,7 +65,7 @@ window.clearSampleData = () => {
     clearSampleData();
     console.log('✅ Sample data cleared');
   } catch (error) {
-    console.error('❌ Error clearing sample data:', error);
+    logger.error('❌ Error clearing sample data:', error);
   }
 };
 
@@ -80,7 +82,7 @@ window.initCategories = () => {
     })));
     return categories;
   } catch (error) {
-    console.error('❌ Error initializing categories:', error);
+    logger.error('❌ Error initializing categories:', error);
   }
 };
 
@@ -97,7 +99,7 @@ window.initTemplates = () => {
     })));
     return templates;
   } catch (error) {
-    console.error('❌ Error initializing templates:', error);
+    logger.error('❌ Error initializing templates:', error);
   }
 };
 
@@ -119,7 +121,7 @@ window.initQuestions = () => {
     console.table(breakdown);
     return questions;
   } catch (error) {
-    console.error('❌ Error initializing questions:', error);
+    logger.error('❌ Error initializing questions:', error);
   }
 };
 
@@ -138,7 +140,7 @@ window.listTemplates = () => {
     })));
     return templates;
   } catch (error) {
-    console.error('❌ Error listing templates:', error);
+    logger.error('❌ Error listing templates:', error);
   }
 };
 
@@ -156,7 +158,7 @@ window.listCategories = () => {
     })));
     return categories;
   } catch (error) {
-    console.error('❌ Error listing categories:', error);
+    logger.error('❌ Error listing categories:', error);
   }
 };
 
@@ -171,8 +173,8 @@ window.validatePool = (tenantId: string, rounds: any[]) => {
     console.log(`Valid: ${validation.isValid ? '✅' : '❌'}\n`);
     
     if (validation.errors.length > 0) {
-      console.error('❌ Errors:');
-      validation.errors.forEach(err => console.error(`  • ${err}`));
+      logger.error('❌ Errors:');
+      validation.errors.forEach(err => logger.error(`  • ${err}`));
     }
     
     if (validation.warnings.length > 0) {
@@ -193,7 +195,7 @@ window.validatePool = (tenantId: string, rounds: any[]) => {
     
     return validation;
   } catch (error) {
-    console.error('❌ Error validating pool:', error);
+    logger.error('❌ Error validating pool:', error);
   }
 };
 
@@ -238,7 +240,7 @@ window.makeAdmin = () => {
   try {
     const currentUser = storage.get(STORAGE_KEYS.CURRENT_USER);
     if (!currentUser) {
-      console.error('❌ No user is currently logged in');
+      logger.error('❌ No user is currently logged in');
       return;
     }
     
@@ -255,7 +257,7 @@ window.makeAdmin = () => {
       window.location.reload();
     }, 1000);
   } catch (error) {
-    console.error('❌ Error updating user role:', error);
+    logger.error('❌ Error updating user role:', error);
   }
 };
 
@@ -282,7 +284,7 @@ window.showCurrentUser = () => {
     console.log('\n💡 Tip: Run window.makeAdmin() to grant admin access');
     return currentUser;
   } catch (error) {
-    console.error('❌ Error fetching current user:', error);
+    logger.error('❌ Error fetching current user:', error);
   }
 };
 
@@ -291,3 +293,4 @@ console.log('\n🎯 Smart eQuiz Platform - Advanced Features Debug Tools');
 console.log('Type window.showDebugInfo() for available commands\n');
 
 export {};
+

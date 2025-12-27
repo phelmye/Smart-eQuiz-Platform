@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiLogger } from '@/lib/logger';
 import { apiClient } from '../lib/apiClient';
 
 export interface PracticeStats {
@@ -27,7 +28,7 @@ export function usePracticeStats(categoryId?: string) {
         const data = await apiClient.getPracticeStats(categoryId);
         setStats(data);
       } catch (err: any) {
-        console.error('Failed to fetch practice stats:', err);
+        apiLogger.error('/api fetch practice stats:', err);
         setError(err.message || 'Failed to load practice stats');
         // Fallback to mock data on error
         setStats({
@@ -52,3 +53,4 @@ export function usePracticeStats(categoryId?: string) {
 
   return { stats, loading, error };
 }
+
