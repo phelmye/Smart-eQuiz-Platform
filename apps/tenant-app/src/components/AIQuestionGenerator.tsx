@@ -100,7 +100,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
   const loadPendingQuestions = () => {
     if (!user?.tenantId) return;
     
-    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     const pending = allQuestions.filter(
       q => q.tenantId === user.tenantId && 
            q.status === QuestionStatus.AI_PENDING_REVIEW
@@ -274,13 +274,13 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
       const question: PendingQuestion = {
         id: `ai_q_${Date.now()}_${i}`,
         tenantId: user.tenantId,
-        question: selectedTemplate.text,
+        text: selectedTemplate.text,
         options: [...selectedTemplate.options].sort(() => Math.random() - 0.5), // Shuffle options
         correctAnswer: selectedTemplate.options.indexOf(selectedTemplate.options[selectedTemplate.correctAnswer]),
         category: settings.category,
         difficulty: settings.difficulty,
-        points: settings.difficulty === 'easy' ? 10 : settings.difficulty === 'medium' ? 15 : 20,
-        timeLimit: 30,
+        source: 'ai',
+        explanation: settings.includeExplanations ? `AI-generated question about ${settings.topic}` : '',
         
         // New lifecycle fields
         status: QuestionStatus.AI_PENDING_REVIEW,
@@ -302,7 +302,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     }
 
     // Save questions as AI_PENDING_REVIEW
-    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     allQuestions.push(...questions);
     storage.set(STORAGE_KEYS.QUESTIONS, allQuestions);
 
@@ -364,7 +364,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     if (!editedQuestion || !user) return;
     
     // Update question in storage
-    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     const index = allQuestions.findIndex(q => q.id === editedQuestion.id);
     
     if (index !== -1) {
@@ -409,7 +409,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
       return;
     }
     
-    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     const index = allQuestions.findIndex(q => q.id === reviewingQuestion.id);
     
     if (index !== -1) {
@@ -437,7 +437,7 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
   const handleNeedsRevision = () => {
     if (!reviewingQuestion || !user) return;
     
-    const allQuestions = storage.get<Question[]>(STORAGE_KEYS.QUESTIONS) || [];
+    const allQuestions = storage.get(STORAGE_KEYS.QUESTIONS) || [];
     const index = allQuestions.findIndex(q => q.id === reviewingQuestion.id);
     
     if (index !== -1) {
@@ -849,13 +849,11 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
                             <Badge variant="outline">{question.category}</Badge>
                           </div>
                           <span className="text-xs text-gray-500">
-                            Generated {new Date(question.aiGeneratedAt).toRelativeTimeString ? 
-                              new Date(question.aiGeneratedAt).toLocaleString() : 
-                              new Date(question.aiGeneratedAt).toLocaleString()}
+                            Generated {new Date(question.aiGeneratedAt).toLocaleString()}
                           </span>
                         </div>
                         
-                        <h4 className="font-medium mb-3">{question.question}</h4>
+                        <h4 className="font-medium mb-3">{question.text}</h4>
                         
                         <div className="grid grid-cols-2 gap-2 mb-3">
                           {question.options.map((option, optionIndex) => (
@@ -923,8 +921,8 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
                   <Label htmlFor="edit-question">Question Text *</Label>
                   <Textarea
                     id="edit-question"
-                    value={editedQuestion.question}
-                    onChange={(e) => setEditedQuestion({ ...editedQuestion, question: e.target.value })}
+                    value={editedQuestion.text}
+                    onChange={(e) => setEditedQuestion({ ...editedQuestion, text: e.target.value })}
                     rows={3}
                     className="mt-1"
                   />
