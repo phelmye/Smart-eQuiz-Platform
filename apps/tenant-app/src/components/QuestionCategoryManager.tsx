@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Edit, Trash2, BookOpen, AlertTriangle, Crown, Info, ArrowLeft, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { useCategories } from '@/hooks/useQuestions';
+import { toast } from '@/hooks/use-toast';
 import { 
   User, 
   Plan, 
@@ -549,7 +550,10 @@ export default function QuestionCategoryManager({ user, onBack }: QuestionCatego
                     size="sm" 
                     variant="ghost" 
                     className="text-orange-800"
-                    onClick={() => window.alert('Contact your administrator to upgrade your plan.')}
+                    onClick={() => toast({
+                      title: 'Contact administrator',
+                      description: 'Contact your administrator to upgrade your plan.',
+                    })}
                   >
                     Learn More
                   </Button>

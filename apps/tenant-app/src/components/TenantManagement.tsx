@@ -12,6 +12,7 @@ import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tenant, User, Tournament, hasPermission } from '@/lib/mockData';
 import { useUsers } from '@/hooks/useUsers';
 import { useTournaments } from '@/hooks/useTournaments';
+import { toast } from '@/hooks/use-toast';
 
 interface TenantManagementProps {
   onBack: () => void;
@@ -52,7 +53,11 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({ onBack }) =>
 
   const handleCreateTenant = () => {
     if (!newTenant.name) {
-      alert('Please enter a tenant name');
+      toast({
+        title: 'Name required',
+        description: 'Please enter a tenant name',
+        variant: 'destructive',
+      });
       return;
     }
 

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Lock, AlertTriangle, Crown } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
 import { 
   User, 
   STORAGE_KEYS, 
@@ -301,7 +302,10 @@ function AccessDeniedCard({
               size="sm"
               onClick={() => {
                 const message = `Hi, I need access to ${componentName}${featureId ? ` (${featureId})` : ''}. My current role is ${roleDisplayName}.`;
-                window.alert(`Contact your administrator with this message:\n\n${message}`);
+                toast({
+                  title: 'Contact administrator',
+                  description: message,
+                });
               }}
             >
               Request Access

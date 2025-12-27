@@ -29,6 +29,7 @@ import {
   getAllParishes,
   RoundQuestionConfig
 } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 import { useQuestions } from '@/hooks/useQuestions';
 import { useTournaments } from '@/hooks/useTournaments';
 import { UpgradePrompt } from './UpgradePrompt';
@@ -129,7 +130,11 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
 
   const handleCreateTournament = () => {
     if (!tournament.name || !tournament.category || !tournament.startDate || !tournament.endDate) {
-      alert('Please fill in all required fields');
+      toast({
+        title: 'Required fields missing',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -201,7 +206,10 @@ export const TournamentBuilder: React.FC<TournamentBuilderProps> = ({ onBack, on
     storage.set(STORAGE_KEYS.TOURNAMENTS, allTournaments);
 
     refetchTournaments(); // Refresh API data
-    alert('Tournament created successfully!');
+    toast({
+      title: 'Tournament created',
+      description: 'Tournament created successfully!',
+    });
     onBack();
   };
 

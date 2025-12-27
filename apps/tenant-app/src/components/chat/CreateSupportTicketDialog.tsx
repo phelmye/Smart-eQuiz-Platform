@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { chatApi } from '@/lib/chatApi';
+import { toast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
 
 interface CreateSupportTicketDialogProps {
   onTicketCreated?: () => void;
@@ -71,7 +73,11 @@ export const CreateSupportTicketDialog: React.FC<CreateSupportTicketDialogProps>
       }
     } catch (error) {
       logger.error('Failed to create ticket:', error);
-      alert('Failed to create support ticket. Please try again.');
+      toast({
+        title: 'Creation failed',
+        description: 'Failed to create support ticket. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(false);
     }

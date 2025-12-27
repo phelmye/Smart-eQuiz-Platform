@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { toast as useToast } from '@/hooks/use-toast';
 import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
@@ -106,7 +107,11 @@ export default function UserManagementWithLoginAs({
 
   const handleLoginAs = (targetUser: User) => {
     if (!canLoginAs(targetUser)) {
-      alert('You do not have permission to login as this user.');
+      useToast({
+        title: 'Permission denied',
+        description: 'You do not have permission to login as this user.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -148,7 +153,11 @@ export default function UserManagementWithLoginAs({
 
   const openCreateDialog = () => {
     if (!hasPermission(user, 'users.create')) {
-      alert('You do not have permission to create users.');
+      useToast({
+        title: 'Permission denied',
+        description: 'You do not have permission to create users.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -159,21 +168,33 @@ export default function UserManagementWithLoginAs({
 
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email) {
-      alert('Please fill in all required fields');
+      useToast({
+        title: 'Required fields missing',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Check if email already exists
     const allUsers = storage.get(STORAGE_KEYS.USERS) || [];
     if (allUsers.some((u: User) => u.email === newUser.email && (!editingUser || u.id !== editingUser.id))) {
-      alert('A user with this email already exists');
+      useToast({
+        title: 'Email already exists',
+        description: 'A user with this email already exists',
+        variant: 'destructive',
+      });
       return;
     }
 
     // For org_admin, check if they can create more users based on their plan
     if (user?.role === 'org_admin' && !editingUser && user.tenantId) {
       if (!canCreateMoreUsers(user.tenantId)) {
-        alert('Your current plan has reached the maximum number of users. Please upgrade your plan to add more users.');
+        useToast({
+          title: 'User limit reached',
+          description: 'Your current plan has reached the maximum number of users. Please upgrade your plan to add more users.',
+          variant: 'destructive',
+        });
         return;
       }
     }
@@ -181,7 +202,11 @@ export default function UserManagementWithLoginAs({
     // Use centralized role assignment policy
     if (!canAssignRole(user, newUser.role)) {
       const assignableRoles = getAssignableRoles(user);
-      alert(`You cannot assign the role '${newUser.role}'. Available roles: ${assignableRoles.join(', ')}`);
+      useToast({
+        title: 'Invalid role assignment',
+        description: `You cannot assign the role '${newUser.role}'. Available roles: ${assignableRoles.join(', ')}`,
+        variant: 'destructive',
+      });
       return;
     }
 

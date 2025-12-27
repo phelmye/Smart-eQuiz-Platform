@@ -25,6 +25,7 @@ import {
   getBracketStandings
 } from '@/lib/mockData';
 import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 
 interface KnockoutTournamentEngineProps {
   tournament: Tournament;
@@ -57,7 +58,11 @@ export default function KnockoutTournamentEngine({
 
   const handleGenerateBracket = () => {
     if (!tournament.knockoutConfig) {
-      alert('Knockout configuration is missing');
+      toast({
+        title: 'Configuration missing',
+        description: 'Knockout configuration is missing',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -85,7 +90,11 @@ export default function KnockoutTournamentEngine({
       loadBracketData();
     } catch (error) {
       logger.error('Failed to generate bracket:', error);
-      alert('Failed to generate bracket. Please try again.');
+      toast({
+        title: 'Generation failed',
+        description: 'Failed to generate bracket. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setGenerating(false);
     }

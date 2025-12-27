@@ -23,6 +23,7 @@ import {
 } from '@/lib/mockData';
 import { useUsers } from '@/hooks/useUsers';
 import { useTournaments } from '@/hooks/useTournaments';
+import { toast } from '@/hooks/use-toast';
 
 interface PrizeAwardManagementProps {
   tournamentId: string;
@@ -105,7 +106,10 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
     const result = updatePrizeAwardStatus(award.id, 'notified');
     if (result.success) {
       loadAwards();
-      alert(`Winner ${award.winnerName} has been notified via email.`);
+      toast({
+        title: 'Winner notified',
+        description: `Winner ${award.winnerName} has been notified via email.`,
+      });
     }
   };
 
@@ -113,7 +117,10 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
     const result = updatePrizeAwardStatus(award.id, 'claimed');
     if (result.success) {
       loadAwards();
-      alert(`Prize marked as claimed by ${award.winnerName}.`);
+      toast({
+        title: 'Prize claimed',
+        description: `Prize marked as claimed by ${award.winnerName}.`,
+      });
     }
   };
 
@@ -133,7 +140,10 @@ export const PrizeAwardManagement: React.FC<PrizeAwardManagementProps> = ({
       loadAwards();
       setIsDistributeDialogOpen(false);
       setDistributionData({ method: 'bank_transfer', referenceNumber: '', notes: '' });
-      alert(`Prize distributed to ${selectedAward.winnerName}!`);
+      toast({
+        title: 'Prize distributed',
+        description: `Prize distributed to ${selectedAward.winnerName}!`,
+      });
     }
   };
 

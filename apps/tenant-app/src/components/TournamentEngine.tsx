@@ -12,6 +12,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Play, Pause, Square, Users, Trophy, Cale
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tournament, User, BIBLE_CATEGORIES, hasPermission } from '@/lib/mockData';
 import { useTournaments } from '@/hooks/useTournaments';
+import { toast } from '@/hooks/use-toast';
 
 interface TournamentEngineProps {
   onBack: () => void;
@@ -51,7 +52,11 @@ export const TournamentEngine: React.FC<TournamentEngineProps> = ({ onBack, init
 
   const handleCreateTournament = () => {
     if (!newTournament.name || !newTournament.category || !newTournament.startDate || !newTournament.endDate) {
-      alert('Please fill in all required fields');
+      toast({
+        title: 'Required fields missing',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 

@@ -24,6 +24,7 @@ import {
   storage,
   STORAGE_KEYS
 } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface PreTournamentQuizProps {
   applicationId: string;
@@ -86,7 +87,11 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
     const questionResult = getQuestionsForAttempt(user.id, application.tournamentId, attemptNumber);
 
     if (!questionResult.success || !questionResult.questions) {
-      alert(questionResult.message || 'Failed to load questions');
+      toast({
+        title: 'Questions load failed',
+        description: questionResult.message || 'Failed to load questions',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -201,7 +206,11 @@ export const PreTournamentQuiz: React.FC<PreTournamentQuizProps> = ({
 
     } catch (error) {
       logger.error('Error submitting quiz:', error);
-      alert('Failed to submit quiz. Please try again.');
+      toast({
+        title: 'Submission failed',
+        description: 'Failed to submit quiz. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }

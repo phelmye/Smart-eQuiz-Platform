@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { toast as useToast } from '@/hooks/use-toast';
 import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
@@ -77,7 +78,11 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
     const tenantAdmins = getTenantAdmins(tenant.id);
     
     if (tenantAdmins.length === 0) {
-      alert(`No organization admin found for ${tenant.name}. Cannot login as tenant.`);
+      useToast({
+        title: 'Admin not found',
+        description: `No organization admin found for ${tenant.name}. Cannot login as tenant.`,
+        variant: 'destructive',
+      });
       return;
     }
 

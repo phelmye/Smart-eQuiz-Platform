@@ -129,7 +129,11 @@ function TenantRoleCustomizationComponent({ tenantId, currentUser, onBack }: Ten
 
   const handleSave = () => {
     if (!selectedRole) {
-      alert('Please select a role');
+      toast({
+        title: 'Role required',
+        description: 'Please select a role',
+        variant: 'destructive',
+      });
       return;
     }
 
