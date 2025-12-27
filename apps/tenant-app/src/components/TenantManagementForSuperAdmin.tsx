@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
@@ -329,10 +330,7 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            toast({
-                              title: "Tenant Details",
-                              description: `Viewing details for ${tenant.name}`,
-                            });
+                            toast.info(`Viewing details for ${tenant.name}`);
                             // Future: Open tenant details modal
                           }}
                         >
@@ -343,10 +341,7 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            toast({
-                              title: "Tenant Configuration",
-                              description: `Opening settings for ${tenant.name}...`,
-                            });
+                            toast.info(`Opening settings for ${tenant.name}...`);
                             // Future: Open tenant configuration modal
                           }}
                         >
