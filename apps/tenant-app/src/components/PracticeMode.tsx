@@ -90,7 +90,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
     try {
       const data = await apiClient.getCategories();
       setCategories(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -103,7 +103,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
     try {
       const data = await apiClient.getPracticeStats();
       setStats(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       apiLogger.error('/api/practice/stats', error);
     }
   };
@@ -112,7 +112,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
     try {
       const data = await apiClient.getPracticeLeaderboard();
       setLeaderboard(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       apiLogger.error('/api/practice/leaderboard', error);
     }
   };
@@ -142,7 +142,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
         timeLeft: data.questions[0].timeLimit,
         startTime: Date.now(),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -210,7 +210,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
           completeSession();
         }
       }, 2500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         variant: 'destructive',
         title: 'Error',
@@ -260,7 +260,7 @@ export const PracticeMode: React.FC<PracticeModeProps> = ({ onBack }) => {
           completeSession();
         }
       }, 2500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Failed to submit time-up answer', error);
     }
   };

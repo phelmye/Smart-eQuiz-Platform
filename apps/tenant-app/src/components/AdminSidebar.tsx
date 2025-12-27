@@ -45,6 +45,32 @@ import {
 } from 'lucide-react';
 import { User, hasPermission, hasFeatureAccess, storage, getRolePermission } from '@/lib/mockData';
 
+interface MenuChild {
+  id: string;
+  label: string;
+  icon: any;
+  page: string;
+  badge?: string;
+  requiredRoles: string[];
+  requiredPermission?: string | null;
+  planFeature?: string | null;
+  action?: string;
+}
+
+interface MenuGroup {
+  id: string;
+  label: string;
+  icon: any;
+  type: 'single' | 'group';
+  page?: string;
+  children?: MenuChild[];
+  requiredRoles: string[];
+  requiredPermission?: string | null;
+  planFeature?: string | null;
+  badge?: string;
+  action?: string;
+}
+
 interface AdminSidebarProps {
   currentPage?: string;
   onNavigate: (page: string, action?: string) => void;
@@ -484,9 +510,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   // Auto-expand groups with active children when currentPage changes
   useEffect(() => {
-    menuGroups.forEach((group: any) => {
+    menuGroups.forEach((group: MenuGroup) => {
       if (group.type === 'group' && group.children) {
-        const hasActiveChild = group.children.some((child: any) => currentPage === child.page);
+        const hasActiveChild = group.children.some((child: MenuChild) => currentPage === child.page);
         if (hasActiveChild && !expandedGroups.includes(group.id)) {
           setExpandedGroups(prev => [...prev, group.id]);
         }
@@ -495,7 +521,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   }, [currentPage]);
 
   // Helper function to check if menu item/group should be visible
-  const isItemVisible = (item: any) => {
+  const isItemVisible = (item: MenuGroup | MenuChild) => {
     // Normalize user role to lowercase for comparison
     const normalizedUserRole = userRole?.toLowerCase();
     const normalizedRequiredRoles = item.requiredRoles.map((role: string) => role.toLowerCase());
@@ -644,7 +670,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-        {visibleMenuGroups.map((group: any) => {
+        {visibleMenuGroups.map((group: MenuGroup) => {
           const GroupIcon = group.icon;
           
           // Single menu item (no sub-items)
@@ -672,7 +698,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           
           // Group menu item (with sub-items)
           const isExpanded = expandedGroups.includes(group.id);
-          const hasActiveChild = group.children?.some((child: any) => currentPage === child.page);
+          const hasActiveChild = group.children?.some((child: MenuChild) => currentPage === child.page);
           
           return (
             <div key={group.id} className="space-y-1">
@@ -703,7 +729,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               {/* Sub-items */}
               {!collapsed && isExpanded && group.children && (
                 <div className="ml-4 space-y-1 border-l-2 border-gray-200 pl-2">
-                  {group.children.map((child: any) => {
+                  {group.children.map((child: MenuChild) => {
                     const ChildIcon = child.icon;
                     const isActive = currentPage === child.page;
                     
@@ -716,7 +742,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           "w-full justify-start h-9 text-sm",
                           isActive && "bg-blue-50 text-blue-700 border-blue-200"
                         )}
-                        onClick={() => onNavigate(child.page, (child as any).action)}
+                        onClick={() => onNavigate(child.page, child.action)}
                       >
                         <ChildIcon className="h-3.5 w-3.5 mr-2" />
                         <span className="flex-1 text-left">{child.label}</span>
