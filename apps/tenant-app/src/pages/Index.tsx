@@ -4,6 +4,7 @@ import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
 import { initializeMockData, mockTournaments, mockTenants, Tenant } from '@/lib/mockData';
 import TenantLandingPage from '@/components/TenantLandingPage';
+import { logger } from '@/lib/logger';
 
 // Dynamic imports for code splitting - components are loaded only when needed
 const Dashboard = lazy(() => import('@/components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -106,7 +107,7 @@ const AppContent: React.FC = () => {
 
     const tenant = detectTenantFromUrl();
     setCurrentTenant(tenant);
-    console.log('🔍 Detected tenant:', tenant);
+    logger.debug('Detected tenant from URL', { tenant });
   }, []);
 
   // Mock tenant data for components that require it when tenant is detected
@@ -128,7 +129,7 @@ const AppContent: React.FC = () => {
 
   // Navigate to dashboard when authenticated
   useEffect(() => {
-    console.log('🔍 Index.tsx - Auth state changed:', { 
+    logger.debug('Index.tsx - Auth state changed', { 
       isAuthenticated, 
       user: user?.email, 
       isInitializing,
@@ -136,10 +137,10 @@ const AppContent: React.FC = () => {
     });
     
     if (isAuthenticated && user && !isInitializing) {
-      console.log('🔍 Index.tsx - User is authenticated, navigating to dashboard');
+      logger.debug('Index.tsx - User authenticated, navigating to dashboard');
       setCurrentPage('dashboard');
     } else {
-      console.log('🔍 Index.tsx - Still not authenticated or initializing:', { 
+      logger.debug('Index.tsx - Not authenticated or initializing', { 
         isAuthenticated, 
         hasUser: !!user, 
         isInitializing 
@@ -164,20 +165,20 @@ const AppContent: React.FC = () => {
 
   // Show loading while initializing authentication
   if (isInitializing) {
-    console.log('🔍 Index.tsx - Showing loading screen, isInitializing:', isInitializing);
+    logger.debug('Index.tsx - Showing loading screen', { isInitializing });
     return <FullScreenLoader text="Initializing..." />;
   }
 
   // Show tenant landing page for unauthenticated visitors (PUBLIC PAGE)
   if (!isAuthenticated || !user) {
-    console.log('🔍 Index.tsx - Showing tenant landing page for unauthenticated visitor');
+    logger.debug('Index.tsx - Showing tenant landing page for unauthenticated visitor');
     
     if (currentTenant) {
       return (
         <TenantLandingPage
           tenant={currentTenant}
           onAuthSuccess={() => {
-            console.log('🔍 Index.tsx - Landing page auth success - user should now be authenticated');
+            logger.debug('Index.tsx - Landing page auth success');
             setCurrentPage('dashboard');
           }}
         />
@@ -186,7 +187,7 @@ const AppContent: React.FC = () => {
     
     // Fallback to auth system if tenant not detected
     return <AuthSystem onAuthSuccess={() => {
-      console.log('🔍 Index.tsx - onAuthSuccess callback triggered');
+      logger.debug('Index.tsx - onAuthSuccess callback triggered');
       setCurrentPage('dashboard');
     }} />;
   }

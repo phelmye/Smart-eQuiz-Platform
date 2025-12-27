@@ -7,11 +7,12 @@ import { TenantProvider } from '@/contexts/TenantContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import Index from './pages/Index';
 import NotFound from './pages/NotFound';
+import { logger } from '@/lib/logger';
 
 const queryClient = new QueryClient();
 
 function App() {
-  console.log('🔍 App component rendering');
+  logger.debug('App component rendering');
   
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loadSavedTheme } from '@/lib/theme';
 import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { logger } from '@/lib/logger';
 
 interface ThemeContextType {
   reloadTheme: () => void;
@@ -20,7 +21,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (tenantId) {
       loadSavedTheme(tenantId);
       setThemeVersion(prev => prev + 1);
-      console.log('Theme reloaded for tenant:', tenantId);
+      logger.debug('Theme reloaded for tenant', { tenantId });
     } else {
       // No tenant ID, load default theme
       loadSavedTheme(null);

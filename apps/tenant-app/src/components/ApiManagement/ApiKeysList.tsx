@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 import {
   Table,
   TableBody,
@@ -95,7 +96,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
   const handleCopyKey = (keyPrefix: string) => {
     navigator.clipboard.writeText(keyPrefix);
     // TODO: Show toast notification
-    console.log('API key prefix copied to clipboard');
+    logger.success('API key prefix copied to clipboard');
   };
 
   const toggleShowSecret = (keyId: string) => {
@@ -121,7 +122,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       setRevokeReason('');
       
       // TODO: Show success toast
-      console.log('API key revoked successfully');
+      logger.success('API key revoked successfully');
     } catch (err) {
       logger.error('Failed to revoke API key:', err);
       // TODO: Show error toast
@@ -141,7 +142,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       setDeleteDialog({ open: false, key: null });
       
       // TODO: Show success toast
-      console.log('API key deleted successfully');
+      logger.success('API key deleted successfully');
     } catch (err) {
       logger.error('Failed to delete API key:', err);
       // TODO: Show error toast
