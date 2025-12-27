@@ -11,7 +11,8 @@ import { logger } from './lib/logger';
 
 // Vercel Speed Insights component (React entrypoint)
 // Use the package's React entrypoint
-import { SpeedInsights } from '@vercel/speed-insights/react';
+// TODO: Install @vercel/speed-insights if deploying to Vercel
+// import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 logger.debug('main.tsx executing');
@@ -19,7 +20,7 @@ logger.debug('About to render App');
 createRoot(document.getElementById('root')!).render(
 	<ErrorBoundary>
 		{/* Render SpeedInsights (Next.js component works as a client-side React component) */}
-		<SpeedInsights />
+		{/* <SpeedInsights /> */}
 		<App />
 	</ErrorBoundary>
 );
