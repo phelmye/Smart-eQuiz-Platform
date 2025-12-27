@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, Menu, X } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { useAuth } from './AuthSystem';
+import { logger } from '@/lib/logger';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,7 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <AdminSidebar 
             onNavigate={(page) => {
               // This will be handled by parent components
-              console.log('Navigate to:', page);
+              logger.debug('Navigation requested', { page, userId: user?.id });
             }}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}

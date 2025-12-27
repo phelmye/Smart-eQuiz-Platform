@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
   TableBody, 
@@ -123,7 +124,14 @@ export default function UserManagementWithLoginAs({
     // Notify parent component about the login
     onLoginAs(targetUser);
     
-    console.log(`🔄 ${user.name} logged in as ${targetUser.name} (${targetUser.role})`);
+    authLogger.loginSuccess(targetUser.id, targetUser.email);
+    logger.info('User logged in as another user', { 
+      originalUserId: user.id,
+      originalUserName: user.name,
+      targetUserId: targetUser.id, 
+      targetUserName: targetUser.name, 
+      targetRole: targetUser.role 
+    });
   };
 
   const handleLogoutFromUser = () => {

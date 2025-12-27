@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Lock, AlertTriangle, Crown } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { 
   User, 
   STORAGE_KEYS, 
@@ -123,12 +124,14 @@ function checkComponentAccess(user: User, componentId: string, featureId?: strin
   const roleFeatures = getRoleFeatures(user.role);
   
   if (!roleFeatures) {
-    console.warn(`⚠️ No features found for role: ${user.role}. Available roles:`, 
-      (storage.get(STORAGE_KEYS.ROLE_PERMISSIONS) || []).map((r: any) => r.roleName));
+    logger.warn('No features found for role', { 
+      role: user.role, 
+      availableRoles: (storage.get(STORAGE_KEYS.ROLE_PERMISSIONS) || []).map((r: any) => r.roleName)
+    });
     
     // Fallback: ORG_ADMIN should have access to all features
     if (user.role?.toLowerCase() === 'org_admin') {
-      console.log('✅ Granting access to ORG_ADMIN via fallback');
+      logger.debug('Granting access to ORG_ADMIN via fallback', { componentId, featureId });
       return true;
     }
     return false;

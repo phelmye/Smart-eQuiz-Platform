@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { logger } from '@/lib/logger';
 import { 
   Dialog, 
   DialogContent, 
@@ -110,7 +111,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
     refetchUsers(); // Refresh API data
     loadUsers();
     
-    console.log(`✅ User created: ${newUser.name} with role ${newUser.role}`);
+    logger.success('User created', { userId: userToCreate.id, userName: newUser.name, role: newUser.role, tenantId: user.tenantId });
   };
 
   const handleUpdateUserRole = (userId: string, newRole: UserRole) => {
@@ -125,7 +126,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
       setIsEditUserOpen(false);
       setSelectedUser(null);
       
-      console.log(`✅ User role updated: ${allUsers[userIndex].name} -> ${newRole}`);
+      logger.success('User role updated', { userId, userName: allUsers[userIndex].name, newRole, tenantId: user.tenantId });
     }
   };
 
@@ -140,7 +141,7 @@ export default function RoleManagement({ user }: RoleManagementProps) {
       loadUsers();
       
       const status = allUsers[userIndex].isActive ? 'Active' : 'Inactive';
-      console.log(`✅ User status toggled: ${allUsers[userIndex].name} -> ${status}`);
+      logger.success('User status toggled', { userId, userName: allUsers[userIndex].name, newStatus: status, tenantId: user.tenantId });
     }
   };
 

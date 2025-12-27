@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Trophy, Users, BookOpen, Star, Coins, Calendar, Play, Settings, LogOut, Menu, X, ChevronLeft, Shield } from 'lucide-react';
 import { useAuth } from './AuthSystem';
+import { logger, authLogger } from '@/lib/logger';
 import { AdminSidebar } from './AdminSidebar';
 import UserManagement from './UserManagement';
 import UserManagementWithLoginAs from './UserManagementWithLoginAs';
@@ -143,7 +144,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       storage.set(STORAGE_KEYS.CURRENT_USER, originalSuperAdmin);
       storage.remove('original_super_admin');
       
-      console.log('🔄 Returned to super admin account');
+      authLogger.logout(user?.id || 'unknown');
+      logger.info('Returned to super admin account', { userId: originalSuperAdmin.id });
       // Force page refresh to update user context
       window.location.reload();
     }
@@ -161,7 +163,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       storage.set(STORAGE_KEYS.CURRENT_USER, originalUser);
       storage.remove('original_user');
       
-      console.log(`🔄 Returned to ${originalUser.name} account`);
+      authLogger.logout(user?.id || 'unknown');
+      logger.info('Returned to original user account', { userId: originalUser.id, userName: originalUser.name });
       // Force page refresh to update user context
       window.location.reload();
     }
@@ -417,7 +420,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 currentUser={user!}
                 onApplyTemplate={(configs) => {
                   // Template applied - show notification
-                  console.log('Template applied:', configs);
+                  logger.success('Template applied', { configCount: Object.keys(configs).length, tenantId: tenant?.id });
                 }}
               />
             </div>
@@ -457,13 +460,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               availablePlans={defaultPlans}
               currentSubscription={user?.tenantId ? mockBilling.find(b => b.tenantId === user.tenantId) : undefined}
               onSelectPlan={(planId, billingCycle) => {
-                console.log('Selected plan:', planId, 'with billing cycle:', billingCycle);
+                logger.info('Plan selected', { planId, billingCycle, tenantId: user?.tenantId });
               }}
               onUpgrade={(planId, billingCycle) => {
-                console.log('Upgrading to plan:', planId, 'with billing cycle:', billingCycle);
+                logger.info('Plan upgrade initiated', { planId, billingCycle, tenantId: user?.tenantId });
               }}
               onDowngrade={(planId, billingCycle) => {
-                console.log('Downgrading to plan:', planId, 'with billing cycle:', billingCycle);
+                logger.info('Plan downgrade initiated', { planId, billingCycle, tenantId: user?.tenantId });
               }}
             />
           </AccessControl>

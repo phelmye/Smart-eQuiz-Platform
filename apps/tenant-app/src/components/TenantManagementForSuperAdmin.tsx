@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
   TableBody, 
@@ -90,7 +91,14 @@ export default function TenantManagementForSuperAdmin({ user, onLoginAs }: Tenan
     // Notify parent component about the login
     onLoginAs(tenant.id);
     
-    console.log(`🔄 Super admin logged in as ${primaryAdmin.name} (${tenant.name})`);
+    authLogger.loginSuccess(primaryAdmin.id, primaryAdmin.email);
+    logger.info('Super admin logged in as tenant admin', { 
+      superAdminId: user.id,
+      targetUserId: primaryAdmin.id, 
+      targetUserName: primaryAdmin.name, 
+      tenantId: tenant.id,
+      tenantName: tenant.name 
+    });
   };
 
   const getStatusBadge = (tenant: Tenant) => {
