@@ -14,6 +14,7 @@ import { User, Tenant, mockUsers, mockTenants, defaultPlans, storage, STORAGE_KE
 import { apiClient } from '@/lib/apiClient';
 import { AddParishForm } from '@/components/AddParishForm';
 import { useTenant } from '@/contexts/TenantContext';
+import { logger, authLogger, componentLogger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -49,20 +50,20 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('🔍 AuthProvider component rendering');
+  componentLogger.render('AuthProvider');
   
   // Initialize mock data including plans
   useEffect(() => {
     initializeMockData();
-    console.log('🔍 Mock data initialized including plans');
+    logger.debug('Mock data initialized including plans');
     
     // Verify role permissions are initialized correctly
     const rolePerms = storage.get(STORAGE_KEYS.ROLE_PERMISSIONS);
     const orgAdmin = rolePerms?.find((r: any) => r.roleName?.toLowerCase() === 'org_admin');
     if (orgAdmin) {
-      console.log('✓ ORG_ADMIN permissions verified:', orgAdmin.componentFeatures.length, 'features');
+      logger.success('ORG_ADMIN permissions verified', { featureCount: orgAdmin.componentFeatures.length });
       if (!orgAdmin.componentFeatures.includes('manage-categories')) {
-        console.error('⚠️ ORG_ADMIN missing manage-categories feature! Fixing...');
+        logger.error('ORG_ADMIN missing manage-categories feature! Fixing...');
         // Force re-init
         import('@/lib/mockData').then(({ forceReinitializeRolePermissions }) => {
           forceReinitializeRolePermissions();
@@ -74,20 +75,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Initialize user from storage (with global state fallback) immediately to prevent flash
   const [user, setUser] = useState<User | null>(() => {
     try {
-      console.log('🔍 AuthProvider initializing - checking storage...');
+      logger.debug('AuthProvider initializing - checking storage');
       
       // Clean up any URL hash that might be present
       if (window.location.hash) {
-        console.log('🔍 Cleaning up URL hash:', window.location.hash);
+        logger.debug('Cleaning up URL hash', { hash: window.location.hash });
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
       
       const savedUser = storage.get(STORAGE_KEYS.CURRENT_USER);
-      console.log('AuthProvider initializing with saved user:', savedUser?.email || 'none');
+      if (savedUser) {
+        authLogger.sessionRestored(savedUser.id);
+        logger.debug('Session restored', { email: savedUser.email });
+      } else {
+        logger.debug('No saved session found');
+      }
       
       return savedUser;
     } catch (error) {
-      console.log('Error loading saved user:', error);
+      logger.error('Error loading saved user', error as Error);
       return null;
     }
   });
@@ -97,12 +103,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const savedUser = storage.get(STORAGE_KEYS.CURRENT_USER);
       if (savedUser) {
         const userTenant = mockTenants.find(t => t.id === savedUser.tenantId);
-        console.log('AuthProvider initializing with tenant:', userTenant?.name || 'none');
+        if (userTenant) {
+          logger.debug('Tenant context initialized', { tenantId: userTenant.id, tenantName: userTenant.name });
+        } else {
+          logger.warn('User has no tenant association', { userId: savedUser.id });
+        }
         return userTenant || null;
       }
       return null;
     } catch (error) {
-      console.log('Error loading tenant:', error);
+      logger.error('Error loading tenant', error as Error);
       return null;
     }
   });
@@ -110,25 +120,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider mounted, current user:', user?.email);
+    componentLogger.mount('AuthProvider');
+    if (user) {
+      logger.debug('Current user on mount', { email: user.email, role: user.role });
+    }
     
     // Clean up any URL hash that might be present
     if (window.location.hash) {
-      console.log('🔍 Cleaning up URL hash on mount:', window.location.hash);
+      logger.debug('Cleaning up URL hash on mount', { hash: window.location.hash });
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     
     // Give a brief moment for storage to be checked and state to settle
     const timer = setTimeout(() => {
       setIsInitializing(false);
-      console.log('AuthProvider initialization complete');
+      logger.debug('AuthProvider initialization complete');
     }, 100);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      componentLogger.unmount('AuthProvider');
+    };
   }, [user]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    console.log('🔍 AuthProvider login called with:', email);
+    authLogger.login(email);
     
     try {
       // Use mock authentication for development
@@ -136,11 +152,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const mockUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (!mockUser) {
-        console.log('🔍 User not found in mock data');
+        authLogger.loginFailure(email);
+        logger.debug('User not found in mock data', { email });
         return false;
       }
       
-      console.log('🔍 Mock login successful:', mockUser.email);
+      logger.debug('Mock authentication successful', { email: mockUser.email, role: mockUser.role });
       
       const loggedInUser: User = {
         id: mockUser.id,
@@ -176,10 +193,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setIsInitializing(false);
       
-      console.log('🔍 Login successful, user state set');
+      authLogger.loginSuccess(loggedInUser.id, loggedInUser.email);
       return true;
     } catch (error: any) {
-      console.error('🔍 Login error:', error.response?.data || error.message);
+      logger.error('Login error', error, { email, errorMessage: error.response?.data || error.message });
       return false;
     }
   };
@@ -223,10 +240,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    apiClient.logout().catch(err => console.error('Logout error:', err));
+    if (user) {
+      authLogger.logout(user.id);
+    }
+    apiClient.logout().catch(err => logger.error('Logout API error', err));
     setUser(null);
     setTenant(null);
     storage.remove(STORAGE_KEYS.CURRENT_USER);
+    logger.info('User logged out, redirecting to marketing site');
     // Redirect to marketing site after logout
     window.location.href = 'http://localhost:3000';
   };
@@ -235,7 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Log auth provider state changes
   useEffect(() => {
-    console.log('AuthProvider state changed:', { 
+    logger.debug('AuthProvider state changed', { 
       hasUser: !!user, 
       userEmail: user?.email, 
       isAuthenticated,
@@ -280,10 +301,8 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
     : [];
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('🔍 FORM SUBMISSION STARTED!');
-    console.log('🔍 Event object:', e);
+    logger.debug('Login form submission started');
     e.preventDefault();
-    console.log('🔍 preventDefault called, setting loading state...');
     
     setIsLoading(true);
     setError('');
@@ -293,51 +312,52 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
       const formData = new FormData(e.currentTarget);
       const email = formData.get('email') as string;
       const password = formData.get('password') as string;
-      console.log('🔍 Form data extracted:', { email, password });
+      logger.debug('Form data extracted', { email, hasPassword: !!password });
 
       if (!email || !password) {
-        console.log('🔍 ERROR: Missing email or password');
+        logger.warn('Login form validation failed', { hasEmail: !!email, hasPassword: !!password });
         setError('Please enter both email and password');
         return;
       }
 
-      console.log('🔍 About to call login function...');
+      logger.debug('Calling login function');
       
       const success = await login(email, password);
-      console.log('🔍 Login function returned:', success);
+      logger.debug('Login function completed', { success });
       
       if (success) {
-        console.log('🔍 LOGIN SUCCESS! Setting success message and forcing navigation...');
+        logger.success('Login successful, redirecting');
         setSuccess('Login successful! Redirecting...');
         
         // Force navigation after a short delay to ensure state propagates
         setTimeout(() => {
-          console.log('🔍 Attempting to force navigation...');
+          logger.debug('Forcing navigation after successful login');
           window.location.reload(); // Force reload as a fallback
         }, 1500);
         
       } else {
-        console.log('🔍 Login failed - invalid credentials');
+        logger.warn('Login failed - invalid credentials', { email });
         setError('Invalid credentials. Try: admin@church.com (any password)');
       }
     } catch (err: any) {
-      console.error('🔍 Login error:', err);
+      logger.error('Login form error', err, { email: err.email });
       setError('Login error. Try: admin@church.com (any password)');
       setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
-      console.log('🔍 Setting loading to false...');
+      logger.debug('Login form submission completed');
       setIsLoading(false);
     }
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
-    console.log('🔍 REGISTRATION FORM SUBMISSION STARTED!');
+    logger.debug('Registration form submission started');
     e.preventDefault();
     setIsLoading(true);
     setError('');
     setSuccess('');
     
     if (!tenant?.id) {
+      logger.error('Registration failed - no tenant context', { hasTenant: false });
       setError('Tenant information not available. Please refresh the page.');
       setIsLoading(false);
       return;
@@ -356,35 +376,36 @@ const AuthForms: React.FC<{ onAuthSuccess?: () => void }> = ({ onAuthSuccess }) 
       
       // Validate parish selection
       if (!selectedParishId) {
+        logger.warn('Registration validation failed - no parish selected', { email: userData.email });
         setError(`Please select your ${fieldLabels.parishSingular.toLowerCase()} or register a new one.`);
         setIsLoading(false);
         return;
       }
       
-      console.log('🔍 Registration data:', userData);
+      logger.debug('Registration data prepared', { email: userData.email, role: userData.role, tenantId: userData.tenantId });
 
       const success = await register(userData);
-      console.log('🔍 Registration result:', success);
+      logger.debug('Registration function completed', { success });
       
       if (success) {
-        console.log('🔍 REGISTRATION SUCCESS! Setting success message and forcing navigation...');
+        logger.success('Registration successful, redirecting', { email: userData.email });
         setSuccess('Registration successful! You are now logged in. Redirecting...');
         
         // Force navigation after a short delay
         setTimeout(() => {
-          console.log('🔍 Attempting to force navigation after registration...');
+          logger.debug('Forcing navigation after successful registration');
           window.location.reload(); // Force reload as a fallback
         }, 2000);
         
       } else {
-        console.log('🔍 Registration failed - user already exists');
+        logger.warn('Registration failed - user already exists', { email: userData.email });
         setError('User already exists with this email.');
       }
     } catch (err) {
-      console.error('🔍 Registration error:', err);
+      logger.error('Registration form error', err as Error);
       setError('Registration failed. Please try again.');
     } finally {
-      console.log('🔍 Setting registration loading to false...');
+      logger.debug('Registration form submission completed');
       setIsLoading(false);
     }
   };
