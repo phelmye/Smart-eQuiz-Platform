@@ -68,7 +68,8 @@ export default function RoleManagement({ user }: RoleManagementProps) {
 
   const loadUsers = () => {
     if (user.tenantId && !usersLoading && apiUsers) {
-      setUsers(apiUsers);
+      // Cast to mockData User type since we're storing in local state
+      setUsers(apiUsers as unknown as User[]);
     }
   };
 
