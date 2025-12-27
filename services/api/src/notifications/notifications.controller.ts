@@ -17,6 +17,7 @@ export class NotificationsController {
   @Post('register-token')
   async registerToken(
     @UserId() userId: string,
+    @TenantId() tenantId: string,
     @Body() body: { token: string; deviceType: 'ios' | 'android'; deviceName?: string }
   ) {
     return this.notificationsService.registerToken({
@@ -24,6 +25,7 @@ export class NotificationsController {
       token: body.token,
       deviceType: body.deviceType,
       deviceName: body.deviceName,
+      tenantId, // Required for tenant isolation
     });
   }
 
@@ -34,9 +36,10 @@ export class NotificationsController {
   @Delete('unregister-token')
   async unregisterToken(
     @UserId() userId: string,
+    @TenantId() tenantId: string,
     @Body() body: { token: string }
   ) {
-    return this.notificationsService.unregisterToken(userId, body.token);
+    return this.notificationsService.unregisterToken(userId, body.token, tenantId);
   }
 
   /**
@@ -44,8 +47,11 @@ export class NotificationsController {
    * GET /api/notifications/tokens
    */
   @Get('tokens')
-  async getUserTokens(@UserId() userId: string) {
-    const tokens = await this.notificationsService.getUserTokens(userId);
+  async getUserTokens(
+    @UserId() userId: string,
+    @TenantId() tenantId: string
+  ) {
+    const tokens = await this.notificationsService.getUserTokens(userId, tenantId);
     return { tokens };
   }
 
@@ -76,7 +82,7 @@ export class NotificationsController {
       badge: body.badge,
       priority: body.priority,
       channelId: body.channelId,
-    });
+    }, tenantId); // Pass tenantId for tenant isolation
   }
 
   /**
@@ -93,10 +99,10 @@ export class NotificationsController {
     }
   ) {
     return this.notificationsService.broadcastNotification(
+      tenantId, // Required - prevents platform-wide broadcasts
       body.title,
       body.body,
-      body.data,
-      tenantId
+      body.data
     );
   }
 
@@ -105,9 +111,12 @@ export class NotificationsController {
    * POST /api/notifications/cleanup
    */
   @Post('cleanup')
-  async cleanupTokens(@Query('days') days?: string) {
+  async cleanupTokens(
+    @TenantId() tenantId: string,
+    @Query('days') days?: string
+  ) {
     const daysInactive = days ? parseInt(days) : 30;
-    const count = await this.notificationsService.cleanupInactiveTokens(daysInactive);
+    const count = await this.notificationsService.cleanupInactiveTokens(tenantId, daysInactive);
     return { success: true, tokensRemoved: count };
   }
 }

@@ -8,6 +8,7 @@ interface RegisterTokenDto {
   token: string;
   deviceType: 'ios' | 'android';
   deviceName?: string;
+  tenantId: string; // Required for tenant isolation
 }
 
 interface SendNotificationDto {
@@ -33,7 +34,7 @@ export class NotificationsService {
    * Register a push notification token for a user
    */
   async registerToken(dto: RegisterTokenDto): Promise<{ success: boolean; message: string }> {
-    const { userId, token, deviceType, deviceName } = dto;
+    const { userId, token, deviceType, deviceName, tenantId } = dto;
 
     // Validate the Expo push token
     if (!Expo.isExpoPushToken(token)) {
@@ -41,9 +42,13 @@ export class NotificationsService {
     }
 
     try {
-      // Check if token already exists
+      // Check if token already exists for this user in this tenant
       const existingToken = await this.prisma.pushToken.findFirst({
-        where: { userId, token },
+        where: { 
+          userId, 
+          token,
+          user: { userTenants: { some: { tenantId } } }
+        },
       });
 
       if (existingToken) {
@@ -77,10 +82,14 @@ export class NotificationsService {
   /**
    * Unregister a push notification token
    */
-  async unregisterToken(userId: string, token: string): Promise<{ success: boolean; message: string }> {
+  async unregisterToken(userId: string, token: string, tenantId: string): Promise<{ success: boolean; message: string }> {
     try {
       const pushToken = await this.prisma.pushToken.findFirst({
-        where: { userId, token },
+        where: { 
+          userId, 
+          token,
+          user: { userTenants: { some: { tenantId } } }
+        },
       });
 
       if (!pushToken) {
@@ -103,11 +112,12 @@ export class NotificationsService {
   /**
    * Get all active tokens for a user
    */
-  async getUserTokens(userId: string): Promise<string[]> {
+  async getUserTokens(userId: string, tenantId: string): Promise<string[]> {
     const tokens = await this.prisma.pushToken.findMany({
       where: {
         userId,
         isActive: true,
+        user: { userTenants: { some: { tenantId } } }
       },
       select: {
         token: true,
@@ -120,14 +130,15 @@ export class NotificationsService {
   /**
    * Send push notification to specific users
    */
-  async sendNotification(dto: SendNotificationDto): Promise<{ success: boolean; sent: number; failed: number }> {
+  async sendNotification(dto: SendNotificationDto, tenantId: string): Promise<{ success: boolean; sent: number; failed: number }> {
     const { userIds, title, body, data, sound, badge, priority, channelId } = dto;
 
-    // Get all active tokens for the users
+    // Get all active tokens for the users within this tenant
     const tokens = await this.prisma.pushToken.findMany({
       where: {
         userId: { in: userIds },
         isActive: true,
+        user: { userTenants: { some: { tenantId } } }
       },
       select: {
         token: true,
@@ -195,27 +206,22 @@ export class NotificationsService {
   }
 
   /**
-   * Send notification to all users (broadcast)
+   * Send notification to all users (broadcast) - TENANT SCOPED
    */
   async broadcastNotification(
+    tenantId: string, // Required - no platform-wide broadcasts
     title: string,
     body: string,
-    data?: any,
-    tenantId?: string
+    data?: any
   ): Promise<{ success: boolean; sent: number; failed: number }> {
-    // Get all active tokens (optionally filtered by tenant)
-    const whereClause: any = {
-      isActive: true,
-    };
-    
-    if (tenantId) {
-      whereClause.user = {
-        tenantId: tenantId,
-      };
-    }
-    
+    // Get all active tokens for users in this tenant only
     const tokens = await this.prisma.pushToken.findMany({
-      where: whereClause,
+      where: {
+        isActive: true,
+        user: {
+          userTenants: { some: { tenantId } }
+        },
+      },
       select: {
         token: true,
       },
@@ -262,18 +268,17 @@ export class NotificationsService {
   }
 
   /**
-   * Clean up inactive tokens (run periodically)
+   * Clean up inactive tokens (run periodically) - TENANT SCOPED
    */
-  async cleanupInactiveTokens(daysInactive: number = 30): Promise<number> {
+  async cleanupInactiveTokens(tenantId: string, daysInactive: number = 30): Promise<number> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysInactive);
 
     const result = await this.prisma.pushToken.deleteMany({
       where: {
         isActive: false,
-        lastUsedAt: {
-          lt: cutoffDate,
-        },
+        lastUsedAt: { lt: cutoffDate },
+        user: { userTenants: { some: { tenantId } } }
       },
     });
 
