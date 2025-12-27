@@ -23,8 +23,10 @@ import {
   Eye,
   Edit,
   Plus,
-  ChevronLeft
+  ChevronLeft,
+  Loader2
 } from 'lucide-react';
+import { useUsers } from '@/hooks/useUsers';
 import { 
   User, 
   UserRole,
@@ -52,6 +54,7 @@ export default function UserManagementWithLoginAs({
   onLogoutFromUser,
   initialAction
 }: UserManagementWithLoginAsProps) {
+  const { users: apiUsers, loading: usersLoading, refetch: refetchUsers } = useUsers('', user.tenantId);
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
@@ -72,12 +75,17 @@ export default function UserManagementWithLoginAs({
 
   useEffect(() => {
     loadUsers();
-  }, [user.tenantId]);
+  }, [user.tenantId, apiUsers, usersLoading]);
 
   const loadUsers = () => {
-    if (user.tenantId) {
-      const tenantUsers = getUsersByTenant(user.tenantId);
+    if (user.tenantId && !usersLoading && apiUsers) {
       // Exclude super_admin and current user from the list
+      const tenantUsers = apiUsers.filter(u => 
+        u.role !== 'super_admin' && u.id !== user.id
+      );
+      setUsers(tenantUsers);
+    }
+  };
       const filteredUsers = tenantUsers.filter(u => 
         u.role !== 'super_admin' && 
         u.id !== user.id
@@ -198,6 +206,8 @@ export default function UserManagementWithLoginAs({
       );
       storage.set(STORAGE_KEYS.USERS, updatedUsers);
       
+      refetchUsers(); // Refresh API data
+      
       // Log user update audit event
       logAuditEvent(
         user,
@@ -221,6 +231,8 @@ export default function UserManagementWithLoginAs({
     } else {
       allUsers.push(userToSave);
       storage.set(STORAGE_KEYS.USERS, allUsers);
+      
+      refetchUsers(); // Refresh API data
       
       // Log user creation audit event
       logAuditEvent(
@@ -291,6 +303,18 @@ export default function UserManagementWithLoginAs({
   const managementRoles = ['question_manager', 'account_officer', 'inspector'];
   const managementUsers = filteredUsers.filter(u => managementRoles.includes(u.role));
   const otherUsers = filteredUsers.filter(u => !managementRoles.includes(u.role));
+
+  // Show loading state
+  if (usersLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-2 text-gray-600">Loading users...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
