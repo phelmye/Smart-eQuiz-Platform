@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { logger, authLogger } from '../lib/logger';
 
 interface User {
   id: string;
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(storedUser));
         setToken(storedToken);
       } catch (error) {
-        console.error('Failed to parse stored user:', error);
+        logger.warn('Failed to parse stored user', error as Error);
         localStorage.removeItem('platform_admin_user');
         localStorage.removeItem('platform_admin_token');
       }
@@ -91,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('platform_admin_user', JSON.stringify(userData));
       localStorage.setItem('platform_admin_token', data.access_token);
     } catch (error) {
-      console.error('Login failed:', error);
+      logger.error('Login failed', error as Error);
       throw error;
     }
   };

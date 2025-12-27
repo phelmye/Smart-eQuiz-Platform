@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 export interface PaymentTransaction {
   id: string;
