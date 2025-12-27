@@ -85,7 +85,7 @@ export class StripeService {
       }
       
       // If tenantId provided (non-super-admin), verify ownership
-      if (tenantId && customer.metadata?.tenantId !== tenantId) {
+      if (tenantId && !customer.deleted && (customer as Stripe.Customer).metadata?.tenantId !== tenantId) {
         throw new BadRequestException('Customer not found or access denied');
       }
       

@@ -47,7 +47,7 @@ export class NotificationsService {
         where: { 
           userId, 
           token,
-          user: { userTenants: { some: { tenantId } } }
+          user: { tenants: { some: { tenantId } } }
         },
       });
 
@@ -88,7 +88,7 @@ export class NotificationsService {
         where: { 
           userId, 
           token,
-          user: { userTenants: { some: { tenantId } } }
+          user: { tenants: { some: { tenantId } } }
         },
       });
 
@@ -117,7 +117,7 @@ export class NotificationsService {
       where: {
         userId,
         isActive: true,
-        user: { userTenants: { some: { tenantId } } }
+        user: { tenants: { some: { tenantId } } }
       },
       select: {
         token: true,
@@ -138,7 +138,7 @@ export class NotificationsService {
       where: {
         userId: { in: userIds },
         isActive: true,
-        user: { userTenants: { some: { tenantId } } }
+        user: { tenants: { some: { tenantId } } }
       },
       select: {
         token: true,
@@ -219,7 +219,7 @@ export class NotificationsService {
       where: {
         isActive: true,
         user: {
-          userTenants: { some: { tenantId } }
+          tenants: { some: { tenantId } }
         },
       },
       select: {
@@ -278,7 +278,7 @@ export class NotificationsService {
       where: {
         isActive: false,
         lastUsedAt: { lt: cutoffDate },
-        user: { userTenants: { some: { tenantId } } }
+        user: { tenants: { some: { tenantId } } }
       },
     });
 

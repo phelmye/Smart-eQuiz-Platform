@@ -32,7 +32,7 @@ export class UsersService {
     return this.prisma.user.findFirst({
       where: {
         email,
-        userTenants: {
+        tenants: {
           some: { tenantId }
         }
       }
@@ -49,7 +49,7 @@ export class UsersService {
     return this.prisma.user.findFirst({
       where: {
         id,
-        userTenants: {
+        tenants: {
           some: { tenantId }
         }
       }
@@ -113,7 +113,7 @@ export class UsersService {
     
     // If tenantId provided, filter to tenant users only
     if (tenantId) {
-      where.userTenants = {
+      where.tenants = {
         some: { tenantId }
       };
     }
@@ -145,7 +145,7 @@ export class UsersService {
       const existing = await this.prisma.user.findFirst({
         where: {
           email: data.email,
-          userTenants: {
+          tenants: {
             some: { tenantId: data.tenantId }
           }
         }
@@ -214,7 +214,7 @@ export class UsersService {
         const existing = await this.prisma.user.findFirst({
           where: {
             email: data.email,
-            userTenants: {
+            tenants: {
               some: { tenantId }
             }
           }
