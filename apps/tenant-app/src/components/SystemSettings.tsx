@@ -12,6 +12,7 @@ import { ArrowLeft, Save, RefreshCw, Shield, Globe, Bell, Database, Zap } from '
 import { useAuth } from './AuthSystem';
 import { TenantTextCustomization } from './TenantTextCustomization';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface SystemSettingsProps {
   onBack: () => void;
@@ -124,9 +125,16 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ onBack }) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       storage.set('system_config', config);
-      alert('System settings saved successfully!');
+      toast({
+        title: 'Settings saved',
+        description: 'System settings saved successfully!',
+      });
     } catch (error) {
-      alert('Failed to save system settings. Please try again.');
+      toast({
+        title: 'Save failed',
+        description: 'Failed to save system settings. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

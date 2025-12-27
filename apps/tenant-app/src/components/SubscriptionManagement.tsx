@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { storage, STORAGE_KEYS, defaultPlans } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface SubscriptionManagementProps {
   user: any;
@@ -169,7 +170,10 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
 
   const handleDowngrade = (planId: string) => {
     if (confirm('Are you sure you want to downgrade your plan? Some features may become unavailable.')) {
-      alert('Plan downgrade scheduled for next billing cycle.');
+      toast({
+        title: 'Downgrade scheduled',
+        description: 'Plan downgrade scheduled for next billing cycle.',
+      });
     }
   };
 
@@ -179,7 +183,10 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
 
   const confirmCancelSubscription = () => {
     if (confirm('Are you absolutely sure? Your subscription will be cancelled at the end of the current billing period.')) {
-      alert('Subscription cancelled. You will retain access until the end of your billing period.');
+      toast({
+        title: 'Subscription cancelled',
+        description: 'You will retain access until the end of your billing period.',
+      });
       setShowCancelModal(false);
     }
   };
@@ -192,11 +199,17 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     billingData[tenant?.id] = { ...billingData[tenant?.id], autoRenew: newValue };
     storage.set(STORAGE_KEYS.BILLING, billingData);
 
-    alert(`Auto-renewal ${newValue ? 'enabled' : 'disabled'} successfully.`);
+    toast({
+      title: `Auto-renewal ${newValue ? 'enabled' : 'disabled'}`,
+      description: `Auto-renewal ${newValue ? 'enabled' : 'disabled'} successfully.`,
+    });
   };
 
   const handleDownloadInvoice = (invoice: Invoice) => {
-    alert(`Downloading invoice ${invoice.number}...`);
+    toast({
+      title: 'Downloading invoice',
+      description: `Downloading invoice ${invoice.number}...`,
+    });
     // In a real app, this would trigger PDF download
   };
 
@@ -205,13 +218,19 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
       ...pm,
       isDefault: pm.id === methodId
     })));
-    alert('Default payment method updated.');
+    toast({
+      title: 'Default updated',
+      description: 'Default payment method updated.',
+    });
   };
 
   const handleRemovePaymentMethod = (methodId: string) => {
     if (confirm('Remove this payment method?')) {
       setPaymentMethods(prev => prev.filter(pm => pm.id !== methodId));
-      alert('Payment method removed.');
+      toast({
+        title: 'Payment method removed',
+        description: 'Payment method removed.',
+      });
     }
   };
 

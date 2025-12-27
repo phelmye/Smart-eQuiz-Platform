@@ -11,6 +11,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Search, UserPlus, Mail, Shield, DollarSi
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, User, Tenant, UserRole, mockUsers, getAvailableRolesForTenant, canCreateMoreUsers, defaultPlans, hasPermission, getAssignableRoles, canAssignRole, logAuditEvent } from '@/lib/mockData';
 import { useUsers } from '@/hooks/useUsers';
+import { toast } from '@/hooks/use-toast';
 
 interface UserManagementProps {
   onBack: () => void;
@@ -92,35 +93,55 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
 
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email) {
-      alert('Please fill in all required fields');
+      toast({
+        title: 'Required fields missing',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Check if email already exists
     const allUsers = storage.get(STORAGE_KEYS.USERS) || [];
     if (allUsers.some((u: User) => u.email === newUser.email && (!editingUser || u.id !== editingUser.id))) {
-      alert('A user with this email already exists');
+      toast({
+        title: 'Email already exists',
+        description: 'A user with this email already exists',
+        variant: 'destructive',
+      });
       return;
     }
 
     // For org_admin, check if they can create more users based on their plan
     if (currentUser?.role === 'org_admin' && !editingUser && currentUser.tenantId) {
       if (!canCreateMoreUsers(currentUser.tenantId)) {
-        alert('Your current plan has reached the maximum number of users. Please upgrade your plan to add more users.');
+        toast({
+          title: 'User limit reached',
+          description: 'Your current plan has reached the maximum number of users. Please upgrade your plan to add more users.',
+          variant: 'destructive',
+        });
         return;
       }
     }
 
     // Double-check creator has create permission
     if (currentUser && !hasPermission(currentUser, 'users.create')) {
-      alert('You do not have permission to create users.');
+      toast({
+        title: 'Permission denied',
+        description: 'You do not have permission to create users.',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Use centralized role assignment policy
     if (!canAssignRole(currentUser, newUser.role)) {
       const assignableRoles = getAssignableRoles(currentUser);
-      alert(`You cannot assign the role '${newUser.role}'. Available roles: ${assignableRoles.join(', ')}`);
+      toast({
+        title: 'Cannot assign role',
+        description: `You cannot assign the role '${newUser.role}'. Available roles: ${assignableRoles.join(', ')}`,
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -212,7 +233,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
 
   const handleDeleteUser = (userId: string) => {
     if (userId === currentUser?.id) {
-      alert('You cannot delete your own account');
+      toast({
+        title: 'Action not allowed',
+        description: 'You cannot delete your own account',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -270,7 +295,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ onBack, initialAction }
 
     // Ensure the user has permission to create users
     if (!hasPermission(currentUser, 'users.create')) {
-      alert('You do not have permission to create users.');
+      toast({
+        title: 'Permission denied',
+        description: 'You do not have permission to create users.',
+        variant: 'destructive',
+      });
       return;
     }
 

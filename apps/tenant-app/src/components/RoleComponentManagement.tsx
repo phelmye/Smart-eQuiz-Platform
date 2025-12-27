@@ -33,6 +33,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import { toast } from '@/hooks/use-toast';
 import { Plus, Edit, Shield, Users, AlertCircle, Settings } from 'lucide-react';
 import { 
   User, 
@@ -88,13 +89,21 @@ export default function RoleComponentManagement({ user, onBack }: RoleComponentM
 
   const handleCreateRole = () => {
     if (!newRole.roleName) {
-      alert('Please select a role');
+      toast({
+        title: 'Role required',
+        description: 'Please select a role',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Check if role already exists
     if (roleFeatures.some(rf => rf.roleName === newRole.roleName)) {
-      alert('Component features for this role already exist');
+      toast({
+        title: 'Role exists',
+        description: 'Component features for this role already exist',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -117,7 +126,10 @@ export default function RoleComponentManagement({ user, onBack }: RoleComponentM
     });
     setIsCreateRoleOpen(false);
 
-    alert(`Component features configured for ${newRole.roleName} role successfully!`);
+    toast({
+      title: 'Features configured',
+      description: `Component features configured for ${newRole.roleName} role successfully!`,
+    });
   };
 
   const handleUpdateRole = () => {
@@ -134,7 +146,10 @@ export default function RoleComponentManagement({ user, onBack }: RoleComponentM
     setIsEditRoleOpen(false);
     setSelectedRole(null);
 
-    alert('Role component features updated successfully!');
+    toast({
+      title: 'Features updated',
+      description: 'Role component features updated successfully!',
+    });
   };
 
   const handleDeleteRole = (roleId: string) => {

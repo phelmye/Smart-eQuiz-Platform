@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { logger } from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -123,7 +124,11 @@ export default function WebhookManagement() {
 
   const handleCreate = async () => {
     if (!formData.url || formData.events.length === 0) {
-      alert('Please provide URL and select at least one event');
+      toast({
+        title: 'Validation error',
+        description: 'Please provide URL and select at least one event',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -141,7 +146,11 @@ export default function WebhookManagement() {
       logger.success('Webhook created successfully');
     } catch (err) {
       logger.error('Failed to create webhook:', err);
-      alert('Failed to create webhook');
+      toast({
+        title: 'Creation failed',
+        description: 'Failed to create webhook',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -155,7 +164,11 @@ export default function WebhookManagement() {
       logger.success('Webhook deleted successfully');
     } catch (err) {
       logger.error('Failed to delete webhook:', err);
-      alert('Failed to delete webhook');
+      toast({
+        title: 'Deletion failed',
+        description: 'Failed to delete webhook',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -163,10 +176,17 @@ export default function WebhookManagement() {
     try {
       await apiManagementClient.testWebhook(webhook.id);
       logger.success('Test webhook sent successfully', { url: webhook.url });
-      alert(`Test event sent to ${webhook.url}`);
+      toast({
+        title: 'Test sent',
+        description: `Test event sent to ${webhook.url}`,
+      });
     } catch (err) {
       logger.error('Failed to test webhook:', err);
-      alert('Failed to send test webhook');
+      toast({
+        title: 'Test failed',
+        description: 'Failed to send test webhook',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -177,7 +197,11 @@ export default function WebhookManagement() {
       setDeliveriesDialog({ open: true, webhook });
     } catch (err) {
       logger.error('Failed to load deliveries:', err);
-      alert('Failed to load delivery logs');
+      toast({
+        title: 'Load failed',
+        description: 'Failed to load delivery logs',
+        variant: 'destructive',
+      });
     }
   };
 

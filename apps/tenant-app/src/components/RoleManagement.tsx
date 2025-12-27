@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { logger } from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
 import { 
   Dialog, 
   DialogContent, 
@@ -75,7 +76,11 @@ export default function RoleManagement({ user }: RoleManagementProps) {
 
   const handleCreateUser = () => {
     if (!newUser.name || !newUser.email || !newUser.role || !user.tenantId) {
-      alert('Please fill in all required fields');
+      toast({
+        title: 'Required fields missing',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -83,7 +88,11 @@ export default function RoleManagement({ user }: RoleManagementProps) {
     
     // Check if user already exists
     if (allUsers.some(u => u.email === newUser.email)) {
-      alert('User with this email already exists');
+      toast({
+        title: 'User exists',
+        description: 'User with this email already exists',
+        variant: 'destructive',
+      });
       return;
     }
 

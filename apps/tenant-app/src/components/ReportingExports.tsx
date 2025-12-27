@@ -29,6 +29,7 @@ import {
   Trash2,
   Filter
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ReportingExportsProps {
   user: any;
@@ -139,43 +140,71 @@ const ReportingExports: React.FC<ReportingExportsProps> = ({ user, tenant, onBac
   const handleQuickExport = (templateId: string) => {
     const template = REPORT_TEMPLATES.find(t => t.id === templateId);
     if (template) {
-      alert(`Generating ${template.name}...\nFormat: ${exportFormat.toUpperCase()}\nThis will download shortly.`);
+      toast({
+        title: 'Generating report',
+        description: `Generating ${template.name}... Format: ${exportFormat.toUpperCase()}`,
+      });
       // In real app, this would trigger actual file generation
     }
   };
 
   const handleCustomExport = () => {
     if (selectedFields.length === 0) {
-      alert('Please select at least one field to export');
+      toast({
+        title: 'No fields selected',
+        description: 'Please select at least one field to export',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (!dateRange.start || !dateRange.end) {
-      alert('Please select a date range');
+      toast({
+        title: 'Date range required',
+        description: 'Please select a date range',
+        variant: 'destructive',
+      });
       return;
     }
 
-    alert(`Generating custom report...\nFields: ${selectedFields.length}\nDate Range: ${dateRange.start} to ${dateRange.end}\nFormat: ${exportFormat.toUpperCase()}`);
+    toast({
+      title: 'Generating custom report',
+      description: `Fields: ${selectedFields.length} | Date Range: ${dateRange.start} to ${dateRange.end} | Format: ${exportFormat.toUpperCase()}`,
+    });
   };
 
   const handleSaveCustomReport = () => {
     if (!customReportName.trim()) {
-      alert('Please enter a report name');
+      toast({
+        title: 'Name required',
+        description: 'Please enter a report name',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (customFields.length === 0) {
-      alert('Please select at least one field');
+      toast({
+        title: 'No fields selected',
+        description: 'Please select at least one field',
+        variant: 'destructive',
+      });
       return;
     }
 
-    alert(`Custom report "${customReportName}" saved successfully!`);
+    toast({
+      title: 'Report saved',
+      description: `Custom report "${customReportName}" saved successfully!`,
+    });
     setCustomReportName('');
     setCustomFields([]);
   };
 
   const handleScheduleReport = (reportId: string) => {
-    alert('Schedule report dialog would open here');
+    toast({
+      title: 'Feature coming soon',
+      description: 'Schedule report dialog would open here',
+    });
   };
 
   const handleToggleScheduledReport = (reportId: string) => {
@@ -187,7 +216,10 @@ const ReportingExports: React.FC<ReportingExportsProps> = ({ user, tenant, onBac
   const handleDeleteScheduledReport = (reportId: string) => {
     if (confirm('Delete this scheduled report?')) {
       setScheduledReports(prev => prev.filter(r => r.id !== reportId));
-      alert('Scheduled report deleted');
+      toast({
+        title: 'Report deleted',
+        description: 'Scheduled report deleted',
+      });
     }
   };
 
