@@ -22,12 +22,38 @@ interface UpdateUserDto {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+  async findByEmail(email: string, tenantId?: string) {
+    if (!tenantId) {
+      // Used only for authentication - return user without tenant filtering
+      return this.prisma.user.findUnique({ where: { email } });
+    }
+    
+    // For tenant-scoped operations, check user belongs to tenant
+    return this.prisma.user.findFirst({
+      where: {
+        email,
+        userTenants: {
+          some: { tenantId }
+        }
+      }
+    });
   }
 
-  async findById(id: string) {
-    return this.prisma.user.findUnique({ where: { id } });
+  async findById(id: string, tenantId?: string) {
+    if (!tenantId) {
+      // Super admin can access any user
+      return this.prisma.user.findUnique({ where: { id } });
+    }
+    
+    // For tenant-scoped operations, verify user belongs to tenant
+    return this.prisma.user.findFirst({
+      where: {
+        id,
+        userTenants: {
+          some: { tenantId }
+        }
+      }
+    });
   }
 
   // Platform Admin Methods
@@ -82,11 +108,21 @@ export class UsersService {
     }));
   }
 
-  async getUserStats() {
+  async getUserStats(tenantId?: string) {
+    const where: any = {};
+    
+    // If tenantId provided, filter to tenant users only
+    if (tenantId) {
+      where.userTenants = {
+        some: { tenantId }
+      };
+    }
+    
     const [total, byRole] = await Promise.all([
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
       this.prisma.user.groupBy({
         by: ['role'],
+        where,
         _count: true,
       }),
     ]);
@@ -104,13 +140,29 @@ export class UsersService {
   }
 
   async createUser(data: CreateUserDto) {
-    // Check if user already exists
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email }
-    });
+    // Check if user already exists in this tenant (if tenantId provided)
+    if (data.tenantId) {
+      const existing = await this.prisma.user.findFirst({
+        where: {
+          email: data.email,
+          userTenants: {
+            some: { tenantId: data.tenantId }
+          }
+        }
+      });
+      
+      if (existing) {
+        throw new ConflictException('User with this email already exists in this tenant');
+      }
+    } else {
+      // For super admin creating users without tenant, check global uniqueness
+      const existing = await this.prisma.user.findUnique({
+        where: { email: data.email }
+      });
 
-    if (existing) {
-      throw new ConflictException('User with this email already exists');
+      if (existing) {
+        throw new ConflictException('User with this email already exists');
+      }
     }
 
     // Hash password
@@ -148,20 +200,35 @@ export class UsersService {
     };
   }
 
-  async updateUser(id: string, data: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async updateUser(id: string, data: UpdateUserDto, tenantId?: string) {
+    // Find user and verify tenant access
+    const user = await this.findById(id, tenantId);
     
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or access denied');
     }
 
-    // If email is being changed, check for conflicts
+    // If email is being changed, check for conflicts within tenant scope
     if (data.email && data.email !== user.email) {
-      const existing = await this.prisma.user.findUnique({
-        where: { email: data.email }
-      });
-      if (existing) {
-        throw new ConflictException('Email already in use');
+      if (tenantId) {
+        const existing = await this.prisma.user.findFirst({
+          where: {
+            email: data.email,
+            userTenants: {
+              some: { tenantId }
+            }
+          }
+        });
+        if (existing) {
+          throw new ConflictException('Email already in use in this tenant');
+        }
+      } else {
+        const existing = await this.prisma.user.findUnique({
+          where: { email: data.email }
+        });
+        if (existing) {
+          throw new ConflictException('Email already in use');
+        }
       }
     }
 
@@ -184,11 +251,12 @@ export class UsersService {
     };
   }
 
-  async deleteUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async deleteUser(id: string, tenantId?: string) {
+    // Find user and verify tenant access
+    const user = await this.findById(id, tenantId);
     
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or access denied');
     }
 
     // Delete user-tenant relationships first
@@ -200,11 +268,12 @@ export class UsersService {
     await this.prisma.user.delete({ where: { id } });
   }
 
-  async suspendUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async suspendUser(id: string, tenantId?: string) {
+    // Find user and verify tenant access
+    const user = await this.findById(id, tenantId);
     
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or access denied');
     }
 
     // Note: User model doesn't have status field
@@ -216,11 +285,12 @@ export class UsersService {
     };
   }
 
-  async activateUser(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async activateUser(id: string, tenantId?: string) {
+    // Find user and verify tenant access
+    const user = await this.findById(id, tenantId);
     
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('User not found or access denied');
     }
 
     // Note: User model doesn't have status field

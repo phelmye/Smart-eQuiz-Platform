@@ -15,7 +15,7 @@ export interface AnswerQuestionDto {
 export class PracticeService {
   constructor(private prisma: PrismaService) {}
 
-  async startPractice(userId: string, dto: StartPracticeDto) {
+  async startPractice(userId: string, tenantId: string, dto: StartPracticeDto) {
     // Get or create practice progress
     let progress = await this.prisma.practiceProgress.findUnique({
       where: {
@@ -42,7 +42,7 @@ export class PracticeService {
     }
 
     // Get a random question from the category (or any category if not specified)
-    const where: any = { isActive: true };
+    const where: any = { isActive: true, tenantId };
     if (dto.categoryId) {
       where.categoryId = dto.categoryId;
     }
@@ -80,6 +80,7 @@ export class PracticeService {
 
   async answerQuestion(
     userId: string,
+    tenantId: string,
     progressId: string,
     dto: AnswerQuestionDto,
   ) {
@@ -91,8 +92,8 @@ export class PracticeService {
       throw new Error('Invalid progress ID');
     }
 
-    const question = await this.prisma.question.findUnique({
-      where: { id: dto.questionId },
+    const question = await this.prisma.question.findFirst({
+      where: { id: dto.questionId, tenantId },
     });
 
     if (!question) {
@@ -215,8 +216,10 @@ export class PracticeService {
     };
   }
 
-  async getLeaderboard(categoryId?: string, limit: number = 10) {
-    const where: any = {};
+  async getLeaderboard(tenantId: string, categoryId?: string, limit: number = 10) {
+    const where: any = {
+      user: { tenantId },
+    };
     if (categoryId) {
       where.categoryId = categoryId;
     }

@@ -32,7 +32,9 @@ export class UsersController {
   @Get('me')
   @Roles('SUPER_ADMIN','ORG_ADMIN','PARTICIPANT','SPECTATOR')
   async me(@Req() req: any) {
-    const user = await this.usersService.findById(req.user.userId);
+    // Super admin can access without tenant filter, others need tenantId
+    const tenantId = req.user.role === 'SUPER_ADMIN' ? undefined : req.user.tenantId;
+    const user = await this.usersService.findById(req.user.userId, tenantId);
     
     // Log user data access
     await this.auditService.logAccess(
@@ -57,15 +59,18 @@ export class UsersController {
 
   @Get('stats')
   @Roles('SUPER_ADMIN')
-  async getStats() {
-    const stats = await this.usersService.getUserStats();
+  async getStats(@Query('tenantId') tenantId?: string) {
+    // Super admin can optionally filter by tenantId or get platform-wide stats
+    const stats = await this.usersService.getUserStats(tenantId);
     return stats;
   }
 
   @Get(':id')
   @Roles('SUPER_ADMIN', 'ORG_ADMIN')
   async findOne(@Param('id') id: string, @Req() req: any) {
-    const user = await this.usersService.findById(id);
+    // Super admin can access any user, ORG_ADMIN only their tenant users
+    const tenantId = req.user.role === 'SUPER_ADMIN' ? undefined : req.user.tenantId;
+    const user = await this.usersService.findById(id, tenantId);
     
     await this.auditService.logAccess(
       req.user.userId,
@@ -100,7 +105,8 @@ export class UsersController {
   @Put(':id')
   @Roles('SUPER_ADMIN')
   async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: any) {
-    const user = await this.usersService.updateUser(id, updateUserDto);
+    // Super admin can update without tenant restriction
+    const user = await this.usersService.updateUser(id, updateUserDto, undefined);
     
     await this.auditService.log({
       userId: req.user.userId,
@@ -118,7 +124,8 @@ export class UsersController {
   @Delete(':id')
   @Roles('SUPER_ADMIN')
   async remove(@Param('id') id: string, @Req() req: any) {
-    await this.usersService.deleteUser(id);
+    // Super admin can delete without tenant restriction
+    await this.usersService.deleteUser(id, undefined);
     
     await this.auditService.log({
       userId: req.user.userId,
@@ -136,7 +143,8 @@ export class UsersController {
   @Post(':id/suspend')
   @Roles('SUPER_ADMIN')
   async suspend(@Param('id') id: string, @Req() req: any) {
-    const user = await this.usersService.suspendUser(id);
+    // Super admin can suspend without tenant restriction
+    const user = await this.usersService.suspendUser(id, undefined);
     
     await this.auditService.log({
       userId: req.user.userId,
@@ -154,7 +162,8 @@ export class UsersController {
   @Post(':id/activate')
   @Roles('SUPER_ADMIN')
   async activate(@Param('id') id: string, @Req() req: any) {
-    const user = await this.usersService.activateUser(id);
+    // Super admin can activate without tenant restriction
+    const user = await this.usersService.activateUser(id, undefined);
     
     await this.auditService.log({
       userId: req.user.userId,
