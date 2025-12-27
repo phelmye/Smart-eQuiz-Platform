@@ -18,6 +18,7 @@
     "sentry:sourcemaps": "sentry-cli sourcemaps upload --org smart-equiz --project api dist"
   },
   "dependencies": {
+    "@nestjs/cli": "^11.0.12",
     "@nestjs/common": "^11.1.9",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^11.1.9",
@@ -25,6 +26,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^11.1.9",
     "@nestjs/platform-socket.io": "^11.1.9",
+    "@nestjs/schedule": "^6.1.0",
     "@nestjs/serve-static": "^4.0.0",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^6.4.0",
@@ -46,15 +48,14 @@
     "helmet": "^7.1.0",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
+    "prisma": "^5.22.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
     "stripe": "^14.0.0",
     "swagger-ui-express": "^5.0.1",
-    "uuid": "^13.0.0",
-    "@nestjs/cli": "^11.0.12",
-    "prisma": "^5.22.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",

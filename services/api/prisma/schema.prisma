@@ -1167,3 +1167,74 @@ model NotificationLog {
   @@map("notification_logs")
 }
 
+// Demo Tenant System - Platform admin manages golden state template
+model DemoTemplate {
+  id              String        @id @default(cuid())
+  version         String        @unique // e.g., "v1.0", "v1.1"
+  name            String        // "Basic Quiz Demo", "Advanced Features Demo"
+  description     String?       @db.Text
+  isActive        Boolean       @default(false)
+  
+  // Template data (golden state)
+  templateData    Json          // Contains: questions, tournaments, users, etc.
+  
+  // Metadata
+  createdBy       String?       // Platform admin user ID
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  activatedAt     DateTime?
+  
+  // Relations
+  demoSessions    DemoSession[]
+  
+  @@index([isActive])
+  @@index([version])
+  @@map("demo_templates")
+}
+
+// Demo Session - Each visitor gets isolated session
+model DemoSession {
+  id              String        @id @default(cuid())
+  sessionToken    String        @unique // Used in cookie/localStorage
+  
+  // Template reference
+  templateId      String
+  template        DemoTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  
+  // User's changes (overlay on top of template)
+  changes         Json          @default("{}")
+  
+  // Session metadata
+  ipAddress       String?
+  userAgent       String?       @db.Text
+  visitCount      Int           @default(1)
+  lastActivityAt  DateTime      @default(now())
+  
+  // Expiration
+  expiresAt       DateTime
+  createdAt       DateTime      @default(now())
+  
+  @@index([sessionToken])
+  @@index([expiresAt])
+  @@index([templateId])
+  @@map("demo_sessions")
+}
+
+// Demo Analytics - Track popular features
+model DemoAnalytics {
+  id              String        @id @default(cuid())
+  sessionId       String        // Reference to demo session (not FK to allow cleanup)
+  
+  // Event tracking
+  eventType       String        // "feature_used", "page_viewed", "action_completed"
+  featureName     String        // "create_question", "start_tournament", etc.
+  metadata        Json?         // Additional event data
+  
+  createdAt       DateTime      @default(now())
+  
+  @@index([eventType])
+  @@index([featureName])
+  @@index([createdAt])
+  @@map("demo_analytics")
+}
+

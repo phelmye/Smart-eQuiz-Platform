@@ -27,12 +27,15 @@ import { EmailModule } from './email/email.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { SupportModule } from './support/support.module';
+import { DemoModule } from './demo/demo.module';
 import { TenantMiddleware } from './common/tenant.middleware';
 import { PrismaModule } from './prisma.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(), // Enable cron jobs for demo cleanup
     // Rate limiting - Enterprise SaaS standard
     ThrottlerModule.forRoot([{
       ttl: 60000,       // Time window in milliseconds (60 seconds)
@@ -67,6 +70,7 @@ import { PrismaModule } from './prisma.module';
     NotificationsModule,
     AdminModule,
     SupportModule,
+    DemoModule,
   ],
   controllers: [AppController],
   providers: [
