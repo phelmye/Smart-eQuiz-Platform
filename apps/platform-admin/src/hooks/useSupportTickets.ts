@@ -70,7 +70,7 @@ export function useSupportTickets(filters?: TicketFilters) {
       setTotal(response.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tickets');
-      console.error('Error fetching tickets:', err);
+      logger.error('Error fetching tickets', err as Error);
     } finally {
       setLoading(false);
     }

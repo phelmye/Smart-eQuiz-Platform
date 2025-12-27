@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 export interface DashboardStats {
   totalTenants: number;
@@ -45,7 +46,7 @@ export function useDashboardStats() {
       setData(response);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch dashboard statistics');
-      console.error('Dashboard stats error:', err);
+      logger.error('Dashboard stats error', err as Error);
     } finally {
       setLoading(false);
     }

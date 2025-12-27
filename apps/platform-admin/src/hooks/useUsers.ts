@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 interface Tenant {
   id: string;
@@ -61,7 +62,7 @@ export function useUsers() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch users';
       setError(message);
-      console.error('Error fetching users:', err);
+      logger.error('Error fetching users', err as Error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export function useUsers() {
       const stats = await api.get<UserStats>('/users/stats');
       return stats;
     } catch (err) {
-      console.error('Error fetching user stats:', err);
+      logger.error('Error fetching user stats', err as Error);
       return null;
     }
   };

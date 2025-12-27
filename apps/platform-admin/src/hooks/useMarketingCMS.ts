@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '../lib/logger';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -118,7 +119,7 @@ export function useMarketingCMS<T>(
       setData(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error(`Error fetching ${endpoint}:`, err);
+      logger.error(`Error fetching ${endpoint}`, err as Error);
     } finally {
       setLoading(false);
     }

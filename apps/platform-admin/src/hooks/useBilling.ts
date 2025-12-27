@@ -73,7 +73,7 @@ export function useBilling() {
       setTransactions(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch transactions');
-      console.error('Error fetching transactions:', err);
+      logger.error('Error fetching transactions', err as Error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export function useBilling() {
       setGateways(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch payment gateways');
-      console.error('Error fetching gateways:', err);
+      logger.error('Error fetching gateways', err as Error);
     }
   };
 
@@ -98,7 +98,7 @@ export function useBilling() {
       setStats(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch revenue stats');
-      console.error('Error fetching revenue stats:', err);
+      logger.error('Error fetching revenue stats', err as Error);
     }
   };
 

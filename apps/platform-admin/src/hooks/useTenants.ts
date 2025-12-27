@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
+import { logger } from '../lib/logger';
 
 export interface Tenant {
   id: string;
@@ -50,7 +51,7 @@ export function useTenants() {
       setTenants(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch tenants');
-      console.error('Error fetching tenants:', err);
+      logger.error('Error fetching tenants', err as Error);
     } finally {
       setLoading(false);
     }
