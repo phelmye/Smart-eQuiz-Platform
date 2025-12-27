@@ -103,8 +103,11 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get transaction details' })
   @ApiResponse({ status: 200, description: 'Returns transaction' })
   @ApiResponse({ status: 404, description: 'Transaction not found' })
-  async getTransaction(@Param('id') id: string) {
-    return this.paymentsService.getTransaction(id);
+  async getTransaction(
+    @Param('id') id: string,
+    @TenantId() tenantId: string,
+  ) {
+    return this.paymentsService.getTransaction(id, tenantId);
   }
 
   /**

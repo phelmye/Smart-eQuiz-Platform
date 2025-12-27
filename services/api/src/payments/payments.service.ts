@@ -80,9 +80,16 @@ export class PaymentsService {
   /**
    * Get transaction by ID
    */
-  async getTransaction(transactionId: string) {
-    const transaction = await this.prisma.paymentTransaction.findUnique({
-      where: { id: transactionId },
+  async getTransaction(transactionId: string, tenantId?: string) {
+    const where: any = { id: transactionId };
+    
+    // If tenantId provided (non-super-admin), filter by tenant
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
+    
+    const transaction = await this.prisma.paymentTransaction.findFirst({
+      where,
       include: {
         tenant: {
           select: {
@@ -95,7 +102,7 @@ export class PaymentsService {
     });
 
     if (!transaction) {
-      throw new NotFoundException('Transaction not found');
+      throw new NotFoundException('Transaction not found or access denied');
     }
 
     return transaction;
