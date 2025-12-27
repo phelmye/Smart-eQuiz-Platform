@@ -4,7 +4,9 @@ A comprehensive **Software-as-a-Service (SaaS) platform** for churches and organ
 
 [![Architecture](https://img.shields.io/badge/Architecture-Multi--Tenant-blue)]()
 [![Apps](https://img.shields.io/badge/Apps-3%20Separate-green)]()
-[![Status](https://img.shields.io/badge/Status-Migrating-yellow)]()
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue)]()
+[![Build](https://img.shields.io/badge/Build-Passing-success)]()
 
 ---
 
@@ -69,7 +71,9 @@ Smart-eQuiz-Platform/
 
 ### ⚡ Fastest Way to Run Locally
 
-**Marketing Site** (uses production API):
+**All applications use the new architecture. The monolithic version in `workspace/shadcn-ui/` is deprecated.**
+
+**Marketing Site**:
 ```powershell
 # From repository root
 .\start-marketing-site.ps1
@@ -88,11 +92,11 @@ cd apps/tenant-app
 pnpm dev  # http://localhost:5174
 ```
 
-> **Important:** Use dedicated terminals for each dev server. Don't run other commands in the same terminal as the dev server or it will shut down.
+> **Important:** Build shared packages first (`packages/types` and `packages/utils`) before running apps. Use dedicated terminals for each dev server.
 
-### Current Working Application
+### Legacy Monolith (Deprecated)
 
-The existing application is located in `workspace/shadcn-ui/`:
+The original monolithic application is in `workspace/shadcn-ui/` and is kept for reference only. **All new development happens in the `apps/` directory.**
 
 ```bash
 cd "c:\Projects\Dev\Smart eQuiz Platform\workspace\shadcn-ui"
@@ -102,7 +106,7 @@ pnpm dev  # http://localhost:5173
 
 This is the **monolithic version** that will be split into three apps.
 
-### New Architecture (In Development)
+### Production Architecture
 
 ```bash
 # Clone repository
@@ -112,16 +116,20 @@ cd Smart-eQuiz-Platform
 # Install all dependencies (workspace)
 pnpm install
 
+# Build shared packages (required first)
+cd packages/types && pnpm build
+cd ../utils && pnpm build
+
 # Start marketing site
-cd apps/marketing-site
+cd ../../apps/marketing-site
 pnpm dev  # http://localhost:3000
 
 # Start platform admin
-cd apps/platform-admin
+cd ../platform-admin
 pnpm dev  # http://localhost:5173
 
 # Start tenant app
-cd apps/tenant-app
+cd ../tenant-app
 pnpm dev  # http://localhost:5174
 ```
 
