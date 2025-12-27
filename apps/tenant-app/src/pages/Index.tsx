@@ -2,9 +2,10 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthSystem, useAuth } from '@/components/AuthSystem';
 import { FullScreenLoader } from '@/components/ui/loading-spinner';
 import ErrorBoundary from '@/components/ui/error-boundary';
-import { initializeMockData, mockTournaments, mockTenants, Tenant } from '@/lib/mockData';
+import { initializeMockData, mockTournaments } from '@/lib/mockData';
 import TenantLandingPage from '@/components/TenantLandingPage';
 import { logger } from '@/lib/logger';
+import { useTenant } from '@/contexts/TenantContext';
 
 // Dynamic imports for code splitting - components are loaded only when needed
 const Dashboard = lazy(() => import('@/components/Dashboard').then(module => ({ default: module.Dashboard })));
@@ -75,57 +76,30 @@ type Page = 'auth' | 'dashboard' | 'practice' | 'tournament-builder' | 'live-mat
 // Main content component that uses auth context
 const AppContent: React.FC = () => {
   const { user, isAuthenticated, isInitializing } = useAuth();
+  const { tenant, isLoading: isTenantLoading } = useTenant(); // Use TenantContext instead of duplicate detection
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
 
-  // Detect tenant from URL
-  useEffect(() => {
-    const detectTenantFromUrl = (): Tenant | null => {
-      const hostname = window.location.hostname;
-      const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
-      
-      if (isDevelopment) {
-        // Check URL parameter first
-        const urlParams = new URLSearchParams(window.location.search);
-        const tenantParam = urlParams.get('tenant');
-        if (tenantParam) {
-          return mockTenants.find(t => t.id === tenantParam) || mockTenants[0];
-        }
-        // Default to first tenant for development
-        return mockTenants[0];
-      }
-      
-      // Production: subdomain detection
-      const parts = hostname.split('.');
-      if (parts.length >= 3) {
-        const subdomain = parts[0];
-        return mockTenants.find(t => t.subdomain === subdomain) || null;
-      }
-      
-      return null;
-    };
+  // Show loading state while tenant is being detected
+  if (isTenantLoading) {
+    return <FullScreenLoader message="Loading organization..." />;
+  }
 
-    const tenant = detectTenantFromUrl();
-    setCurrentTenant(tenant);
-    logger.debug('Detected tenant from URL', { tenant });
-  }, []);
-
-  // Mock tenant data for components that require it when tenant is detected
-  const mockTenant = currentTenant || {
-    id: 'demo-tenant',
-    name: 'Demo Organization',
-    subdomain: 'demo',
-    customDomainVerified: false,
-    planId: 'professional',
-    status: 'active' as const,
-    primaryColor: '#3b82f6',
-    sslEnabled: true,
-    paymentIntegrationEnabled: true,
-    maxUsers: 100,
-    maxTournaments: 50,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  // Tenant should always exist here (validated by TenantProvider)
+  if (!tenant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Organization Not Found</h1>
+          <p className="text-gray-600 mb-4">
+            This organization could not be found or is not active.
+          </p>
+          <a href="https://smartequiz.com" className="text-blue-600 hover:underline">
+            Go to Smart eQuiz Home
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   // Navigate to dashboard when authenticated
   useEffect(() => {
@@ -239,7 +213,7 @@ const AppContent: React.FC = () => {
             case 'billing':
               return <BillingSelection availablePlans={[]} onSelectPlan={() => {}} />;
             case 'subscription-management':
-              return <SubscriptionManagement user={user} tenant={mockTenant} onBack={handleBackToDashboard} />;
+              return <SubscriptionManagement user={user} tenant={tenant} onBack={handleBackToDashboard} />;
             case 'plan-management':
               return <PlanManagement onBack={handleBackToDashboard} />;
             
@@ -253,14 +227,14 @@ const AppContent: React.FC = () => {
             case 'audit-logs':
               return <AuditLogViewer onBack={handleBackToDashboard} />;
             case 'reports':
-              return <ReportingExports user={user} tenant={mockTenant} onBack={handleBackToDashboard} />;
+              return <ReportingExports user={user} tenant={tenant} onBack={handleBackToDashboard} />;
             
             // Tournament Management
             case 'certificates':
               // Mock award for demo purposes
               const mockAward = {
                 id: 'demo-award-1',
-                tenantId: mockTenant.id,
+                tenantId: tenant.id,
                 tournamentId: 'demo-tournament',
                 prizeConfigId: 'demo-config',
                 winnerId: user?.id || 'demo-user',
@@ -283,37 +257,37 @@ const AppContent: React.FC = () => {
             case 'email-templates':
               return <EmailTemplateManager onBack={handleBackToDashboard} />;
             case 'hall-of-fame':
-              return <WinnersHallOfFame tenantId={mockTenant.id} />;
+              return <WinnersHallOfFame tenantId={tenant.id} />;
             case 'spectator':
               // Use first available tournament for spectator mode
-              const spectatorTournament = mockTournaments.find(t => t.tenantId === mockTenant.id) || mockTournaments[0];
+              const spectatorTournament = mockTournaments.find(t => t.tenantId === tenant.id) || mockTournaments[0];
               return <LiveTournamentSpectator tournament={spectatorTournament} onBack={handleBackToDashboard} />;
             case 'match-management':
-              return <MatchManagement tournamentId="demo-tournament" tenantId={mockTenant.id} onBack={handleBackToDashboard} />;
+              return <MatchManagement tournamentId="demo-tournament" tenantId={tenant.id} onBack={handleBackToDashboard} />;
             case 'prize-management':
-              return <PrizeAwardManagement tenantId={mockTenant.id} tournamentId="demo-tournament" />;
+              return <PrizeAwardManagement tenantId={tenant.id} tournamentId="demo-tournament" />;
             case 'brackets':
               return <BracketVisualization tournamentId="demo-tournament" onBack={handleBackToDashboard} />;
             case 'knockout-tournament':
               // Use first available tournament
-              const knockoutTournament = mockTournaments.find(t => t.tenantId === mockTenant.id) || mockTournaments[0];
-              return <KnockoutTournamentEngine tournament={knockoutTournament} tenantId={mockTenant.id} onBack={handleBackToDashboard} />;
+              const knockoutTournament = mockTournaments.find(t => t.tenantId === tenant.id) || mockTournaments[0];
+              return <KnockoutTournamentEngine tournament={knockoutTournament} tenantId={tenant.id} onBack={handleBackToDashboard} />;
             
             // Question & Category Management
             case 'bonus-questions':
-              return <BonusQuestionManager tenantId={mockTenant.id} userId={user?.id || 'demo-user'} onBack={handleBackToDashboard} />;
+              return <BonusQuestionManager tenantId={tenant.id} userId={user?.id || 'demo-user'} onBack={handleBackToDashboard} />;
             case 'custom-categories':
-              return <CustomCategoryManager tenantId={mockTenant.id} currentUser={user} />;
+              return <CustomCategoryManager tenantId={tenant.id} currentUser={user} />;
             case 'question-categories':
               return <QuestionCategoryManager user={user} onBack={handleBackToDashboard} />;
             case 'round-config':
-              return <RoundQuestionConfigBuilder totalRounds={3} onConfigsChange={() => {}} tenantId={mockTenant.id} currentUser={user} onBack={handleBackToDashboard} />;
+              return <RoundQuestionConfigBuilder totalRounds={3} onConfigsChange={() => {}} tenantId={tenant.id} currentUser={user} onBack={handleBackToDashboard} />;
             case 'templates':
-              return <TemplateLibrary tenantId={mockTenant.id} currentUser={user} onApplyTemplate={() => {}} />;
+              return <TemplateLibrary tenantId={tenant.id} currentUser={user} onApplyTemplate={() => {}} />;
             
             // User & Role Management
             case 'team-management':
-              return <TeamManagement user={user} tenant={mockTenant} onBack={handleBackToDashboard} />;
+              return <TeamManagement user={user} tenant={tenant} onBack={handleBackToDashboard} />;
             case 'role-customization':
               return <TenantRoleCustomization onBack={handleBackToDashboard} />;
             case 'role-management':
