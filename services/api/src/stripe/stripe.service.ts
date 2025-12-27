@@ -73,7 +73,7 @@ export class StripeService {
   /**
    * Get customer by ID
    */
-  async getCustomer(customerId: string): Promise<Stripe.Customer> {
+  async getCustomer(customerId: string, tenantId?: string): Promise<Stripe.Customer> {
     if (!this.stripe) {
       throw new BadRequestException('Stripe is not configured');
     }
@@ -83,6 +83,12 @@ export class StripeService {
       if (customer.deleted) {
         throw new BadRequestException('Customer has been deleted');
       }
+      
+      // If tenantId provided (non-super-admin), verify ownership
+      if (tenantId && customer.metadata?.tenantId !== tenantId) {
+        throw new BadRequestException('Customer not found or access denied');
+      }
+      
       return customer as Stripe.Customer;
     } catch (error) {
       this.logger.error(`Failed to retrieve customer ${customerId}: ${error.message}`);
@@ -240,13 +246,25 @@ export class StripeService {
   /**
    * Get subscription
    */
-  async getSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  async getSubscription(subscriptionId: string, tenantId?: string): Promise<Stripe.Subscription> {
     if (!this.stripe) {
       throw new BadRequestException('Stripe is not configured');
     }
 
     try {
-      return await this.stripe.subscriptions.retrieve(subscriptionId);
+      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ['customer'],
+      });
+      
+      // If tenantId provided (non-super-admin), verify ownership
+      if (tenantId) {
+        const customer = subscription.customer as Stripe.Customer;
+        if (customer.metadata?.tenantId !== tenantId) {
+          throw new BadRequestException('Subscription not found or access denied');
+        }
+      }
+      
+      return subscription;
     } catch (error) {
       this.logger.error(`Failed to retrieve subscription ${subscriptionId}: ${error.message}`);
       throw new InternalServerErrorException('Failed to retrieve subscription');

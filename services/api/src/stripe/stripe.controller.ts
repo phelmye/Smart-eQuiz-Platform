@@ -56,8 +56,11 @@ export class StripeController {
   @ApiResponse({ status: 200, description: 'Customer retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Customer not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCustomer(@Param('customerId') customerId: string) {
-    const customer = await this.stripeService.getCustomer(customerId);
+  async getCustomer(
+    @Param('customerId') customerId: string,
+    @TenantId() tenantId: string,
+  ) {
+    const customer = await this.stripeService.getCustomer(customerId, tenantId);
     return {
       id: customer.id,
       email: customer.email,
@@ -114,8 +117,11 @@ export class StripeController {
   @ApiResponse({ status: 200, description: 'Subscription retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getSubscription(@Param('subscriptionId') subscriptionId: string) {
-    const subscription = await this.stripeService.getSubscription(subscriptionId);
+  async getSubscription(
+    @Param('subscriptionId') subscriptionId: string,
+    @TenantId() tenantId: string,
+  ) {
+    const subscription = await this.stripeService.getSubscription(subscriptionId, tenantId);
     return {
       id: subscription.id,
       status: subscription.status,
