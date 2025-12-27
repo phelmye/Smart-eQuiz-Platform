@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import {
   Table,
@@ -95,7 +96,7 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
 
   const handleCopyKey = (keyPrefix: string) => {
     navigator.clipboard.writeText(keyPrefix);
-    // TODO: Show toast notification
+    toast.success('API key prefix copied to clipboard');
     logger.success('API key prefix copied to clipboard');
   };
 
@@ -121,11 +122,11 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       setRevokeDialog({ open: false, key: null });
       setRevokeReason('');
       
-      // TODO: Show success toast
+      toast.success('API key revoked successfully');
       logger.success('API key revoked successfully');
     } catch (err) {
       logger.error('Failed to revoke API key:', err);
-      // TODO: Show error toast
+      toast.error('Failed to revoke API key');
     }
   };
 
@@ -141,11 +142,11 @@ export default function ApiKeysList({ onCreateClick }: ApiKeysListProps) {
       // Close dialog
       setDeleteDialog({ open: false, key: null });
       
-      // TODO: Show success toast
+      toast.success('API key deleted successfully');
       logger.success('API key deleted successfully');
     } catch (err) {
       logger.error('Failed to delete API key:', err);
-      // TODO: Show error toast
+      toast.error('Failed to delete API key');
     }
   };
 
