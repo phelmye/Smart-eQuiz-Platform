@@ -146,7 +146,11 @@ function checkComponentAccess(user: User, componentId: string, featureId?: strin
     // Check specific feature access
     const hasAccess = roleFeatures.componentFeatures.includes(featureId);
     if (!hasAccess && user.role?.toLowerCase() === 'org_admin') {
-      console.warn(`⚠️ ORG_ADMIN missing feature: ${featureId}. Current features:`, roleFeatures.componentFeatures);
+      logger.warn('ORG_ADMIN missing feature', { 
+        featureId, 
+        currentFeatures: roleFeatures.componentFeatures,
+        componentId 
+      });
     }
     return hasAccess;
   }
