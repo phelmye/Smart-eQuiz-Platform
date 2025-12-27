@@ -149,7 +149,7 @@ export class TournamentsService {
     const tournament = await this.prisma.tournament.findFirst({
       where: { id: tournamentId, tenantId },
       include: {
-        TournamentParticipant: {
+        entries: {
           include: {
             user: {
               select: {
@@ -158,11 +158,12 @@ export class TournamentsService {
               },
             },
           },
+        },
+        questions: {
           orderBy: {
-            score: 'desc',
+            orderIndex: 'asc',
           },
         },
-        questions: true,
       },
     });
 
@@ -171,28 +172,26 @@ export class TournamentsService {
     }
 
     // Calculate metrics
-    const participants = tournament.TournamentParticipant || [];
+    const participants = tournament.entries || [];
     const totalParticipants = participants.length;
-    const activeParticipants = participants.filter(p => !p.completedAt).length;
-    const finishedParticipants = participants.filter(p => p.completedAt).length;
+    // Note: We don't have real-time completion tracking yet
+    const activeParticipants = totalParticipants;
+    const finishedParticipants = 0;
     
     // Format participant data
-    const participantData = participants.map((p, index) => ({
-      userId: p.userId,
-      displayName: p.user?.email || 'Unknown',
-      currentScore: p.score || 0,
-      correctAnswers: p.correctAnswers || 0,
-      averageTime: p.averageResponseTime || 0,
-      status: p.completedAt ? 'finished' : 'active',
+    const participantData = participants.map((entry, index) => ({
+      userId: entry.userId,
+      displayName: entry.user?.email || 'Unknown',
+      currentScore: 0, // TODO: Track scores in real-time
+      correctAnswers: 0,
+      averageTime: 0,
+      status: 'active',
       rank: index + 1,
     }));
 
-    // Calculate averages
-    const totalScore = participants.reduce((sum, p) => sum + (p.score || 0), 0);
-    const averageScore = totalParticipants > 0 ? Math.round(totalScore / totalParticipants) : 0;
-    
-    const totalTime = participants.reduce((sum, p) => sum + (p.averageResponseTime || 0), 0);
-    const averageTimePerQuestion = totalParticipants > 0 ? Math.round(totalTime / totalParticipants) : 0;
+    // Calculate averages (placeholder values until we track scores)
+    const averageScore = 0;
+    const averageTimePerQuestion = 0;
 
     return {
       tournamentId: tournament.id,
@@ -202,12 +201,12 @@ export class TournamentsService {
         totalParticipants,
         activeParticipants,
         finishedParticipants,
-        droppedParticipants: 0, // TODO: Track disconnections
+        droppedParticipants: 0,
         averageScore,
         averageTimePerQuestion,
       },
       questionProgress: {
-        currentQuestion: tournament.currentQuestionIndex || 0,
+        currentQuestion: 0, // TODO: Track current question
         totalQuestions: tournament.questions?.length || 0,
         answeredBy: activeParticipants,
         averageTime: averageTimePerQuestion,
