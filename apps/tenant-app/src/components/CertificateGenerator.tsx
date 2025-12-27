@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { PrizeAward, Tournament, User, mockTournaments, storage, STORAGE_KEYS } from '@/lib/mockData';
 import { useUsers } from '@/hooks/useUsers';
 import { useTournaments } from '@/hooks/useTournaments';
+import { toast } from '@/hooks/use-toast';
 
 interface CertificateGeneratorProps {
   award: PrizeAward;
@@ -48,7 +49,10 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
 
   const handleDownload = () => {
     // In production, this would generate a PDF
-    alert('Certificate download will be implemented with PDF generation library');
+    toast({
+      title: 'Feature coming soon',
+      description: 'Certificate download will be implemented with PDF generation library',
+    });
   };
 
   const handlePrint = () => {
@@ -56,7 +60,10 @@ export const CertificateGenerator: React.FC<CertificateGeneratorProps> = ({
   };
 
   const handleEmail = () => {
-    alert(`Certificate will be emailed to ${award.winnerEmail || user?.email}`);
+    toast({
+      title: 'Email queued',
+      description: `Certificate will be emailed to ${award.winnerEmail || user?.email}`,
+    });
   };
 
   return (
@@ -226,7 +233,10 @@ export const BulkCertificateGenerator: React.FC<{
     // Simulate generation
     await new Promise(resolve => setTimeout(resolve, 2000));
     setGenerating(false);
-    alert(`Generated ${awards.length} certificates!`);
+    toast({
+      title: 'Certificates generated',
+      description: `Generated ${awards.length} certificates!`,
+    });
   };
 
   return (

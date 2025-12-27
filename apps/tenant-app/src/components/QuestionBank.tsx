@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Edit, Trash2, Search, Filter, Download, Upload, BookOp
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, hasPermission } from '@/lib/mockData';
 import { useQuestions, useCategories } from '@/hooks/useQuestions';
+import { toast } from '@/hooks/use-toast';
 
 interface QuestionBankProps {
   onBack: () => void;
@@ -206,7 +207,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
     e.preventDefault();
     
     if (!formData.text.trim() || !formData.category || formData.options.some(opt => !opt.trim())) {
-      alert('Please fill in all required fields');
+      toast({
+        title: 'Incomplete form',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -271,7 +276,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const bulkDelete = () => {
     if (selectedQuestions.length === 0) {
-      alert('Please select questions to delete');
+      toast({
+        title: 'No selection',
+        description: 'Please select questions to delete',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -285,7 +294,11 @@ export const QuestionBank: React.FC<QuestionBankProps> = ({ onBack, onNavigateTo
 
   const bulkToggleStatus = () => {
     if (selectedQuestions.length === 0) {
-      alert('Please select questions to update');
+      toast({
+        title: 'No selection',
+        description: 'Please select questions to update',
+        variant: 'destructive',
+      });
       return;
     }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';import { logger } from '@/lib/logger';import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';import { logger } from '@/lib/logger';import { toast } from '@/hooks/use-toast';import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -133,7 +133,11 @@ export default function BonusQuestionManager({
       newSelected.delete(questionId);
     } else {
       if (eligibility && newSelected.size >= eligibility.questionsRemaining) {
-        alert(`You can only select ${eligibility.questionsRemaining} questions at your current tier`);
+        toast({
+          title: 'Selection limit reached',
+          description: `You can only select ${eligibility.questionsRemaining} questions at your current tier`,
+          variant: 'destructive',
+        });
         return;
       }
       newSelected.add(questionId);
@@ -143,7 +147,11 @@ export default function BonusQuestionManager({
 
   const handleCreateRequest = async () => {
     if (selectedQuestions.size === 0) {
-      alert('Please select at least one question');
+      toast({
+        title: 'No questions selected',
+        description: 'Please select at least one question',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -168,7 +176,11 @@ export default function BonusQuestionManager({
       );
 
       if ('error' in request) {
-        alert(request.error);
+        toast({
+          title: 'Request failed',
+          description: request.error,
+          variant: 'destructive',
+        });
         setIsProcessing(false);
         return;
       }
@@ -188,7 +200,11 @@ export default function BonusQuestionManager({
       }, 1000);
     } catch (error) {
       logger.error('Error creating bonus question request', error);
-      alert('Failed to create bonus question request');
+      toast({
+        title: 'Creation failed',
+        description: 'Failed to create bonus question request',
+        variant: 'destructive',
+      });
       setIsProcessing(false);
       setProcessingStatus('');
     }
@@ -209,7 +225,11 @@ export default function BonusQuestionManager({
         loadData();
       }
     } else {
-      alert(result.error);
+      toast({
+        title: 'Approval failed',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 

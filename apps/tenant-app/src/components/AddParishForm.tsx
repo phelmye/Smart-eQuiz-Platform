@@ -19,6 +19,7 @@ import {
   getFieldLabels,
   getCustomText
 } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface AddParishFormProps {
   onSuccess?: (parishId: string) => void;
@@ -169,7 +170,11 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
       img.onload = () => {
         const aspectRatio = img.width / img.height;
         if (Math.abs(aspectRatio - 16/9) > 0.1) {
-          alert('Please upload an image with 16:9 aspect ratio (landscape)');
+          toast({
+            title: 'Invalid aspect ratio',
+            description: 'Please upload an image with 16:9 aspect ratio (landscape)',
+            variant: 'destructive',
+          });
           return;
         }
         const imageUrl = URL.createObjectURL(file);
@@ -193,9 +198,16 @@ export const AddParishForm: React.FC<AddParishFormProps> = ({ onSuccess, onCance
             coordinates: { lat: parseFloat(lat), lng: parseFloat(lng) } 
           } 
         });
-        alert('Coordinates saved successfully!');
+        toast({
+          title: 'Coordinates saved',
+          description: 'Coordinates saved successfully!',
+        });
       } else {
-        alert('Invalid coordinates format. Please use: latitude,longitude');
+        toast({
+          title: 'Invalid format',
+          description: 'Invalid coordinates format. Please use: latitude,longitude',
+          variant: 'destructive',
+        });
       }
     }
   };

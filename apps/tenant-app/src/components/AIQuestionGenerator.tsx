@@ -27,7 +27,7 @@ import {
   updateQuestionStatus
 } from '@/lib/mockData';
 import { useQuestions } from '@/hooks/useQuestions';
-import { useQuestions } from '@/hooks/useQuestions';
+import { toast } from '@/hooks/use-toast';
 
 interface AIQuestionGeneratorProps {
   onBack: () => void;
@@ -204,14 +204,22 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
 
   const generateQuestions = async () => {
     if (!settings.category || !user) {
-      alert('Please select a category');
+      toast({
+        title: 'Category required',
+        description: 'Please select a category',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Check if can generate
     const check = canGenerateAIQuestions(user.tenantId, settings.count);
     if (!check.allowed) {
-      alert(check.reason || 'Cannot generate questions at this time');
+      toast({
+        title: 'Generation not allowed',
+        description: check.reason || 'Cannot generate questions at this time',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -230,7 +238,11 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     });
 
     if ('error' in request) {
-      alert(request.error);
+      toast({
+        title: 'Generation failed',
+        description: request.error,
+        variant: 'destructive',
+      });
       setIsGenerating(false);
       return;
     }
@@ -305,12 +317,19 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     // Switch to pending tab
     setActiveTab('pending');
     
-    alert(`Generated ${questions.length} questions for review!`);
+    toast({
+      title: 'Questions generated',
+      description: `Generated ${questions.length} questions for review!`,
+    });
   };
 
   const saveSelectedQuestions = () => {
     if (selectedQuestions.length === 0) {
-      alert('Please select at least one question to save');
+      toast({
+        title: 'No questions selected',
+        description: 'Please select at least one question to save',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -323,7 +342,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
     // Refetch questions from API to update the list
     refetchQuestions();
     
-    alert(`${questionsToSave.length} questions saved successfully!`);
+    toast({
+      title: 'Questions saved',
+      description: `${questionsToSave.length} questions saved successfully!`,
+    });
     setGeneratedQuestions([]);
     setSelectedQuestions([]);
   };
@@ -369,14 +391,21 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
       // Reload pending questions
       loadPendingQuestions();
       setReviewDialogOpen(false);
-      alert(`Question approved and added to ${destination}!`);
+      toast({
+        title: 'Question approved',
+        description: `Question approved and added to ${destination}!`,
+      });
     }
   };
 
   // Reject question
   const handleReject = () => {
     if (!reviewingQuestion || !user || !rejectionReason.trim()) {
-      alert('Please provide a rejection reason');
+      toast({
+        title: 'Reason required',
+        description: 'Please provide a rejection reason',
+        variant: 'destructive',
+      });
       return;
     }
     
@@ -397,7 +426,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
       
       loadPendingQuestions();
       setReviewDialogOpen(false);
-      alert('Question rejected');
+      toast({
+        title: 'Question rejected',
+        description: 'Question rejected',
+      });
     }
   };
 
@@ -422,7 +454,10 @@ export const AIQuestionGenerator: React.FC<AIQuestionGeneratorProps> = ({ onBack
       
       loadPendingQuestions();
       setReviewDialogOpen(false);
-      alert('Question marked for revision');
+      toast({
+        title: 'Needs revision',
+        description: 'Question marked for revision',
+      });
     }
   };
 

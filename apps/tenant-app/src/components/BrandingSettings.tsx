@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, Upload, Image, Palette, Type, Save, RefreshCw, Eye, Download, LogOut } from 'lucide-react';
 import { useAuth } from './AuthSystem';
 import { storage, STORAGE_KEYS, Tenant, hasPermission } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface BrandingSettingsProps {
   onBack: () => void;
@@ -129,9 +130,16 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
       // Apply branding to document
       applyBrandingToDocument();
       
-      alert('Branding settings saved successfully!');
+      toast({
+        title: 'Settings saved',
+        description: 'Branding settings saved successfully!',
+      });
     } catch (error) {
-      alert('Failed to save branding settings. Please try again.');
+      toast({
+        title: 'Save failed',
+        description: 'Failed to save branding settings. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -848,9 +856,16 @@ export const BrandingSettings: React.FC<BrandingSettingsProps> = ({ onBack }) =>
                             try {
                               const config = JSON.parse(event.target?.result as string);
                               setBranding(config);
-                              alert('Configuration imported successfully!');
+                              toast({
+                                title: 'Configuration imported',
+                                description: 'Configuration imported successfully!',
+                              });
                             } catch (error) {
-                              alert('Invalid configuration file.');
+                              toast({
+                                title: 'Import failed',
+                                description: 'Invalid configuration file.',
+                                variant: 'destructive',
+                              });
                             }
                           };
                           reader.readAsText(file);

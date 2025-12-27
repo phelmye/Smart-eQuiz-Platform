@@ -28,6 +28,7 @@ import {
   Edit,
   MoreVertical
 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { storage, STORAGE_KEYS, User } from '@/lib/mockData';
 
 interface TeamManagementProps {
@@ -203,7 +204,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
 
   const handleSendInvitation = () => {
     if (!inviteEmail.trim()) {
-      alert('Please enter an email address');
+      toast({
+        title: 'Email required',
+        description: 'Please enter an email address',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -212,7 +217,11 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
                        invitations.some(i => i.email.toLowerCase() === inviteEmail.toLowerCase() && i.status === 'pending');
     
     if (emailExists) {
-      alert('This email is already associated with a team member or has a pending invitation');
+      toast({
+        title: 'Email already exists',
+        description: 'This email is already associated with a team member or has a pending invitation',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -240,25 +249,38 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
     };
     setActivityLogs(prev => [newLog, ...prev]);
 
-    alert(`Invitation sent to ${inviteEmail}!`);
+    toast({
+      title: 'Invitation sent',
+      description: `Invitation sent to ${inviteEmail}!`,
+    });
     setInviteEmail('');
     setInviteMessage('');
   };
 
   const handleResendInvitation = (invitation: Invitation) => {
-    alert(`Invitation resent to ${invitation.email}`);
+    toast({
+      title: 'Invitation resent',
+      description: `Invitation resent to ${invitation.email}`,
+    });
   };
 
   const handleCancelInvitation = (invitationId: string) => {
     if (confirm('Cancel this invitation?')) {
       setInvitations(prev => prev.filter(i => i.id !== invitationId));
-      alert('Invitation cancelled');
+      toast({
+        title: 'Invitation cancelled',
+        description: 'Invitation cancelled',
+      });
     }
   };
 
   const handleRemoveMember = (memberId: string, memberName: string) => {
     if (memberId === user?.id) {
-      alert('You cannot remove yourself from the team');
+      toast({
+        title: 'Action not allowed',
+        description: 'You cannot remove yourself from the team',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -276,13 +298,20 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
       };
       setActivityLogs(prev => [newLog, ...prev]);
 
-      alert(`${memberName} has been removed from the team`);
+      toast({
+        title: 'Member removed',
+        description: `${memberName} has been removed from the team`,
+      });
     }
   };
 
   const handleChangeRole = (memberId: string, memberName: string, newRole: string) => {
     if (memberId === user?.id) {
-      alert('You cannot change your own role');
+      toast({
+        title: 'Action not allowed',
+        description: 'You cannot change your own role',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -301,7 +330,10 @@ const TeamManagement: React.FC<TeamManagementProps> = ({ user, tenant, onBack })
     };
     setActivityLogs(prev => [newLog, ...prev]);
 
-    alert(`Role updated for ${memberName}`);
+    toast({
+      title: 'Role updated',
+      description: `Role updated for ${memberName}`,
+    });
   };
 
   const formatDate = (dateString: string) => {

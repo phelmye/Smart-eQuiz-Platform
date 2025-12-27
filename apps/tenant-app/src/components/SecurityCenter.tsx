@@ -27,6 +27,7 @@ import {
   Activity
 } from 'lucide-react';
 import { storage, STORAGE_KEYS } from '@/lib/mockData';
+import { toast } from '@/hooks/use-toast';
 
 interface SecurityCenterProps {
   user: any;
@@ -231,17 +232,28 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack }) => {
 
   const handleChangePassword = () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('Passwords do not match!');
+      toast({
+        title: 'Password mismatch',
+        description: 'Passwords do not match!',
+        variant: 'destructive',
+      });
       return;
     }
 
     if (passwordStrength < 60) {
-      alert('Password is too weak. Please use a stronger password.');
+      toast({
+        title: 'Weak password',
+        description: 'Password is too weak. Please use a stronger password.',
+        variant: 'destructive',
+      });
       return;
     }
 
     // Simulate password change
-    alert('Password changed successfully!');
+    toast({
+      title: 'Password changed',
+      description: 'Password changed successfully!',
+    });
     setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     setPasswordStrength(0);
     setPasswordFeedback([]);
@@ -253,20 +265,33 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack }) => {
     storage.set(`${STORAGE_KEYS.USERS}_2fa_${user?.id}`, { enabled: newStatus });
     
     if (newStatus) {
-      alert('Two-factor authentication enabled! You will receive a setup guide via email.');
+      toast({
+        title: 'Two-factor authentication enabled',
+        description: 'You will receive a setup guide via email.',
+      });
     } else {
-      alert('Two-factor authentication disabled.');
+      toast({
+        title: 'Two-factor authentication disabled',
+        description: 'Two-factor authentication has been disabled.',
+      });
     }
   };
 
   const handleTerminateSession = (sessionId: string) => {
     setSessions(prev => prev.filter(s => s.id !== sessionId));
-    alert('Session terminated successfully.');
+    toast({
+      title: 'Session terminated',
+      description: 'Session terminated successfully.',
+    });
   };
 
   const handleGenerateApiKey = () => {
     if (!newApiKeyName.trim()) {
-      alert('Please enter a name for the API key');
+      toast({
+        title: 'Name required',
+        description: 'Please enter a name for the API key',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -285,19 +310,28 @@ const SecurityCenter: React.FC<SecurityCenterProps> = ({ user, onBack }) => {
     setApiKeys(updatedKeys);
     storage.set(`${STORAGE_KEYS.USERS}_api_keys_${user?.id}`, updatedKeys);
     setNewApiKeyName('');
-    alert('API key generated successfully! Make sure to copy it now - you won\'t be able to see it again.');
+    toast({
+      title: 'API key generated',
+      description: 'Make sure to copy it now - you won\'t be able to see it again.',
+    });
   };
 
   const handleRevokeApiKey = (keyId: string) => {
     const updatedKeys = apiKeys.filter(k => k.id !== keyId);
     setApiKeys(updatedKeys);
     storage.set(`${STORAGE_KEYS.USERS}_api_keys_${user?.id}`, updatedKeys);
-    alert('API key revoked successfully.');
+    toast({
+      title: 'API key revoked',
+      description: 'API key revoked successfully.',
+    });
   };
 
   const handleCopyApiKey = (key: string) => {
     navigator.clipboard.writeText(key);
-    alert('API key copied to clipboard!');
+    toast({
+      title: 'Copied to clipboard',
+      description: 'API key copied to clipboard!',
+    });
   };
 
   const handleDismissAlert = (alertId: string) => {

@@ -6,6 +6,7 @@ import { CreateSupportTicketDialog } from '@/components/chat/CreateSupportTicket
 import { ChatChannel, chatApi } from '@/lib/chatApi';
 import { chatSocket } from '@/lib/chatSocket';
 import { logger } from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
 
 interface ChatPageProps {
   currentUserId: string;
@@ -48,11 +49,18 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
     try {
       await chatApi.escalateChannel(selectedChannel.id, reason);
-      alert('Ticket escalated to platform support successfully.');
+      toast({
+        title: 'Ticket escalated',
+        description: 'Ticket escalated to platform support successfully.',
+      });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       logger.error('Failed to escalate:', error);
-      alert('Failed to escalate ticket. Please try again.');
+      toast({
+        title: 'Escalation failed',
+        description: 'Failed to escalate ticket. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -66,11 +74,18 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       // TODO: Implement assign channel API endpoint
       // await chatApi.assignChannel(selectedChannel.id, assignee);
       logger.info('Assigning channel to:', assignee);
-      alert(`Channel assigned to ${assignee} successfully.`);
+      toast({
+        title: 'Channel assigned',
+        description: `Channel assigned to ${assignee} successfully.`,
+      });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       logger.error('Failed to assign:', error);
-      alert('Failed to assign channel. Please try again.');
+      toast({
+        title: 'Assignment failed',
+        description: 'Failed to assign channel. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -81,11 +96,18 @@ export const ChatPage: React.FC<ChatPageProps> = ({
     
     try {
       await chatApi.resolveChannel(selectedChannel.id, resolution || undefined);
-      alert('Channel marked as resolved.');
+      toast({
+        title: 'Channel resolved',
+        description: 'Channel marked as resolved.',
+      });
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       logger.error('Failed to resolve:', error);
-      alert('Failed to resolve channel. Please try again.');
+      toast({
+        title: 'Resolution failed',
+        description: 'Failed to resolve channel. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -98,12 +120,19 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
     try {
       await chatApi.archiveChannel(selectedChannel.id);
-      alert('Channel archived successfully.');
+      toast({
+        title: 'Channel archived',
+        description: 'Channel archived successfully.',
+      });
       setSelectedChannel(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       logger.error('Failed to archive:', error);
-      alert('Failed to archive channel. Please try again.');
+      toast({
+        title: 'Archive failed',
+        description: 'Failed to archive channel. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
