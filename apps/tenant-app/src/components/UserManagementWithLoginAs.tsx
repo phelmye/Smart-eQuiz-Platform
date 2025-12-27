@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 import { logger, authLogger } from '@/lib/logger';
 import { 
   Table, 
@@ -84,14 +85,8 @@ export default function UserManagementWithLoginAs({
       const tenantUsers = apiUsers.filter(u => 
         u.role !== 'super_admin' && u.id !== user.id
       );
-      setUsers(tenantUsers);
-    }
-  };
-      const filteredUsers = tenantUsers.filter(u => 
-        u.role !== 'super_admin' && 
-        u.id !== user.id
-      );
-      setUsers(filteredUsers);
+      // Cast to mockData User type since we're storing in local state
+      setUsers(tenantUsers as unknown as User[]);
     }
   };
 
@@ -522,10 +517,7 @@ export default function UserManagementWithLoginAs({
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              toast({
-                                title: "User Details",
-                                description: `Viewing details for ${u.email}`,
-                              });
+                            toast.info(`Viewing details for ${u.email}`);
                               // Future: Open user details modal
                             }}
                           >
@@ -595,10 +587,7 @@ export default function UserManagementWithLoginAs({
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            toast({
-                              title: "User Details",
-                              description: `Viewing details for ${u.email}`,
-                            });
+                            toast.info(`Viewing details for ${u.email}`);
                             // Future: Open user details modal
                           }}
                         >
